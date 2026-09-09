@@ -133,25 +133,25 @@ chat_lockIcon=-16718337
 chat_muteIcon=-8615279
 chat_selectedBackground=436266495
 
-# Incoming message: amber plate, dark foreground
-chat_inBubble=-1517254
-chat_inBubbleSelected=-858277
+# Incoming message: dark warm body, amber outline, light foreground
+chat_inBubble=-15526898
+chat_inBubbleSelected=-14934761
 chat_inBubbleShadow=0
-chat_messageTextIn=-15724010
+chat_messageTextIn=-1447195
 chat_messageLinkIn=-16052974
-chat_inTimeText=-10331363
-chat_inTimeSelectedText=-15724010
+chat_inTimeText=-6116457
+chat_inTimeSelectedText=-3419454
 chat_inViews=-10331363
 chat_inViewsSelected=-15724010
-chat_inMenu=-10331363
-chat_inMenuSelected=-15724010
-chat_inForwardedNameText=-16052974
+chat_inMenu=-14474211
+chat_inMenuSelected=-12960718
+chat_inForwardedNameText=-1517254
 chat_inViaBotNameText=-16052974
-chat_inReplyLine=-16052974
-chat_inReplyNameText=-16052974
-chat_inReplyMessageText=-15724010
-chat_inReplyMediaMessageText=-10331363
-chat_inPreviewLine=-16052974
+chat_inReplyLine=-1517254
+chat_inReplyNameText=-1517254
+chat_inReplyMessageText=-3157048
+chat_inReplyMediaMessageText=-3157048
+chat_inPreviewLine=-7695230
 chat_inSiteNameText=-16052974
 chat_inContactNameText=-16052974
 chat_inContactPhoneText=-15724010
@@ -253,3 +253,4 @@ fill_RedNormal=-53690
 undo_background=-871690990
 undo_cancelColor=-16718337
 undo_infoColor=-1641742
+

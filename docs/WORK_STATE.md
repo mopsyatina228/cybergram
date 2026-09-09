@@ -438,6 +438,45 @@ The user completed login manually; validation ran against the real ChatActivity 
 ### Defects / deferred
 - No BLOCKER. One search-state nuance documented (decor stacked above the search field, no overlap). Deferred: bottom-nav restyle (pass 3), floatingButtonStories styling, amber attention tint for the unread counter.
 
+## Chrome Normalization audit + Stage C incoming-bubble palette correction (2026-09-09)
+
+### Screenshot-derived visual defects (real-device)
+- Chat header: identity block + call/menu controls are large light-gray OPAQUE rounded Material capsules/pills (sample px ~195,195,197) sitting under the Cybergram cyan rule/ticks.
+- Dialogs top: filter/folder tabs remain a large rounded pill.
+- Bottom nav: large rounded/glass pill; selected tab rounded capsule.
+- FAB = good (angular, keep).
+
+### Chrome ownership + seams (audit; fixes deferred — complex shared seams)
+- Chat header pills: driven by the deep `ActionBar.setGlassMode` glass/blur pipeline
+  (`BlurredBackgroundDrawableViewFactory`, `glassBackgroundSourceRenderNode`, `ChatAvatarContainer.setGlassMode()`,
+  capsule px 195,195,197 from the glass overlay, NOT an at-theme key). Narrow normalization would require gating/flattening
+  the shared glass pipeline -> deferred (task allows documenting complex seams; "не ломать blur pipeline").
+- Dialogs filter tabs: `FilterTabsView` rounded pill -> audit only; not changed this pass.
+- Bottom nav: owner = `MainTabsActivity` -> `MainTabsLayout` (tabsView) + `GlassTabView[5]` + `tabsViewBackground`
+  (BlurredBackgroundDrawable); shared complex nav component -> Stage E pass 3 (not changed here).
+- CybergramHeaderDecorationView rule/amber/ticks kept (verified still coherent).
+
+### Stage C incoming-bubble palette correction (APPLIED + validated)
+- Rationale: real-device screenshot -> the opaque amber-yellow incoming fill (`chat_inBubble` #E8D93A) dominated the
+  composition and did not fit the dark HUD language. Opaque amber incoming fill REJECTED after real-device review.
+- Change (cybergram.attheme only, no MessageDrawable geometry change):
+  - chat_inBubble -> 0xFF13140E (dark warm graphite body); chat_inBubbleSelected -> 0xFF1C1D17 (lighter warm-dark raised).
+  - chat_messageTextIn -> 0xFFE9EAE5 (light text; was dark -> unreadable on dark body).
+  - chat_inTimeText/Selected -> muted warm-light; chat_inForwardedNameText -> amber; chat_inReplyLine -> amber
+    (drives the incoming 1dp border via `MessageDrawable.getCybergramBorderColor` + the reply quote line);
+    chat_inReplyNameText -> amber; chat_inReplyMessageText/ReplyMedia -> light; chat_inMenu/Selected -> warm-dark;
+    chat_inPreviewLine -> muted.
+- Outgoing unchanged (dark cyan `chat_outBubble` + cyan `chat_outReplyLine` border).
+- APK verified to embed the new at-theme values; installed over beta (no pm clear/logout).
+- Real incoming plain-text bubble (safe chat, human-opened): left/incoming = dark warm body + 1dp amber outline + light
+  readable text; right/outgoing = dark cyan + cyan stroke; no yellow bubbles; FATAL/ANR=0.
+- Showcase v9 reflects the new palette (showcase reads at-theme via palette.color; incoming fill/border/text auto-update).
+- Before/after: `real_header_before` (chrome), `cybergram_showcase_v9_incoming.png`, `real_incoming_v1.png` (gitignored).
+
+### Day regression
+- Incoming palette is a at-theme override (Cybergram at theme only); Day/stock at-theme unaffected.
+- Chrome fixes NOT applied -> Day chrome unchanged (upstream rounded/glass preserved) by construction.
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
