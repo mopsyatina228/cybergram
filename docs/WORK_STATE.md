@@ -354,6 +354,37 @@ The user completed login manually; validation ran against the real ChatActivity 
 - No BLOCKER. Minor observation only: the header HUD ticks land at the bottom corners, under the back/menu buttons (small marks below the glyphs, subtle, non-intrusive) — left as-is since the slice works and redesign is out of scope this pass.
 - No production code changed this pass; docs/WORK_STATE.md only.
 
+## Stage D pass 2: Cybergram Angular Send Control (2026-09-09)
+
+### Send-state ownership / state machine (audit)
+- The compose send control lives in `ChatActivityEnterView`: a `sendButtonContainer` FrameLayout hosts stacked controls — `audioVideoButtonContainer` (mic/audio/video), `cancelBotButton`, `sendButton` (a `ChatActivityEnterView.SendButton` custom view), `sendButtonBlockedByTypingView`, `slowModeButton`, `expandStickersButton`. They toggle by visibility/alpha/scale.
+- `SendButton` (static inner class) draws a `backgroundRect` (38dp rounded-rect, RADIUS 19) with `getFillColor()` = `key_chat_messagePanelSend` (cyan) behind the send glyph; the glyph (new-design) is white. It exposes `isInScheduleMode()`, `isOpen()`, `isInactive()`, `shouldDrawBackground()`, `setAlpha()`.
+- `resId` is set once (send_plane_24 / input_schedule); mic/audio/video are SEPARATE controls, and the send button animates in/out (alpha 0→1, scale 0.1→1) via the enter-view state machine.
+
+### Integration seam
+- Cybergram treatment is a decoration, NOT a new button: inside `SendButton.onDraw`, when `isCybergramSendPlateEnabled()`, draw a `CybergramHudDrawable` chamfered dark plate (fill = `key_chat_messagePanelBackground` #0B0D12, stroke = `key_chat_messagePanelSend` #00E5FF, cut = `BUBBLE_CORNER_CUT_DP` 6dp, bounds = `backgroundRect`) over the rounded-rect; the glyph draws on top. Otherwise (Day/non-Cybergram/non-send) the original `drawRoundRect` renders.
+- Gate `isCybergramSendPlateEnabled()`: base returns false; only the composer's anonymous SendButton overrides to `CybergramTheme.isCybergramPresentation(resourcesProvider) && editingMessageObject == null && !recordingAudioVideo` — uses the real Telegram state, not text.length. Reuses the shared `CybergramBubbleDrawable.buildPath` via CybergramHudDrawable (no second polygon).
+
+### Normal-send gate + animation
+- Plate appears only under Cybergram and only when the normal text-send state is shown. Drawn inside the SendButton's own `onDraw`, it inherits the send button's alpha/scale/translation/visibility — no separate animation, no double scale, no "icon gone but frame left" artifact.
+- Empty/mic, video/voice, recording, edit/done, slow-mode: gate false or send button not shown → plate does not hang under other controls.
+
+### Runtime send-state result (real chat, authenticated Saved Messages)
+- Built + installed over org.telegram.messenger.beta (no pm clear, no logout). No FATAL/ANR.
+- Human checkpoint #1: user typed a single "." (unsent). Verified: 108x108 chamfered dark plate (45° top-left/bottom-left cuts), ~1dp cyan stroke, light paper-plane glyph centered on top, right edge 29px from screen edge, ~3dp gap to the composer frame, no rounded/circular leftover. Screenshot `.local-artifacts/real_chat_cybergram_send_v1.png`.
+- Human checkpoint #2: user deleted the ".". Verified: send button + plate disappeared, mic/empty state returned, no ghost border/background, composer frame intact.
+- Transitions (task 12): keyboard open (composer + send plate moved up together), emoji panel open/close (plate stays aligned above the panel) — the plate follows the send state.
+- Deferred (intentionally not tested per task): voice/video recording, camera, slow-mode, edit/done, actual message send.
+
+### Showcase v6
+- `cybergram_showcase_v6_send.png`: v4 bubbles + v5 header + v5 composer frame + banner preserved; added send control (dark chamfered plate + 1dp cyan stroke + paper-plane glyph) via the same CybergramHudDrawable primitive.
+
+### Day / non-Cybergram regression
+- At Day `isCybergramPresentation()` is false → `isCybergramSendPlateEnabled()` false → the SendButton draws the original rounded cyan `drawRoundRect` (no plate). Verified by the static gate; a real Day send screenshot is optional (would need a theme switch).
+
+### Showcase vs production (read-only)
+- Consistent: dark chamfered plate, 1dp cyan stroke, paper-plane glyph, no round; composer frame + plate visually coherent. Only a minor scale difference (showcase ~34dp mock plate vs production ~38dp real button) — EXPECTED. No blockers, no visual defects.
+
 ## Next implementation sequence
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.

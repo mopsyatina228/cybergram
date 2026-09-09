@@ -350,11 +350,26 @@ public class CybergramShowcaseActivity extends Activity {
             // emoji glyph
             paint.setTextSize(dp(20));
             canvas.drawText("\u263A", w - dp(88), top + dp(38), paint);
-            // send / mic control
-            paint.setColor(sendCol);
-            canvas.drawCircle(w - dp(34), top + dp(32), dp(17), paint);
-            paint.setColor(composerBg);
-            canvas.drawCircle(w - dp(34), top + dp(32), dp(9), paint);
+            // Send control (Stage D pass 2): a chamfered dark angular plate + 1dp cyan stroke
+            // behind a light send glyph, replacing Telegram's cyan round send button. Uses the
+            // same CybergramHudDrawable primitive (shared CybergramBubbleDrawable.buildPath).
+            int cx = w - dp(34);
+            int cy = top + dp(32);
+            CybergramHudDrawable sendPlate = new CybergramHudDrawable();
+            sendPlate.setFillColor(composerBg);
+            sendPlate.setStroke(sendCol, dp(1), true);
+            sendPlate.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            sendPlate.setBounds(cx - dp(17), cy - dp(17), cx + dp(17), cy + dp(17));
+            sendPlate.draw(canvas);
+            // send glyph approximation (paper-plane triangle), drawn on top in light
+            Path plane = new Path();
+            plane.moveTo(cx - dp(6), cy + dp(6));
+            plane.lineTo(cx - dp(6), cy - dp(6));
+            plane.lineTo(cx + dp(9), cy);
+            plane.close();
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xFFFFFFFF);
+            canvas.drawPath(plane, paint);
 
             // Cybergram composer frame: 1dp cyan chamfered outline around the field pill,
             // via the same HUD primitive used by the production composer seam. Sits clear of

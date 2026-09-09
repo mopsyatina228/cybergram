@@ -3489,6 +3489,13 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             @Override
+            public boolean isCybergramSendPlateEnabled() {
+                return CybergramTheme.isCybergramPresentation(resourcesProvider)
+                        && ChatActivityEnterView.this.editingMessageObject == null
+                        && !ChatActivityEnterView.this.recordingAudioVideo;
+            }
+
+            @Override
             public boolean shouldDrawBackground() {
                 return shouldDrawBackground;
             }
@@ -14838,6 +14845,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         public boolean center;
 
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final CybergramHudDrawable cybergramSendPlate = new CybergramHudDrawable();
 
         public SendButton(Context context, int resId, Theme.ResourcesProvider resourcesProvider) {
             this(context, resId, resourcesProvider, false);
@@ -15102,7 +15110,11 @@ public class ChatActivityEnterView extends FrameLayout implements
             updateColors();
             checkBackgroundRect();
             if (isNewDesignSendButton) {
-                canvas.drawRoundRect(backgroundRect, dp(RADIUS), dp(RADIUS), backgroundPaint);
+                if (isCybergramSendPlateEnabled()) {
+                    drawCybergramSendPlate(canvas);
+                } else {
+                    canvas.drawRoundRect(backgroundRect, dp(RADIUS), dp(RADIUS), backgroundPaint);
+                }
             }
 
             final boolean inactive = isInactive();
@@ -15435,6 +15447,28 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         private final RectF backgroundRect = new RectF();
         private static final int RADIUS = 19;
+
+        /**
+         * Whether the Cybergram angular send plate should be drawn behind the send glyph for
+         * THIS instance. The base SendButton returns false (no plate), so only the composer's
+         * anonymous subclass (which overrides this) enables it, and only under Cybergram while
+         * the normal text-send state is shown (not recording / not editing).
+         */
+        public boolean isCybergramSendPlateEnabled() {
+            return false;
+        }
+
+        private void drawCybergramSendPlate(Canvas canvas) {
+            int fill = Theme.getColor(Theme.key_chat_messagePanelBackground, resourcesProvider);
+            int stroke = Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
+            cybergramSendPlate.setFillColor(fill);
+            cybergramSendPlate.setStroke(stroke, dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+            cybergramSendPlate.setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            cybergramSendPlate.setBounds(
+                    (int) backgroundRect.left, (int) backgroundRect.top,
+                    (int) backgroundRect.right, (int) backgroundRect.bottom);
+            cybergramSendPlate.draw(canvas);
+        }
 
         private void checkBackgroundRect() {
             final float margin = dpf2(3);
