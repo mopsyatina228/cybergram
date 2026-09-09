@@ -84,6 +84,29 @@ Control palette verified as intended: background `#080A0F`, header/panel `#0B0D1
 - Persistence proven on-device: simulating an existing choice (`theme=Day`, `nighttheme=Day`) then relaunching leaves `theme=Day`/`nighttheme=Day` — Cybergram does not overwrite it.
 - The `IntroActivity` screen is rendered with the client default surface and does not visually reflect the Cybergram palette in this build; this is a known display behaviour of the pre-auth intro and is intentionally out of scope for the theme-default change (per `docs/CYBERGRAM_UI_SPEC.md` Stage B note). The theme itself is active (day/night/preferences all resolve to Cybergram).
 
+## Debug showcase Activity (2026-09-09)
+
+A DEBUG-ONLY visual showcase was added for offline UI iteration, so palette/geometry changes can be reviewed without a Telegram account or login.
+
+Files (uncommitted recovery snapshot, all in `debug` source set / debug manifests so they are absent from release builds):
+
+- `org.telegram.ui.CybergramShowcaseActivity` in `TMessagesProj_App/src/debug/java/org/telegram/ui/` — self-contained `Activity` that draws a header bar, incoming/outgoing message bubbles and a media bubble via the real production `MessageDrawable`, a composer bar, and a runtime debug strip. Reads colours through `Theme.getColor(...)`; a small labelled DEBUG fallback map covers palette keys Cybergram does not define.
+- `org.telegram.ui.CybergramShowcaseActivity` declared in `TMessagesProj/config/debug/AndroidManifest.xml` and `AndroidManifest_SDK23.xml` with `android:exported="true"` and NO launcher `intent-filter` (started only via an explicit `adb` intent). Never merged into release manifests.
+
+Verified this session (device Samsung SM-A256E / Android 16 / arm64-v8a):
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` -> APK `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, single ABI `arm64-v8a`, package `org.telegram.messenger.beta`, versionCode `70389`, versionName `12.10.1`, size 72,376,594 B, SHA-256 `5f3860788ab6e50d2252f89219e00cd38147aeedabefe2dd490529c3bf4b9433`.
+- Install: same APK installed on-device (`lastUpdateTime` 2026-09-09 16:27); installed `base.apk` SHA-256 and size match the host APK byte-for-byte, so the showcase Activity is present in the installed build.
+- Launch: `adb shell am start -n org.telegram.messenger.beta/org.telegram.ui.CybergramShowcaseActivity` -> `topResumedActivity` confirmed, PID 8986, no FATAL/ANR.
+- Screenshot: `.local-artifacts/cybergram_showcase_v1.png` (1080x2340, git-ignored).
+- Runtime debug values read from the on-screen debug strip:
+  - theme name = `Day`, dark = `false`
+  - `windowBackgroundWhite` = `#FFFFFFFF`
+  - `chat_inBubble` = `#FFF0F0F0`
+  - `chat_outBubble` = clipped at the right screen edge (the debug strip text overflows the canvas width, so the final hex is not rendered); the rendered outgoing bubble and media placeholder are dark/near-black.
+
+Observation (recorded, not acted on this session): the debug strip reports `day.attheme`-derived values (e.g. `chat_inBubble #FFF0F0F0`, which is day.attheme's `#7FF0F0F0` with alpha normalised to `FF`), yet the rendered outgoing bubble appears near-black rather than day.attheme's `chat_outBubble` (`#7F2D7ED5` -> `#FF2D7ED5`, a blue). Worth investigating whether the active palette / `MessageDrawable` colour path matches expectation. Per recovery constraints no code was changed based on this.
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).

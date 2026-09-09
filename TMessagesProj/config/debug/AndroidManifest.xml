@@ -60,6 +60,12 @@
             android:enabled="false"
             android:exported="false" />
 
+        <!-- Debug-only Cybergram visual showcase (no launcher intent-filter;
+             started via explicit adb intent). Absent from release manifests. -->
+        <activity
+            android:name="org.telegram.ui.CybergramShowcaseActivity"
+            android:exported="true" />
+
     </application>
 
 </manifest>
