@@ -103,6 +103,8 @@ public class MessageDrawable extends Drawable {
     private int overrideRoundRadius;
     private float overrideRounding;
     public boolean forceInvalidatePath;
+    private Paint borderPaint;
+    private final Path cybergramBorderPath = new Path();
 
     public MessageDrawable(int type, boolean out, boolean selected) {
         this(type, out, selected, null);
@@ -554,6 +556,7 @@ public class MessageDrawable extends Drawable {
             if (background != null) {
                 background.setBounds(bounds);
                 background.draw(canvas);
+                drawCybergramBorder(canvas, bounds);
                 return;
             }
         }
@@ -612,6 +615,9 @@ public class MessageDrawable extends Drawable {
             int color = getColor(Theme.key_chat_outBubbleGradientSelectedOverlay);
             selectedPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * alpha / 255f)));
             canvas.drawPath(path, selectedPaint);
+        }
+        if (paintToUse == null) {
+            drawCybergramBorder(canvas, bounds);
         }
     }
 
@@ -829,8 +835,69 @@ public class MessageDrawable extends Drawable {
             left = bounds.left + dp(8);
             right = bounds.right - padding;
         }
-        float cut = dp(CybergramTheme.BUBBLE_CORNER_CUT_DP);
-        CybergramBubbleDrawable.buildPath(path, left, top, right, bottom, cut);
+        // Directional near semantics: the corner on the former tail side is reduced when
+        // the neighbour bubble is near (grouped). The far-side corners stay full cut.
+        float full = dp(CybergramTheme.BUBBLE_CORNER_CUT_DP);
+        float near = dp(CybergramTheme.BUBBLE_NEAR_CORNER_CUT_DP);
+        float tl;
+        float tr;
+        float br;
+        float bl;
+        if (isOut) {
+            tl = full;
+            bl = full;
+            tr = isTopNear ? near : full;
+            br = isBottomNear ? near : full;
+        } else {
+            tr = full;
+            br = full;
+            tl = isTopNear ? near : full;
+            bl = isBottomNear ? near : full;
+        }
+        CybergramBubbleDrawable.buildPath(path, left, top, right, bottom, tl, tr, br, bl);
+    }
+
+    private Paint getBorderPaint() {
+        if (borderPaint == null) {
+            borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            borderPaint.setStyle(Paint.Style.STROKE);
+            borderPaint.setStrokeJoin(Paint.Join.MITER);
+            borderPaint.setStrokeCap(Paint.Cap.SQUARE);
+            borderPaint.setStrokeWidth(dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP));
+        }
+        return borderPaint;
+    }
+
+    private int getCybergramBorderColor() {
+        if (isOut) {
+            if (isSelected) {
+                int c = getColor(Theme.key_chat_outReplyLine2);
+                if (c != 0) {
+                    return c;
+                }
+                return getColor(Theme.key_chat_outReplyLine);
+            }
+            return getColor(Theme.key_chat_outReplyLine);
+        }
+        return getColor(Theme.key_chat_inReplyLine);
+    }
+
+    /**
+     * Draws the Cybergram outline as a separate overlay stroke on the exact Cybergram
+     * path (reusing generateCybergramPath — no second geometry implementation). It is
+     * only drawn on the final user canvas (paintToUse == null), never inside the cached
+     * nine-patch / shadow rasterization, and its alpha scales with the drawable alpha.
+     */
+    private void drawCybergramBorder(Canvas canvas, Rect bounds) {
+        if (!useAngularGeometry() || (currentType != TYPE_TEXT && currentType != TYPE_MEDIA)) {
+            return;
+        }
+        int padding = dp(2);
+        generateCybergramPath(cybergramBorderPath, bounds, padding);
+        Paint bp = getBorderPaint();
+        bp.setColor(getCybergramBorderColor());
+        bp.setAlpha(alpha);
+        canvas.drawPath(cybergramBorderPath, bp);
     }
 
     public void setDrawFullBubble(boolean drawFullBuble) {
@@ -842,6 +909,9 @@ public class MessageDrawable extends Drawable {
         if (this.alpha != alpha || this.paint.getAlpha() != alpha) {
             this.alpha = alpha;
             paint.setAlpha(alpha);
+            if (borderPaint != null) {
+                borderPaint.setAlpha(alpha);
+            }
             if (isOut) {
                 selectedPaint.setAlpha((int) (Color.alpha(getColor(Theme.key_chat_outBubbleGradientSelectedOverlay)) * (alpha / 255.0f)));
             }

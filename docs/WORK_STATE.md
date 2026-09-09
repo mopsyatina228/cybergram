@@ -176,11 +176,62 @@ First production integration of Cybergram geometry: it replaces the Telegram rou
 
 Note (pre-existing, out of scope): the debug composer placeholder "Сообщение" sits low and reads as partially clipped; this predates the geometry pass and is not a regression of this task.
 
+## Angular message geometry — border + grouped corners (Stage C, pass 2, 2026-09-09)
+
+Second pass on the Cybergram message silhouette: add a thin outline and make `topNear`/`bottomNear` visually meaningful for the angular bubbles. Geometry only — layout, colours, text, sizes and Telegram logic unchanged. Old Telegram rendering is untouched when Cybergram geometry is off.
+
+### Per-corner builder API
+
+- `CybergramBubbleDrawable.buildPath(Path, left, top, right, bottom, cut)` (uniform) now delegates to a new overload `buildPath(Path, left, top, right, bottom, topLeftCut, topRightCut, bottomRightCut, bottomLeftCut)`. All clamp logic stays centralised (each cut clamped to at most half the smaller side). `CybergramBubbleDrawable` (standalone) continues to run through the same builder.
+
+### Near-corner mapping (near-aware directional cuts)
+
+- `generateCybergramPath` now emits four different cuts:
+  - outgoing: left corners always `BUBBLE_CORNER_CUT_DP` (6dp); `topRight = topNear ? BUBBLE_NEAR_CORNER_CUT_DP (2dp) : 6dp`, `bottomRight = bottomNear ? 2dp : 6dp`.
+  - incoming: right corners always 6dp; `topLeft = topNear ? 2dp : 6dp`, `bottomLeft = bottomNear ? 2dp : 6dp`.
+  - TYPE_MEDIA uses the same incoming/outgoing directional semantics.
+  - With no near flag set, all four corners are 6dp — the standalone v3 silhouette is unchanged. The cut is never 0, so a 2dp chamfer keeps the angular language inside a group.
+
+### Border render seam
+
+- New `MessageDrawable`-owned separate overlay stroke (`borderPaint`: Style.STROKE, Join.MITER, Cap.SQUARE, width = `dp(BUBBLE_BORDER_WIDTH_DP)` = 1dp), drawn ALWAYS on the exact `generateCybergramPath` path (no second geometry implementation, no separate RectF approximation).
+- Hooked in both paths of `draw(Canvas, Paint)`:
+  - fast solid path (`getBackgroundDrawable()` -> `background.draw(canvas)`): border drawn after the background, before `return`;
+  - direct/gradient path: fill -> selected overlay -> border last.
+- Only when `useAngularGeometry()` and `TYPE_TEXT`/`TYPE_MEDIA`. Only on the FINAL user canvas, i.e. `paintToUse == null` — it is never baked into the cached nine-patch/shadow bitmap. `borderPaint` alpha scales with the drawable alpha; colorFilter/crossfade untouched.
+
+### Border theme keys (via the current ResourcesProvider; no hardcoded colours)
+
+- incoming (normal/selected): `Theme.key_chat_inReplyLine` (cybergram `#10141A`, thin dark outline on the amber panel).
+- outgoing (normal): `Theme.key_chat_outReplyLine` (cybergram `#00E5FF` cyan).
+- outgoing (selected): `Theme.key_chat_outReplyLine2` (cybergram `#33D6FF` secondary cyan), falling back to `chat_outReplyLine`.
+- `getColor(key)` routes through the same provider (showcase Palette / production provider), so the border works in both. `cybergram.attheme` defines all three keys.
+
+### Verified (SM-A256E / Android 16 / arm64-v8a)
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL; APK SHA-256 `43ae8f4c6e3aee1cdcf0ebb4f678156c572fb97b7fb2a5da5d635041eaf57a81`.
+- Install: over `org.telegram.messenger.beta` via `adb install -r` (streamed), Success; no `pm clear`.
+- Pre-launch read-only: `mainconfig.xml` `theme=Day`, `nighttheme=Day`.
+- Launch showcase: explicit adb intent -> `topResumedActivity=...CybergramShowcaseActivity`, PID 28283, no FATAL/ANR.
+- Screenshot: `.local-artifacts/cybergram_showcase_v4_border_grouped.png` (1080x2340, git-ignored).
+- Banner verbatim: `Showcase: Cybergram | dark=true` / `Active app theme: Day` / `BG #080A0F | IN #E8D93A | OUT #0A1A21`.
+- Border: incoming amber has a thin dark outline; outgoing dark has a thin cyan outline; 1dp, follows the chamfers (machine: cyan ~2px vertical lines at an outgoing bubble's left and right edges).
+- Grouped: standalone/multiline far corners measured ~15px (6dp); grouped near corners (top bubble bottom-left, bottom bubble top-left for incoming) measured ~4-5px (2dp). No tails. Selected bubble renders lighter teal with a cyan border; media bordered + angular; no clipping.
+- v3 -> v4 comparison (read-only vision): only the outline + grouped near-cuts are new; standalone silhouette, colours, layout and banner unchanged. The cyan outline is thin and does not turn the bubble into a neon frame; the 2dp near chamfer is subtle and reads as a joined group.
+- Regression: normal beta client at `theme=Day` launched (no FATAL/ANR) — no border/angular leak (activation gate false). Prefs still `theme=Day`, `nighttheme=Day`.
+
+Note (pre-existing, out of scope) carries over: the debug composer placeholder "Сообщение" sits low; not a regression of these passes.
+
+### Deferred from this pass
+
+- `TYPE_PREVIEW` angular support.
+- The border re-strokes each frame by design (never baked into the cached nine-patch); revisit only if profiling shows a cost.
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
-3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass. Follow-ups: `TYPE_PREVIEW` support, grouped-near-specific corner treatment, and the border/stroke layer.)
+3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass; then border + grouped near-corners pass. Remaining follow-ups: `TYPE_PREVIEW` support, and validating replies/reactions/forwards/pressed states.)
 4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list.
 
 ## Explicitly deferred

@@ -225,36 +225,40 @@ public class CybergramShowcaseActivity extends Activity {
             float y = top + dp(38);
             // normal incoming
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Привет! Это демо-сообщение Cybergram.", false, false, false);
+                    "Привет! Это демо-сообщение Cybergram.", false, false, false, 8f);
             // multiline incoming
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Мультистрочное сообщение:\nвторой абзац и\nдлинная строка, которая должна аккуратно переноситься.", false, false, false);
+                    "Мультистрочное сообщение:\nвторой абзац и\nдлинная строка, которая должна аккуратно переноситься.", false, false, false, 8f);
             // normal outgoing
             y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
-                    "Привет! Это демо-сообщение Cybergram.", false, false, false, false);
+                    "Привет! Это демо-сообщение Cybergram.", false, false, false, false, 8f);
             // selected multiline outgoing (with time)
             y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
-                    "Выделенное сообщение\nс временем и статусом.", true, true, false, false);
-            // grouped incoming pair (near flags accepted; same corner cut for now)
-            y += dp(6);
+                    "Выделенное сообщение\nс временем и статусом.", true, true, false, false, 8f);
+            // grouped incoming pair (near flags drive the 2dp near corner; tight 2dp gap)
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Группа · первое сообщение", false, false, true);
+                    "Группа · входящее 1", false, false, true, 2f);
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Группа · второе сообщение", false, true, false);
+                    "Группа · входящее 2", false, true, false, 8f);
+            // grouped outgoing pair (mirror on the right)
+            y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
+                    "Группа · исходящее 1", false, false, false, true, 2f);
+            y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
+                    "Группа · исходящее 2", false, false, true, false, 8f);
             drawMediaBubble(canvas, w, y);
         }
 
-        private float drawIncomingBubble(Canvas canvas, float leftPad, float y, float maxW, String text, boolean selected, boolean topNear, boolean bottomNear) {
+        private float drawIncomingBubble(Canvas canvas, float leftPad, float y, float maxW, String text, boolean selected, boolean topNear, boolean bottomNear, float gapDp) {
             Layout.Alignment align = Layout.Alignment.ALIGN_NORMAL;
             int textColor = palette.color(Theme.key_chat_messageTextIn);
             float bubbleW = bubbleWidth(text, maxW, align);
             float bubbleH = bubbleHeight(text, bubbleW, align, textColor, 0);
             drawBubble(canvas, MessageDrawable.TYPE_TEXT, false, selected, topNear, bottomNear, leftPad, y, bubbleW, bubbleH);
             drawText(canvas, text, leftPad + dp(10), y + dp(8), bubbleW - dp(20), align, textColor);
-            return y + bubbleH + dp(16);
+            return y + bubbleH + dp(gapDp);
         }
 
-        private float drawOutgoingBubble(Canvas canvas, int w, float leftPad, float y, float maxW, String text, boolean selected, boolean withTime, boolean topNear, boolean bottomNear) {
+        private float drawOutgoingBubble(Canvas canvas, int w, float leftPad, float y, float maxW, String text, boolean selected, boolean withTime, boolean topNear, boolean bottomNear, float gapDp) {
             Layout.Alignment align = Layout.Alignment.ALIGN_OPPOSITE;
             int textColor = palette.color(Theme.key_chat_messageTextOut);
             float bubbleW = bubbleWidth(text, maxW, align);
@@ -272,7 +276,7 @@ public class CybergramShowcaseActivity extends Activity {
                 paint.setColor(0xff00e5ff);
                 canvas.drawText("\u2713\u2713", w - dp(12) - dp(22), y + bubbleH - dp(9), paint);
             }
-            return y + bubbleH + dp(16);
+            return y + bubbleH + dp(gapDp);
         }
 
         private void drawMediaBubble(Canvas canvas, int w, float y) {

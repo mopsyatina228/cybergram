@@ -37,6 +37,12 @@ public final class CybergramTheme {
     /** Corner chamfer cut, in dp, for the Cybergram message silhouette (45-degree corners). */
     public static final float BUBBLE_CORNER_CUT_DP = 6f;
 
+    /** Chamfer cut, in dp, for the "near" corners of a grouped Cybergram bubble. */
+    public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
+
+    /** Cybergram message outline stroke width, in dp. */
+    public static final float BUBBLE_BORDER_WIDTH_DP = 1f;
+
     /**
      * Marker {@link Theme.ResourcesProvider} that opts a renderer into Cybergram
      * angular message geometry. The debug showcase implements this so it can exercise

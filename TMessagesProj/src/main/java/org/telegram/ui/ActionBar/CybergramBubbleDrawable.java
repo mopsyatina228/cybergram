@@ -110,13 +110,7 @@ public final class CybergramBubbleDrawable extends Drawable {
     }
 
     /**
-     * Shared Cybergram clipped-corner silhouette. Four straight sides with four
-     * 45-degree chamfered corners (no arcs, no round radius). The corner cut is
-     * clamped so it never exceeds half of the smaller side.
-     *
-     * Used by BOTH the standalone {@link CybergramBubbleDrawable} and Telegram's
-     * {@link MessageDrawable} so there is a single implementation of the Cybergram
-     * polygon. Resets {@code path} before building.
+     * Shared Cybergram clipped-corner silhouette with an equal cut on all four corners.
      *
      * @param path   destination path (reset first)
      * @param left   body left edge
@@ -126,19 +120,46 @@ public final class CybergramBubbleDrawable extends Drawable {
      * @param cut    desired corner chamfer cut in px (clamped internally)
      */
     public static void buildPath(Path path, float left, float top, float right, float bottom, float cut) {
+        buildPath(path, left, top, right, bottom, cut, cut, cut, cut);
+    }
+
+    /**
+     * Shared Cybergram clipped-corner silhouette with four straight sides and four
+     * 45-degree chamfered corners, each with its own cut. The cut is clamped so it never
+     * exceeds half of the smaller side. No arcs, no round radius. Resets {@code path}.
+     *
+     * Used by BOTH the standalone {@link CybergramBubbleDrawable} and Telegram's
+     * {@link MessageDrawable} so there is a single implementation of the Cybergram polygon.
+     *
+     * @param path          destination path (reset first)
+     * @param left          body left edge
+     * @param top           body top edge
+     * @param right         body right edge
+     * @param bottom        body bottom edge
+     * @param topLeftCut    top-left cut in px (clamped internally)
+     * @param topRightCut   top-right cut in px (clamped internally)
+     * @param bottomRightCut bottom-right cut in px (clamped internally)
+     * @param bottomLeftCut bottom-left cut in px (clamped internally)
+     */
+    public static void buildPath(Path path, float left, float top, float right, float bottom,
+                                 float topLeftCut, float topRightCut, float bottomRightCut, float bottomLeftCut) {
         path.reset();
         if (right <= left || bottom <= top) {
             return;
         }
-        float safeCut = Math.min(cut, Math.min(right - left, bottom - top) * 0.5f);
-        path.moveTo(left + safeCut, top);
-        path.lineTo(right - safeCut, top);
-        path.lineTo(right, top + safeCut);
-        path.lineTo(right, bottom - safeCut);
-        path.lineTo(right - safeCut, bottom);
-        path.lineTo(left + safeCut, bottom);
-        path.lineTo(left, bottom - safeCut);
-        path.lineTo(left, top + safeCut);
+        float maxCut = Math.min(right - left, bottom - top) * 0.5f;
+        float tl = Math.min(topLeftCut, maxCut);
+        float tr = Math.min(topRightCut, maxCut);
+        float br = Math.min(bottomRightCut, maxCut);
+        float bl = Math.min(bottomLeftCut, maxCut);
+        path.moveTo(left + tl, top);
+        path.lineTo(right - tr, top);
+        path.lineTo(right, top + tr);
+        path.lineTo(right, bottom - br);
+        path.lineTo(right - br, bottom);
+        path.lineTo(left + bl, bottom);
+        path.lineTo(left, bottom - bl);
+        path.lineTo(left, top + tl);
         path.close();
     }
 
