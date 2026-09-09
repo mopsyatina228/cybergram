@@ -1652,9 +1652,14 @@ public class Theme {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN) {
-                String[] wallpaperLink = new String[1];
-                SparseIntArray colors = getThemeFileValues(new File(pathToFile), null, wallpaperLink);
-                checkIsDark(colors, this);
+                if (assetName != null) {
+                    SparseIntArray colors = getThemeFileValues(null, assetName, null);
+                    checkIsDark(colors, this);
+                } else if (pathToFile != null) {
+                    String[] wallpaperLink = new String[1];
+                    SparseIntArray colors = getThemeFileValues(new File(pathToFile), null, wallpaperLink);
+                    checkIsDark(colors, this);
+                }
             }
             return isDark == DARK;
         }
@@ -4010,6 +4015,17 @@ public class Theme {
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
 
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Cybergram";
+        themeInfo.assetName = "cybergram.attheme";
+        themeInfo.previewBackgroundColor = 0xff080a0f;
+        themeInfo.previewInColor = 0xffe8d93a;
+        themeInfo.previewOutColor = 0xff0a1a21;
+        themeInfo.sortIndex = 6;
+        // Cybergram uses its own fixed palette (cybergram.attheme) without accent tables.
+        themes.add(themeInfo);
+        themesDict.put("Cybergram", themeInfo);
+
         String themesString = themeConfig.getString("themes2", null);
 
         int remoteVersion = themeConfig.getInt("remote_version", 0);
@@ -4057,6 +4073,20 @@ public class Theme {
 
         ThemeInfo applyingTheme = null;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+
+        // Cybergram: make the built-in Cybergram theme the default of a genuinely fresh
+        // install. Seed the existing theme keys only when no explicit day/night theme has
+        // ever been chosen and no theme bookkeeping (lastDayTheme/lastDarkTheme) has ever
+        // been written, so an existing user's saved choice is never overwritten.
+        ThemeInfo cybergramTheme = themesDict.get("Cybergram");
+        if (cybergramTheme != null && !preferences.contains("theme") && !preferences.contains("nighttheme")
+                && !themeConfig.contains("lastDayTheme") && !themeConfig.contains("lastDarkTheme")) {
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putString("theme", cybergramTheme.getKey());
+            editor.putString("nighttheme", cybergramTheme.getKey());
+            editor.commit();
+        }
+
         try {
             final ThemeInfo themeDarkBlue = themesDict.get("Dark Blue");
 
@@ -7584,6 +7614,11 @@ public class Theme {
                             if ((idx = line.indexOf('=')) != -1) {
                                 String key = line.substring(0, idx);
                                 String param = line.substring(idx + 1);
+                                if (!param.isEmpty() && param.charAt(param.length() - 1) == 13) {
+                                    // Strip one trailing CR: with core.autocrlf=true a Windows checkout
+                                    // leaves .attheme assets CRLF and parseInt() would otherwise return 0.
+                                    param = param.substring(0, param.length() - 1);
+                                }
                                 int value;
                                 if (param.length() > 0 && param.charAt(0) == '#') {
                                     try {

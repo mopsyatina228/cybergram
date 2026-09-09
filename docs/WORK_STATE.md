@@ -43,25 +43,42 @@ Telegram already separates most colours needed for the Cybergram chat design thr
 
 `MessageDrawable` reads the incoming/outgoing bubble colour keys directly, so colour prototyping can be done without replacing message rendering.
 
-Built-in themes are registered in the large static initialization section of `Theme.java`. The existing built-ins (`Blue`, `Dark Blue`, `Arctic Blue`, `Day`, `Night`) are instantiated there with asset names and accent tables. `cybergram.attheme` is currently shipped as an asset but is not yet registered as a built-in theme. This is intentionally deferred rather than performing a broad, difficult-to-review rewrite of `Theme.java` without a local build loop.
+### Built-in Cybergram theme
+
+The `Cybergram` theme is now registered as a built-in theme in the static initialization section of `Theme.java`:
+
+- name/key: `Cybergram`
+- asset: `cybergram.attheme`
+- preview background `#080A0F`, incoming `#E8D93A`, outgoing `#0A1A21`
+- `sortIndex = 6` (existing built-in order unchanged)
+- no accent tables (Cybergram uses its own fixed palette)
+- added to both `themes` and `themesDict`; `ThemeInfo.isDark()` resolves it as a dark theme
+
+`isDark()` detection was made generic for asset-backed themes: when `assetName` is non-empty the theme file values are read via `getThemeFileValues(null, assetName, ...)`; otherwise the existing file-backed path is used; the existing `checkIsDark(...)` fast path for Blue / Dark Blue / Arctic Blue / Day / Night is unchanged.
+
+### Fresh-install default
+
+On a genuinely fresh Cybergram install (no `theme`/`nighttheme` preference and no `lastDayTheme`/`lastDarkTheme` bookkeeping ever written), `Theme.java` seeds `theme=Cybergram` and `nighttheme=Cybergram` into the existing `mainconfig` preferences, so Cybergram becomes the active day and night theme and the initially applied theme. An existing user's saved choice is never overwritten: the seed only runs when none of those keys are present, and on every subsequent launch the standard Telegram preference priority applies.
+
+### .attheme CRLF handling
+
+With `core.autocrlf=true` on Windows, `.attheme` assets are checked out CRLF; the upstream `getThemeFileValues` parser keeps the trailing `\r` in the value string, which makes `Utilities.parseInt` return `0` for every colour. `getThemeFileValues` now strips a single trailing CR (`charAt(last) == 13`) before parsing, so CRLF `.attheme` files (imported or Windows-checked-out) parse correctly. `.gitattributes` pins `*.attheme text eol=lf`.
 
 ## Verification status
 
-Repository-side changes have been written successfully to GitHub.
-
-No Android compilation or runtime test has been executed from this ChatGPT environment. Therefore there is no build-pass claim yet.
-
-The next machine-side checkpoint must be a clean build of the untouched/upstream-compatible branch and then a `dev` build with the new additive Cybergram files. Any compile failure should be fixed before integrating the custom bubble drawable into Telegram's message renderer.
+- Repository-side changes written successfully to GitHub.
+- Local single-ABI debug build established: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` (Gradle 8.11.1, AGP 8.10.1, JDK 17, SDK 36, NDK 27.2.12479018) — `BUILD SUCCESSFUL`.
+- Runtime smoke test on Samsung SM-A256E / Android 16 / arm64-v8a: debug build `org.telegram.messenger.beta` cold-launches, `LaunchActivity` alive, no FATAL/ANR.
+- Fresh-install default proven on-device: after `pm clear`, `mainconfig` contains `theme=Cybergram` and `nighttheme=Cybergram`; `themeconfig` contains `lastDayTheme=Cybergram` and `lastDarkTheme=Cybergram`.
+- Persistence proven on-device: simulating an existing choice (`theme=Day`, `nighttheme=Day`) then relaunching leaves `theme=Day`/`nighttheme=Day` — Cybergram does not overwrite it.
+- The `IntroActivity` screen is rendered with the client default surface and does not visually reflect the Cybergram palette in this build; this is a known display behaviour of the pre-auth intro and is intentionally out of scope for the theme-default change (per `docs/CYBERGRAM_UI_SPEC.md` Stage B note). The theme itself is active (day/night/preferences all resolve to Cybergram).
 
 ## Next implementation sequence
 
-1. Clone `mopsyatina228/cybergram` with submodules on the development machine and add `DrKLO/Telegram` as `upstream`.
-2. Build the existing project using Android Studio 2025.1.4, Android SDK 36 and NDK 27.2.12479018.
-3. Build `dev` and confirm the additive Cybergram classes/assets compile cleanly.
-4. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline.
-5. Tune the `.attheme` palette from device screenshots.
-6. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam.
-7. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list.
+1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
+2. Tune the `.attheme` palette from device screenshots.
+3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam.
+4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list.
 
 ## Explicitly deferred
 

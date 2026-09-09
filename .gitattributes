@@ -1,0 +1,4 @@
+# Keep .attheme theme assets LF-normalized so they survive CRLF checkouts
+# (e.g. core.autocrlf=true on Windows). The .attheme parser handles CRLF, but
+# stable LF assets keep diffs minimal and match upstream.
+*.attheme text eol=lf
