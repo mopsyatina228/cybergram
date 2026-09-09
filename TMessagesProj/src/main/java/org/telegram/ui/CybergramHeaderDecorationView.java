@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -13,15 +14,21 @@ import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 /**
- * DEBUG/safe non-interactive overlay that draws Cybergram structural decoration over the
- * chat {@link ActionBar}: a thin cyan bottom rule, a short amber accent segment near the
- * identity/title zone, and a couple of very restrained chamfered corner ticks.
+ * Production non-interactive presentation overlay that draws Cybergram structural
+ * decoration over the chat {@link ActionBar}: a thin cyan bottom rule, a short amber accent
+ * segment near the identity/title zone, and a couple of very restrained chamfered corner
+ * ticks.
  *
- * It never intercepts touch, never draws when Cybergram presentation is not active, and
- * it uses the shared {@link CybergramBubbleDrawable#buildPath} polygon for the angular
- * marks (no duplicated polygon implementation). It reads the cyan colour from a themed
- * action-bar/icon key and takes amber from {@link CybergramTheme#AMBER}. It adds no
- * microtext and no fake "SECURE"/ID badges.
+ * It never intercepts touch, never draws when Cybergram presentation is not active (a
+ * runtime gate in {@link #onDraw}), and it uses the shared
+ * {@link CybergramBubbleDrawable#buildPath} polygon for the angular marks (no duplicated
+ * polygon implementation). It reads the cyan colour from a themed action-bar/icon key and
+ * takes amber from {@link CybergramTheme#AMBER}. It adds no microtext and no fake
+ * "SECURE"/ID badges.
+ *
+ * It is always present in the view hierarchy so a Day -&gt; Cybergram (or back) theme switch is
+ * reflected without recreating the activity: the gate re-evaluates on every draw. When idle
+ * it is an inert, non-clickable, non-focusable, accessibility-hidden overlay.
  *
  * Placed as a full-size sibling over the action bar (top z-order); its onDraw measures the
  * action bar's window position so it follows the header regardless of hierarchy.
@@ -41,7 +48,13 @@ public class CybergramHeaderDecorationView extends View {
         this.resourcesProvider = resourcesProvider;
         setClickable(false);
         setFocusable(false);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         setWillNotDraw(false);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return false;
     }
 
     private int cyanColor() {

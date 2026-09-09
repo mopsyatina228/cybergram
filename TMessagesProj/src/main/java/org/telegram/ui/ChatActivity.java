@@ -213,7 +213,6 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -8977,12 +8976,11 @@ public class ChatActivity extends BaseFragment implements
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         Timer.finish(t);
 
-        // Cybergram header structural decoration: a non-interactive overlay added only when
-        // Cybergram presentation is active, so non-Cybergram chats are completely untouched.
-        if (CybergramTheme.isCybergramPresentation(getResourceProvider())) {
-            contentView.addView(new CybergramHeaderDecorationView(context, actionBar, getResourceProvider()),
-                    LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        }
+        // Cybergram header structural decoration: an always-present non-interactive overlay.
+        // It draws nothing unless Cybergram presentation is active (runtime gate in onDraw),
+        // so a Day <-> Cybergram theme switch is reflected without recreating the activity.
+        contentView.addView(new CybergramHeaderDecorationView(context, actionBar, getResourceProvider()),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         return fragmentView;
     }

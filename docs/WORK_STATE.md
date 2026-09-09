@@ -273,6 +273,35 @@ First decoration pass over the chat header and composer. Presentation only: no r
 - Production ChatActivity header + ChatActivityEnterView composer seams are compile/static-verified only; real-chat runtime validation requires an authenticated beta session (no auth this build; no login/session touched).
 - Send button angular control: Stage D pass 2.
 
+## Stabilization pass (Stage D pass 1 follow-up, 2026-09-09)
+
+Two lifecycle/reusable-component fixes; no new artwork.
+
+### CybergramHudDrawable alpha contract (order-independent)
+
+- Root cause: `setAlpha()` applied the alpha to the Paints, but the subsequent `setFillColor`/`setStrokeColor`/`setFill`/`setStroke` called `Paint.setColor(color)`, restoring the alpha from the ARGB colour and clobbering the drawable alpha.
+- Fix: the drawable stores the BASE colours (full ARGB) and a drawable `alpha` (clamped 0..255); a centralised `updatePaintColors()` recomputes each Paint colour as `effectiveAlpha = Color.alpha(baseColor) * drawableAlpha / 255` over the base RGB. Every colour setter and `setAlpha()` routes through it, so the outcome is identical regardless of call order: `setAlpha(96); setStrokeColor(0xff00e5ff)` == `setStrokeColor(0xff00e5ff); setAlpha(96)`.
+- Regression evidence (debug showcase, temporary, removed afterwards): two side-by-side HUD samples with the alpha/stroke order swapped rendered pixel-identical (0/2601 differing pixels). Proof screenshot `.local-artifacts/cybergram_showcase_v5_1_proof.png`; the final screenshot has no sample.
+
+### ChatActivity header lifecycle (live theme switch)
+
+- Root cause: the overlay was added only inside `if (isCybergramPresentation(...))`, so on an existing `ChatActivity` an in-place Day -> Cybergram switch had no overlay (it was never instantiated).
+- Fix: `CybergramHeaderDecorationView` is now ALWAYS added to `contentView` as a non-interactive overlay; its `onDraw()` already carries the runtime gate, so at Day it draws nothing and at Cybergram it draws. A Day <-> Cybergram switch reflects without recreating the activity. The composer frame was already dynamic via the `dispatchDraw` gate — left unchanged.
+- Non-Cybergram impact (inert overlay): `clickable=false`, `focusable=false`, `importantForAccessibility=IMPORTANT_FOR_ACCESSIBILITY_NO`, and `onTouchEvent` returns false (never consumes events), so touch/layout/accessibility are unaffected. The class comment was cleaned to "production non-interactive presentation overlay" (misleading DEBUG wording removed; an unused `CybergramTheme` import was dropped).
+
+### Verified
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL; final APK SHA-256 `b12d7df510817b6d7baf8e1873f3df96a7389f5358e7d33d6a48dcd88208586f`.
+- Install over `org.telegram.messenger.beta` (streamed), Success; no `pm clear`. Pre-launch prefs `theme=Day`, `nighttheme=Day`.
+- Showcase launch: explicit intent -> `topResumedActivity=...CybergramShowcaseActivity`, no FATAL/ANR.
+- Screenshot: `.local-artifacts/cybergram_showcase_v5_1_stabilized.png` (1080x2340, git-ignored) — visually identical to v5 (banner/header/composer/bubbles unchanged; only 0.29% incidental AA jitter between two distinct captures).
+- Alpha regression proof: `.local-artifacts/cybergram_showcase_v5_1_proof.png` — order-swapped HUD samples pixel-identical.
+- Day regression: normal beta client launched (no FATAL/ANR); the always-present overlay is inert at Day (gate=false, draws nothing); prefs still `theme=Day`, `nighttheme=Day`.
+
+### Honest limitation (unchanged)
+
+- Production ChatActivity header + ChatActivityEnterView composer seams are compile/static-verified; full real-chat runtime validation still requires an authenticated beta session (no auth; no login/session touched).
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).

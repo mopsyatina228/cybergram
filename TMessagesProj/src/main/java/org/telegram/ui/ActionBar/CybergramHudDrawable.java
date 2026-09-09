@@ -1,6 +1,7 @@
 package org.telegram.ui.ActionBar;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -21,6 +22,11 @@ import androidx.annotation.Nullable;
  * SQUARE. It is a pure {@link Drawable}: no touch/event handling, no layout, no Cyberpunk
  * assets anywhere.
  *
+ * The drawable alpha contract is order-independent: base colours are stored separately and
+ * every colour change re-applies the saved drawable alpha, so
+ * {@code setAlpha(96); setStrokeColor(0xff00e5ff)} and
+ * {@code setStrokeColor(0xff00e5ff); setAlpha(96)} yield the same paint.
+ *
  * Intended to be composed by surfaces that want a Cybergram frame — e.g. the composer's
  * text-field frame and the chat header's structural decoration — rather than each surface
  * re-implementing the chamfered polygon.
@@ -33,15 +39,15 @@ public class CybergramHudDrawable extends Drawable {
 
     private boolean fillEnabled;
     private boolean strokeEnabled;
-    private int fillColor;
-    private int strokeColor;
+    private int fillColor;      // base ARGB (its own alpha preserved)
+    private int strokeColor;    // base ARGB (its own alpha preserved)
     private float cornerCut;
     private float topLeftCut = -1;
     private float topRightCut = -1;
     private float bottomRightCut = -1;
     private float bottomLeftCut = -1;
     private float strokeWidthPx;
-    private int alpha = 255;
+    private int alpha = 255;    // drawable alpha, clamped 0..255
 
     public CybergramHudDrawable() {
         fillPaint.setStyle(Paint.Style.FILL);
@@ -50,21 +56,32 @@ public class CybergramHudDrawable extends Drawable {
         strokePaint.setStrokeCap(Paint.Cap.SQUARE);
     }
 
-    /** Enables the fill and sets its colour. */
+    /**
+     * Recomputes the fill/stroke paint colours so the drawable alpha is always applied on
+     * top of the base colour's own alpha, regardless of the order of {@code set*} /
+     * {@code setAlpha} calls. {@code effectiveAlpha = Color.alpha(baseColor) * alpha / 255}.
+     */
+    private void updatePaintColors() {
+        int fa = alpha <= 0 ? 0 : (Color.alpha(fillColor) * alpha / 255);
+        fillPaint.setColor((fa << 24) | (fillColor & 0x00FFFFFF));
+        int sa = alpha <= 0 ? 0 : (Color.alpha(strokeColor) * alpha / 255);
+        strokePaint.setColor((sa << 24) | (strokeColor & 0x00FFFFFF));
+        invalidateSelf();
+    }
+
+    /** Enables the fill and sets its base colour. */
     public CybergramHudDrawable setFillColor(@ColorInt int color) {
         this.fillColor = color;
         this.fillEnabled = true;
-        fillPaint.setColor(color);
-        invalidateSelf();
+        updatePaintColors();
         return this;
     }
 
-    /** Enables the stroke and sets its colour. */
+    /** Enables the stroke and sets its base colour. */
     public CybergramHudDrawable setStrokeColor(@ColorInt int color) {
         this.strokeColor = color;
         this.strokeEnabled = true;
-        strokePaint.setColor(color);
-        invalidateSelf();
+        updatePaintColors();
         return this;
     }
 
@@ -72,8 +89,7 @@ public class CybergramHudDrawable extends Drawable {
     public CybergramHudDrawable setFill(@ColorInt int color, boolean enabled) {
         this.fillColor = color;
         this.fillEnabled = enabled;
-        fillPaint.setColor(color);
-        invalidateSelf();
+        updatePaintColors();
         return this;
     }
 
@@ -82,9 +98,8 @@ public class CybergramHudDrawable extends Drawable {
         this.strokeColor = color;
         this.strokeWidthPx = Math.max(0f, widthPx);
         strokePaint.setStrokeWidth(this.strokeWidthPx);
-        strokePaint.setColor(color);
         this.strokeEnabled = enabled;
-        invalidateSelf();
+        updatePaintColors();
         return this;
     }
 
@@ -108,10 +123,8 @@ public class CybergramHudDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-        this.alpha = alpha;
-        fillPaint.setAlpha(alpha);
-        strokePaint.setAlpha(alpha);
-        invalidateSelf();
+        this.alpha = Math.max(0, Math.min(255, alpha));
+        updatePaintColors();
     }
 
     public int getAlpha() {
@@ -141,10 +154,10 @@ public class CybergramHudDrawable extends Drawable {
         float br = bottomRightCut < 0 ? cornerCut : bottomRightCut;
         float bl = bottomLeftCut < 0 ? cornerCut : bottomLeftCut;
         CybergramBubbleDrawable.buildPath(path, bounds.left, bounds.top, bounds.right, bounds.bottom, tl, tr, br, bl);
-        if (fillEnabled && fillPaint.getAlpha() > 0 && alpha > 0) {
+        if (fillEnabled && fillPaint.getAlpha() > 0) {
             canvas.drawPath(path, fillPaint);
         }
-        if (strokeEnabled && strokeWidthPx > 0 && strokePaint.getAlpha() > 0 && alpha > 0) {
+        if (strokeEnabled && strokeWidthPx > 0 && strokePaint.getAlpha() > 0) {
             canvas.drawPath(path, strokePaint);
         }
     }
