@@ -90,7 +90,7 @@ A DEBUG-ONLY visual showcase was added for offline UI iteration, so palette/geom
 
 Files (uncommitted recovery snapshot, all in `debug` source set / debug manifests so they are absent from release builds):
 
-- `org.telegram.ui.CybergramShowcaseActivity` in `TMessagesProj_App/src/debug/java/org/telegram/ui/` — self-contained `Activity` that draws a header bar, incoming/outgoing message bubbles and a media bubble via the real production `MessageDrawable`, a composer bar, and a runtime debug strip. Reads colours through `Theme.getColor(...)`; a small labelled DEBUG fallback map covers palette keys Cybergram does not define.
+- `org.telegram.ui.CybergramShowcaseActivity` in `TMessagesProj_App/src/debug/java/org/telegram/ui/` — self-contained `Activity` that draws a header bar, incoming/outgoing message bubbles and a media bubble via the real production `MessageDrawable`, a composer bar, and a runtime debug strip. v1 read colours through `Theme.getColor(...)`; later rewritten (v2, below) to a deterministic Cybergram palette via a DEBUG `Theme.ResourcesProvider`.
 - `org.telegram.ui.CybergramShowcaseActivity` declared in `TMessagesProj/config/debug/AndroidManifest.xml` and `AndroidManifest_SDK23.xml` with `android:exported="true"` and NO launcher `intent-filter` (started only via an explicit `adb` intent). Never merged into release manifests.
 
 Verified this session (device Samsung SM-A256E / Android 16 / arm64-v8a):
@@ -106,6 +106,30 @@ Verified this session (device Samsung SM-A256E / Android 16 / arm64-v8a):
   - `chat_outBubble` = clipped at the right screen edge (the debug strip text overflows the canvas width, so the final hex is not rendered); the rendered outgoing bubble and media placeholder are dark/near-black.
 
 Observation (recorded, not acted on this session): the debug strip reports `day.attheme`-derived values (e.g. `chat_inBubble #FFF0F0F0`, which is day.attheme's `#7FF0F0F0` with alpha normalised to `FF`), yet the rendered outgoing bubble appears near-black rather than day.attheme's `chat_outBubble` (`#7F2D7ED5` -> `#FF2D7ED5`, a blue). Worth investigating whether the active palette / `MessageDrawable` colour path matches expectation. Per recovery constraints no code was changed based on this.
+
+### Deterministic palette rewrite (v2, 2026-09-09)
+
+v1 read colours through the global `Theme.getColor(...)`, so after the persistence test the active theme was `Day` and the polygon did not actually show the Cybergram palette; the debug strip also overflowed the 1080 px canvas (clipping `chat_outBubble`), and the bubble radius was hard-overridden with `setRoundRadius(dp(12))`. v2 fixes all of it (production `MessageDrawable` / `CybergramBubbleDrawable` unchanged):
+
+- `Palette` — a DEBUG-only `Theme.ResourcesProvider` that loads `Theme.getThemeFileValues(null, "cybergram.attheme", null)` into a `SparseIntArray` and returns that Cybergram value for any key present; keys absent from the palette fall back to `ThemeColors.createDefaultColors()` (deterministic upstream defaults), never the user's Day/Night theme. `getColor` and `getCurrentColor` both route through the provider, so `Theme.getColor`/`currentColors` are never consulted and the active user theme is untouched (no `Theme.applyTheme`, no preference writes, no `pm clear`).
+- All `MessageDrawable` instances are created as `new MessageDrawable(type, out, selected, palette)` and driven by the full production contract: `setBounds(...)` + `setTop(top, w, h, false, false)` (which selects `chat_inBubble`/`chat_outBubble` and initialises paint/gradient state) + `draw(...)`. `setDrawFullBubble(true)` renders the standalone production tail. The `setRoundRadius(dp(12))` override was REMOVED, so the radius is the genuine `SharedConfig.bubbleRadius` (default 17) from `MessageDrawable`'s own geometry path.
+- Media example uses `MessageDrawable.TYPE_MEDIA`.
+- Multiline text is laid out with `StaticLayout` (newline + wrapping work; bubble height derives from the real layout) instead of a single `Canvas.drawText`.
+- Header / composer / service colours come from the same `Palette`/provider (e.g. `actionBarDefault`, `actionBarDefaultTitle`, `actionBarDefaultSubtitle`, `chat_messagePanelBackground`, `chat_messagePanelSend`, `chat_messagePanelHint`, `chat_serviceBackground`, `chat_serviceText`, `chat_messageTextIn`, `chat_messageTextOut`).
+- Debug banner is now 3 compact lines:
+  `Showcase: Cybergram | dark=true` / `Active app theme: Day` / `BG #080A0F | IN #E8D93A | OUT #0A1A21`
+  It deliberately shows BOTH the showcase palette (Cybergram) and the active user theme (read-only, name from `Theme.getCurrentTheme()`), so it is visible the showcase does not change preferences.
+
+Verified on-device (SM-A256E / Android 16 / arm64-v8a):
+
+- Pre-launch read-only: `mainconfig.xml` has `theme=Day`, `nighttheme=Day` — the saved active theme stays `Day`.
+- Build/install: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` (BUILD SUCCESSFUL, warm 7 s); APK single ABI `arm64-v8a`, SHA-256 `53d07f03c461ee3a13c8f15af89ec41c067212c28294ef319ec7bf3cb5b3a1a7`; installed over `org.telegram.messenger.beta` (`pm install -r`, Success, `lastUpdateTime` 17:09:27).
+- Launch: explicit adb intent -> `topResumedActivity=...CybergramShowcaseActivity`, PID 14513, no FATAL/ANR.
+- Screenshot: `.local-artifacts/cybergram_showcase_v2.png` (1080x2340, git-ignored). On-screen debug banner reads verbatim: `Showcase: Cybergram | dark=true`, `Active app theme: Day`, `BG #080A0F | IN #E8D93A | OUT #0A1A21`.
+- Runtime palette (from the banner): BG `windowBackgroundWhite` `#080A0F`, IN `chat_inBubble` `#E8D93A`, OUT `chat_outBubble` `#0A1A21`. Rendered bubbles match these values (incoming amber `#E8D93A`, outgoing dark `#0A1A21`), with production rounded corners + tails and no clipping; multiline renders correctly; composer/header correct.
+- Post-close read-only: `mainconfig.xml` still `theme=Day`, `nighttheme=Day`; `themeconfig.xml` still `lastDayTheme=Cybergram`, `lastDarkTheme=Cybergram` — the showcase did not modify the user's theme choice.
+
+This resolves the v1 colour-path observation: the showcase now renders the deterministic Cybergram palette regardless of the active Day/Night theme.
 
 ## Next implementation sequence
 
