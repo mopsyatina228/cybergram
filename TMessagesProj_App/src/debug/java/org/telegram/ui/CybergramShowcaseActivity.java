@@ -14,6 +14,7 @@ import android.util.SparseIntArray;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
@@ -37,7 +38,9 @@ import org.telegram.ui.ActionBar.ThemeColors;
  * contract: setBounds + setTop (which selects chat_inBubble/chat_outBubble and initialises
  * paint/gradient state) + draw. No setRoundRadius override is used, so the rendered
  * geometry reflects the genuine production SharedConfig.bubbleRadius / MessageDrawable
- * path, and setDrawFullBubble(true) renders the standalone production tail.
+ * path. {@link Palette} implements {@link CybergramTheme.GeometryProvider}, which enables
+ * the Cybergram angular (clipped-corner) silhouette through the production MessageDrawable
+ * geometry seam. setDrawFullBubble(true) keeps the bubble as a full standalone bubble.
  */
 public class CybergramShowcaseActivity extends Activity {
 
@@ -60,7 +63,7 @@ public class CybergramShowcaseActivity extends Activity {
      *   - otherwise -> return the deterministic upstream design default
      *     (ThemeColors.createDefaultColors()), never the user's Day/Night theme.
      */
-    private static final class Palette implements Theme.ResourcesProvider {
+    private static final class Palette implements CybergramTheme.GeometryProvider {
 
         private final SparseIntArray cybergram;
         private final int[] defaultColors;
@@ -220,35 +223,45 @@ public class CybergramShowcaseActivity extends Activity {
             canvas.drawText(dateLabel, w / 2f, top + dp(21), paint);
 
             float y = top + dp(38);
+            // normal incoming
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Привет! Это демо-сообщение Cybergram.");
+                    "Привет! Это демо-сообщение Cybergram.", false, false, false);
+            // multiline incoming
             y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
-                    "Мультистрочное сообщение:\nвторой абзац и\nдлинная строка, которая должна аккуратно переноситься.");
+                    "Мультистрочное сообщение:\nвторой абзац и\nдлинная строка, которая должна аккуратно переноситься.", false, false, false);
+            // normal outgoing
             y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
-                    "Привет! Это демо-сообщение Cybergram.", false);
+                    "Привет! Это демо-сообщение Cybergram.", false, false, false, false);
+            // selected multiline outgoing (with time)
             y = drawOutgoingBubble(canvas, w, leftPad, y, maxBubbleW,
-                    "Длинное исходящее сообщение\nс временем и статусом,\nкоторое тоже переносится по словам.", true);
+                    "Выделенное сообщение\nс временем и статусом.", true, true, false, false);
+            // grouped incoming pair (near flags accepted; same corner cut for now)
+            y += dp(6);
+            y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
+                    "Группа · первое сообщение", false, false, true);
+            y = drawIncomingBubble(canvas, leftPad, y, maxBubbleW,
+                    "Группа · второе сообщение", false, true, false);
             drawMediaBubble(canvas, w, y);
         }
 
-        private float drawIncomingBubble(Canvas canvas, float leftPad, float y, float maxW, String text) {
+        private float drawIncomingBubble(Canvas canvas, float leftPad, float y, float maxW, String text, boolean selected, boolean topNear, boolean bottomNear) {
             Layout.Alignment align = Layout.Alignment.ALIGN_NORMAL;
             int textColor = palette.color(Theme.key_chat_messageTextIn);
             float bubbleW = bubbleWidth(text, maxW, align);
             float bubbleH = bubbleHeight(text, bubbleW, align, textColor, 0);
-            drawBubble(canvas, MessageDrawable.TYPE_TEXT, false, false, leftPad, y, bubbleW, bubbleH);
+            drawBubble(canvas, MessageDrawable.TYPE_TEXT, false, selected, topNear, bottomNear, leftPad, y, bubbleW, bubbleH);
             drawText(canvas, text, leftPad + dp(10), y + dp(8), bubbleW - dp(20), align, textColor);
             return y + bubbleH + dp(16);
         }
 
-        private float drawOutgoingBubble(Canvas canvas, int w, float leftPad, float y, float maxW, String text, boolean withTime) {
+        private float drawOutgoingBubble(Canvas canvas, int w, float leftPad, float y, float maxW, String text, boolean selected, boolean withTime, boolean topNear, boolean bottomNear) {
             Layout.Alignment align = Layout.Alignment.ALIGN_OPPOSITE;
             int textColor = palette.color(Theme.key_chat_messageTextOut);
             float bubbleW = bubbleWidth(text, maxW, align);
             float timeH = withTime ? dp(18) : 0;
             float bubbleH = bubbleHeight(text, bubbleW, align, textColor, timeH);
             float left = w - dp(12) - bubbleW;
-            drawBubble(canvas, MessageDrawable.TYPE_TEXT, true, false, left, y, bubbleW, bubbleH);
+            drawBubble(canvas, MessageDrawable.TYPE_TEXT, true, selected, topNear, bottomNear, left, y, bubbleW, bubbleH);
             drawText(canvas, text, left + dp(10), y + dp(8), bubbleW - dp(20), align, textColor);
             if (withTime) {
                 paint.setStyle(Paint.Style.FILL);
@@ -267,7 +280,7 @@ public class CybergramShowcaseActivity extends Activity {
             float bh = dp(120);
             float left = w - dp(12) - bw;
             // Production media bubble: TYPE_MEDIA through the same provider/contract.
-            drawBubble(canvas, MessageDrawable.TYPE_MEDIA, true, false, left, y, bw, bh);
+            drawBubble(canvas, MessageDrawable.TYPE_MEDIA, true, false, false, false, left, y, bw, bh);
 
             // media placeholder inner + play glyph (debug chrome, deterministic)
             paint.setStyle(Paint.Style.FILL);
@@ -341,12 +354,14 @@ public class CybergramShowcaseActivity extends Activity {
             return sl.getHeight() + 2 * dp(8) + extraH;
         }
 
-        private void drawBubble(Canvas canvas, int type, boolean out, boolean selected, float left, float y, float w, float h) {
+        private void drawBubble(Canvas canvas, int type, boolean out, boolean selected, boolean topNear, boolean bottomNear, float left, float y, float w, float h) {
             MessageDrawable d = new MessageDrawable(type, out, selected, palette);
             d.setDrawFullBubble(true);
             d.setBounds((int) left, (int) y, (int) (left + w), (int) (y + h));
-            // setTop selects chat_in/outBubble and initialises paint/gradient state.
-            d.setTop((int) y, (int) w, (int) h, false, false);
+            // setTop selects chat_in/outBubble, initialises paint/gradient state and
+            // carries the grouping near flags (accepted; Cybergram uses the same corner
+            // cut on all four corners for now — grouped-specific treatment deferred).
+            d.setTop((int) y, (int) w, (int) h, topNear, bottomNear);
             d.draw(canvas);
         }
 

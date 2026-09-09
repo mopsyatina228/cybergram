@@ -90,8 +90,8 @@ public final class CybergramBubbleDrawable extends Drawable {
     }
 
     private void rebuildPath(Rect bounds) {
-        path.reset();
         if (bounds.isEmpty()) {
+            path.reset();
             return;
         }
 
@@ -102,19 +102,43 @@ public final class CybergramBubbleDrawable extends Drawable {
         float bottom = bounds.bottom - inset;
 
         if (right <= left || bottom <= top) {
+            path.reset();
             return;
         }
 
-        float cut = Math.min(cornerCutPx, Math.min(right - left, bottom - top) * 0.5f);
+        buildPath(path, left, top, right, bottom, cornerCutPx);
+    }
 
-        path.moveTo(left + cut, top);
-        path.lineTo(right - cut, top);
-        path.lineTo(right, top + cut);
-        path.lineTo(right, bottom - cut);
-        path.lineTo(right - cut, bottom);
-        path.lineTo(left + cut, bottom);
-        path.lineTo(left, bottom - cut);
-        path.lineTo(left, top + cut);
+    /**
+     * Shared Cybergram clipped-corner silhouette. Four straight sides with four
+     * 45-degree chamfered corners (no arcs, no round radius). The corner cut is
+     * clamped so it never exceeds half of the smaller side.
+     *
+     * Used by BOTH the standalone {@link CybergramBubbleDrawable} and Telegram's
+     * {@link MessageDrawable} so there is a single implementation of the Cybergram
+     * polygon. Resets {@code path} before building.
+     *
+     * @param path   destination path (reset first)
+     * @param left   body left edge
+     * @param top    body top edge
+     * @param right  body right edge
+     * @param bottom body bottom edge
+     * @param cut    desired corner chamfer cut in px (clamped internally)
+     */
+    public static void buildPath(Path path, float left, float top, float right, float bottom, float cut) {
+        path.reset();
+        if (right <= left || bottom <= top) {
+            return;
+        }
+        float safeCut = Math.min(cut, Math.min(right - left, bottom - top) * 0.5f);
+        path.moveTo(left + safeCut, top);
+        path.lineTo(right - safeCut, top);
+        path.lineTo(right, top + safeCut);
+        path.lineTo(right, bottom - safeCut);
+        path.lineTo(right - safeCut, bottom);
+        path.lineTo(left + safeCut, bottom);
+        path.lineTo(left, bottom - safeCut);
+        path.lineTo(left, top + safeCut);
         path.close();
     }
 

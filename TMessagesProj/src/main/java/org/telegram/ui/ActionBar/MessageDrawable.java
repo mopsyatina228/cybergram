@@ -663,6 +663,14 @@ public class MessageDrawable extends Drawable {
     }
 
     private void generatePath(Path path, Rect bounds, int padding, int rad, int smallRad, int nearRad, int top, boolean drawFullBottom, boolean drawFullTop, boolean customPaint) {
+        // Cybergram angular silhouette: a narrow seam ahead of the standard Telegram
+        // rounded-path generation. Applied only for text/media; TYPE_PREVIEW stays on
+        // the Telegram path. When Cybergram geometry is not active this branch is a
+        // no-op and the exact upstream rendering path is preserved.
+        if (useAngularGeometry() && (currentType == TYPE_TEXT || currentType == TYPE_MEDIA)) {
+            generateCybergramPath(path, bounds, padding);
+            return;
+        }
         path.rewind();
         int heightHalf = (bounds.height() - padding) >> 1;
         if (rad > heightHalf) {
@@ -790,6 +798,39 @@ public class MessageDrawable extends Drawable {
             }
         }
         path.close();
+    }
+
+    private boolean useAngularGeometry() {
+        return CybergramTheme.useAngularMessageGeometry(resourcesProvider);
+    }
+
+    /**
+     * Cybergram clipped-corner silhouette body (no tail, four 45-degree chamfered
+     * corners, no round radius). The body rectangle mirrors the upstream Telegram
+     * body area so the message text / layout does not shift:
+     *   - outgoing text body: left = bounds.left + padding, right = bounds.right - 8dp
+     *   - incoming text body: left = bounds.left + 8dp,       right = bounds.right - padding
+     *   - media body:          left = bounds.left + padding,  right = bounds.right - padding
+     * The vertical extent uses the same production padding. The tail region (8dp on the
+     * tail side) is NOT reclaimed to avoid moving existing content geometry.
+     */
+    private void generateCybergramPath(Path path, Rect bounds, int padding) {
+        float top = bounds.top + padding;
+        float bottom = bounds.bottom - padding;
+        float left;
+        float right;
+        if (currentType == TYPE_MEDIA) {
+            left = bounds.left + padding;
+            right = bounds.right - padding;
+        } else if (isOut) {
+            left = bounds.left + padding;
+            right = bounds.right - dp(8);
+        } else {
+            left = bounds.left + dp(8);
+            right = bounds.right - padding;
+        }
+        float cut = dp(CybergramTheme.BUBBLE_CORNER_CUT_DP);
+        CybergramBubbleDrawable.buildPath(path, left, top, right, bottom, cut);
     }
 
     public void setDrawFullBubble(boolean drawFullBuble) {

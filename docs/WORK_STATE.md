@@ -131,11 +131,56 @@ Verified on-device (SM-A256E / Android 16 / arm64-v8a):
 
 This resolves the v1 colour-path observation: the showcase now renders the deterministic Cybergram palette regardless of the active Day/Night theme.
 
+## Angular message geometry (Stage C — geometry-only pass, 2026-09-09)
+
+First production integration of Cybergram geometry: it replaces the Telegram rounded/tail bubble silhouette with the Cybergram clipped-corner silhouette, geometry only — colours, text, layout, sizes and logic are untouched. Production `MessageDrawable` / `CybergramBubbleDrawable` internals and behaviour are preserved.
+
+### Activation seam (centralised in `CybergramTheme`)
+
+- `CybergramTheme.THEME_NAME = "Cybergram"` and `CybergramTheme.BUBBLE_CORNER_CUT_DP = 6f`.
+- `CybergramTheme.GeometryProvider extends Theme.ResourcesProvider` — a marker interface that opts a renderer into Cybergram geometry.
+- `CybergramTheme.useAngularMessageGeometry(Theme.ResourcesProvider provider)` returns true iff `provider instanceof GeometryProvider` OR the active `Theme.getCurrentTheme()` is the built-in Cybergram theme; false otherwise. It never infers Cybergram from colours. It is called from a single place (`MessageDrawable.useAngularGeometry()`); no theme-name checks are scattered through the drawable. This covers both real clients (usually `provider == null`, global theme = Cybergram) and the debug showcase (global theme = Day, enabled via the marker `GeometryProvider`).
+
+### Shared polygon builder
+
+- `CybergramBubbleDrawable.buildPath(Path, float left, float top, float right, float bottom, float cut)` — new `public static` helper producing the four-straight-side / four-45°-chamfered-corner Cybergram polygon (no arcs, no round radius); the cut is clamped to at most half the smaller side. Used by BOTH the standalone `CybergramBubbleDrawable` (its `rebuildPath` now delegates here) and `MessageDrawable`, so there is exactly one implementation of the Cybergram polygon.
+
+### `MessageDrawable` seam
+
+- A narrow branch at the top of `generatePath(...)`: if `useAngularGeometry()` and `currentType` is `TYPE_TEXT` or `TYPE_MEDIA`, build the Cybergram silhouette and return; `TYPE_PREVIEW` stays on the Telegram path. When Cybergram geometry is not active, the exact upstream rounded-path generation is preserved (the branch is a no-op).
+- `generateCybergramPath(...)` mirrors the upstream body area so text/layout does not shift:
+  - outgoing text: left = `bounds.left + padding`, right = `bounds.right - dp(8)`;
+  - incoming text: left = `bounds.left + dp(8)`, right = `bounds.right - padding`;
+  - media: left = `bounds.left + padding`, right = `bounds.right - padding`;
+  - vertical: `bounds.top + padding` .. `bounds.bottom - padding`, where `padding = dp(2)`.
+- The 8dp tail region is NOT reclaimed; the silhouette keeps the existing content geometry.
+- The existing selected fill/overlay and the cached/nine-patch rendering both flow through the same Cybergram Path (verified: the selected outgoing bubble renders as `chat_outBubbleSelected` (`#10313C`-ish) on the same silhouette).
+
+### Scope / deferred
+
+- No border/stroke layer yet (CybergramBubbleDrawable has stroke support, but MessageDrawable still runs through its own Paint/Path — a border will be a following layer after visual validation). No cyan stroke is hard-coded in MessageDrawable.
+- Grouped `topNear` / `bottomNear` / `botButtonsBottom` API is accepted and preserved; the first Cybergram polygon uses the SAME corner cut on all four corners regardless of near flags. Grouped-near-specific corner treatment is DEFERRED (see Next sequence).
+- `cybergram.attheme`, Theme registration/default logic, `ChatMessageCell` layout, composer production UI, dialogs, IntroActivity, network/auth/storage, package/signing/API credentials — all untouched.
+
+### Verified (SM-A256E / Android 16 / arm64-v8a)
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL; APK single ABI `arm64-v8a`, SHA-256 `76c85d54a6641be7e1cf6895f9c8869c3f1ee824d01e622e51a6b5e40e5e6a88`.
+- Install: over `org.telegram.messenger.beta` via `adb install -r` (streamed). NOTE: the previously-proven `push + pm install` file:// path was rejected by on-device verification this time (`INSTALL_FAILED_VERIFICATION_FAILURE`), so the direct streamed install was used. No `pm clear`; data kept.
+- Pre-launch read-only: `mainconfig.xml` `theme=Day`, `nighttheme=Day` (unchanged).
+- Launch showcase: explicit adb intent -> `topResumedActivity=...CybergramShowcaseActivity`, no FATAL/ANR.
+- Screenshot: `.local-artifacts/cybergram_showcase_v3_angular.png` (1080x2340, git-ignored).
+- Banner still reads verbatim: `Showcase: Cybergram | dark=true` / `Active app theme: Day` / `BG #080A0F | IN #E8D93A | OUT #0A1A21`.
+- Geometry acceptance: Telegram tails gone (vision + pixel); all four corners are 45° chamfers (pixel-verified straight diagonal on the incoming bubble: top-left 74->57 and top-right 817->834 over ~14 rows then straight edges, bottom-left 57->74); body alignment vs text unchanged (incoming body left = `bounds.left + 8dp`); selected outgoing bubble renders (lighter teal, `#10313C`-ish); TYPE_MEDIA uses the same silhouette; multiline not clipped; FATAL/ANR = 0.
+- v2 -> v3 comparison (read-only vision): geometry only — v2 had rounded corners + pointed tails; v3 has chamfered corners + no tails; colours (`IN #E8D93A`, `OUT #0A1A21`), layout and banner unchanged. The 6dp cut reads as a modest chamfer on 1080x2340.
+- Regression: normal beta client launched at `theme=Day` (launcher activity top, no FATAL/ANR) — the Cybergram code present in the APK does NOT flip Day-theme bubbles to angular (the activation gate returns false). Prefs still `theme=Day`, `nighttheme=Day`.
+
+Note (pre-existing, out of scope): the debug composer placeholder "Сообщение" sits low and reads as partially clipped; this predates the geometry pass and is not a regression of this task.
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
-3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam.
+3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass. Follow-ups: `TYPE_PREVIEW` support, grouped-near-specific corner treatment, and the border/stroke layer.)
 4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list.
 
 ## Explicitly deferred
