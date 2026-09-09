@@ -385,6 +385,31 @@ The user completed login manually; validation ran against the real ChatActivity 
 ### Showcase vs production (read-only)
 - Consistent: dark chamfered plate, 1dp cyan stroke, paper-plane glyph, no round; composer frame + plate visually coherent. Only a minor scale difference (showcase ~34dp mock plate vs production ~38dp real button) — EXPECTED. No blockers, no visual defects.
 
+## Stage E pass 1: Dialogs List / Chat Row Presentation (2026-09-09)
+
+### Dialogs ownership map (audit)
+- `DialogsActivity`: `viewPage.listView = new DialogsRecyclerView(...)` (RecyclerView); list background = `Theme.key_windowBackgroundGray` (dark in Cybergram at theme); `actionBar` bg = `key_windowBackgroundWhite` (#080A0F dark); bottom-nav + FAB = standard Telegram new UI (round/Material, left as-is this pass). Filter/folder tabs + search exposed to accessibility; chat rows are NOT (custom RecyclerView) — navigation via more-menu / vision for "Избранное".
+- `DialogCell` (BaseCell): row `onDraw` draws content + the swipe/archive reveal + the `isSelected` rounded blob (`Theme.dialogs_tabletSeletedPaint`, `dp(8)` corners). Normal rows are transparent over the list bg (no per-row card). Unread badge = `drawCounter` (`key_topics_unreadCounter`, `key_chats_unreadCounter`); muted = `key_chats_unreadCounterMuted`; pinned overlay = `key_chats_pinnedOverlay`. Row pressed/selector handled by the RecyclerListView (list-level). `resourcesProvider` present; `dpf2`/`dp` static-imported; `Path` imported.
+
+### Exact production seams
+- `DialogCell.drawCybergramRowTreatment(Canvas)` — called at the top of `onDraw` (line ~3789) only when `CybergramTheme.isCybergramPresentation(resourcesProvider)`. Draws in the row's base bounds: (a) a thin (~1px) sub-1dp cyan-dark separator along the bottom edge (cyan at alpha 66 — subtle, not a neon line); (b) a short cyan technical accent tab (2px wide x 16px tall) at the LEFT edge (alpha 150) + a small 45° HUD tick (6px diagonal) at its top (alpha 110). The row itself stays transparent (no rounded card, no full-row cyan frame) so density is preserved.
+- `DialogCell` `isSelected` branch (line ~4002): under Cybergram, the Telegram rounded blob is replaced by a `CybergramHudDrawable` restrained raised dark panel (fill = `key_chats_pinnedOverlay`, stroke = `key_chat_messagePanelSend` 1dp, cut 6dp). Day/non-Cybergram keeps `drawRoundRect` (upstream).
+
+### Private-content handling
+- The real Chats screen contains personal content. Hermes only analyzed geometry/colors/chrome (never transcribing chat names / message text); the runtime screenshots are local `.local-artifacts/real_dialogs_cybergram_v1.png` only, not committed. Tap navigation used only the safe «Избранное».
+
+### Runtime findings (real dialogs)
+- List bg near-black; rows show the thin subtle cyan-dark separator at the bottom + small restrained cyan accent at the left edge (toned down after the artistic pass — the first capture read as "neon" and was reduced). Dense list, no per-row cards. Bottom row clipped by the bottom nav (normal overlap). FATAL/ANR = 0 across scroll, tap «Избранное»+back, header more-menu, bottom-nav (Contacts/Chats), no touch regression. Unread + muted/pinned indicators present (existing cyan/gray palette).
+
+### Showcase v7 vs real (read-only)
+- `cybergram_showcase_v7_dialogs.png`: 4 mock rows (normal / unread / muted-pinned / selected) with the same primitives (separator + left-edge accent + 45° tick + CybergramHudDrawable selected panel) and the preserved v5 header / composer frame / banner. Real matches: same separator + accent treatment, dense rhythm, dark bg. Rows still read as a dense Telegram list with a clear Cybergram HUD rhythm (not cards / not "Excel from the future").
+
+### Day / non-Cybergram regression
+- Statically verified (gate at `DialogCell.java:3789` + `:4002`): at Day `isCybergramPresentation()` is false → no row treatment → upstream DialogCell appearance; selected state uses the original rounded blob. A real Day runtime screenshot is optional (needs a theme switch — same manual action as before; avoided re-doing the complex chain).
+
+### Deferred (Stage E pass 2 / not in scope this pass)
+- Dialogs action-bar structural header decor (cyan line + amber identity + HUD ticks) — the action bar is already Cybergram-dark via theme; adding the structural language is a focused pass-2 item (different hierarchy from ChatActivity's header). Bottom-nav geometry + FAB (still round/Material) — pass 2. Amber attention tint for the unread counter — the existing at theme uses cyan (readable + coherent); switching to amber is an optional pass-2 semantic palette change. Settings/Contacts/Profile/media viewer — untouched.
+
 ## Next implementation sequence
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.

@@ -23,6 +23,8 @@ import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -639,6 +641,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int drawScam;
 
     private boolean isSelected;
+    private final Paint cybergramSeparatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final CybergramHudDrawable cybergramSelectedPanel = new CybergramHudDrawable();
 
     private RectF rect = new RectF();
     private DialogsAdapter.DialogsPreloader preloader;
@@ -3782,6 +3786,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return;
         }
 
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            drawCybergramRowTreatment(canvas);
+        }
+
         float gtx = 0, gty = 0;
         boolean emojiStatusVisible = false;
 
@@ -3991,7 +3999,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (isSelected) {
             rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.lerp(getMeasuredHeight(), getCollapsedHeight(), rightFragmentOpenedProgress));
             rect.offset(0, -translateY + collapseOffset);
-            canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                cybergramSelectedPanel.setFillColor(Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider));
+                cybergramSelectedPanel.setStroke(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider), dpf2(1), true);
+                cybergramSelectedPanel.setCornerCut(dpf2(6));
+                cybergramSelectedPanel.setBounds((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
+                cybergramSelectedPanel.draw(canvas);
+            } else {
+                canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            }
         }
 
         canvas.save();
@@ -4948,6 +4964,32 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     private int starBgColor;
     private Drawable starFg, starBg;
+
+    private void drawCybergramRowTreatment(Canvas canvas) {
+        int w = getMeasuredWidth();
+        int h = getMeasuredHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        // thin cyan-dark separator along the bottom edge (sub-1dp, subtle — not a neon full line)
+        cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
+        cybergramSeparatorPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
+        cybergramSeparatorPaint.setAlpha(66);
+        canvas.drawRect(0, h - dpf2(1), w, h, cybergramSeparatorPaint);
+
+        // short cyan technical accent tab at the left edge + a small 45° HUD cut/tick tied to row geometry
+        int accH = dp(16);
+        int accX = 0;
+        int accTop = (int) (h * 0.30f);
+        cybergramSeparatorPaint.setAlpha(150);
+        canvas.drawRect(accX, accTop, accX + dpf2(2), accTop + accH, cybergramSeparatorPaint);
+
+        int tick = dp(6);
+        cybergramSeparatorPaint.setStyle(Paint.Style.STROKE);
+        cybergramSeparatorPaint.setStrokeWidth(dpf2(1));
+        cybergramSeparatorPaint.setAlpha(110);
+        canvas.drawLine(accX + dpf2(2), accTop, accX + dpf2(2) + tick, accTop - tick, cybergramSeparatorPaint);
+    }
 
     public boolean drawAvatarOverlays(Canvas canvas) {
         boolean needInvalidate = false, stars = false;

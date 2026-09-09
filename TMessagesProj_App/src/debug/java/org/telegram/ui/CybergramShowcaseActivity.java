@@ -126,7 +126,7 @@ public class CybergramShowcaseActivity extends Activity {
             canvas.drawColor(palette.color(Theme.key_windowBackgroundWhite));
             drawHeader(canvas, w);
             drawDebugBanner(canvas, w);
-            drawChat(canvas, w);
+            drawDialogs(canvas, w);
             drawComposer(canvas, w, h);
         }
 
@@ -402,6 +402,60 @@ public class CybergramShowcaseActivity extends Activity {
             textPaint.setColor(color);
             StaticLayout sl = new StaticLayout(text, textPaint, (int) Math.ceil(innerW), align, 1f, 0f, false);
             return sl.getHeight() + 2 * dp(8) + extraH;
+        }
+
+        private void drawDialogs(Canvas canvas, int w) {
+            int top = dp(52) + dp(56) + dp(12);
+            int rowH = dp(52);
+            int titleX = dp(60);
+            int leftPad = dp(4);
+            String[] titles = {"ALIAS // open channel", "ВЕСТНИК · УЗЕЛ 07", "DATA RELAY", "CONTACT 07"};
+            String[] previews = {"привет, фид виден", "3 новых сообщения", "muted · сетевой инцидент", "выбрано: 1"};
+            for (int i = 0; i < 4; i++) {
+                int y = top + i * rowH;
+                boolean unread = i == 1;
+                boolean mutedPinned = i == 2;
+                boolean selected = i == 3;
+
+                if (selected) {
+                    CybergramHudDrawable sel = new CybergramHudDrawable();
+                    sel.setFillColor(palette.color(Theme.key_chats_pinnedOverlay));
+                    sel.setStroke(palette.color(Theme.key_chat_messagePanelSend), dp(1), true);
+                    sel.setCornerCut(dp(6));
+                    sel.setBounds(leftPad, y + dp(2), w - leftPad, y + rowH - dp(2));
+                    sel.draw(canvas);
+                }
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(palette.color(Theme.key_chat_messagePanelSend));
+                paint.setAlpha(66);
+                canvas.drawRect(0, y + rowH - dp(1), w, y + rowH, paint);
+                paint.setAlpha(206);
+                float accTop = y + rowH * 0.30f;
+                canvas.drawRect(0, accTop, dp(2), accTop + dp(16), paint);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(dp(1));
+                paint.setAlpha(150);
+                canvas.drawLine(dp(2), accTop, dp(2) + dp(6), accTop - dp(6), paint);
+                paint.setStyle(Paint.Style.FILL);
+
+                paint.setColor(palette.color(Theme.key_chats_name));
+                paint.setTextSize(dp(15));
+                paint.setAlpha(255);
+                canvas.drawText(titles[i], titleX, y + dp(21), paint);
+                paint.setColor(palette.color(Theme.key_chats_message));
+                paint.setTextSize(dp(13));
+                canvas.drawText(previews[i], titleX, y + dp(39), paint);
+                paint.setColor(palette.color(Theme.key_chats_date));
+                paint.setTextSize(dp(11));
+                paint.setTextAlign(Paint.Align.RIGHT);
+                canvas.drawText("23:59", w - dp(16), y + dp(19), paint);
+                if (unread || mutedPinned) {
+                    paint.setColor(palette.color(mutedPinned ? Theme.key_chats_unreadCounterMuted : Theme.key_chats_unreadCounter));
+                    paint.setTextSize(dp(15));
+                    canvas.drawText(mutedPinned ? "77" : "3", w - dp(16), y + dp(41), paint);
+                }
+                paint.setTextAlign(Paint.Align.LEFT);
+            }
         }
 
         private void drawBubble(Canvas canvas, int type, boolean out, boolean selected, boolean topNear, boolean bottomNear, float left, float y, float w, float h) {
