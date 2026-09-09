@@ -133,9 +133,9 @@ chat_lockIcon=-16718337
 chat_muteIcon=-8615279
 chat_selectedBackground=436266495
 
-# Incoming message: dark warm body, amber outline, light foreground
-chat_inBubble=-15526898
-chat_inBubbleSelected=-14934761
+# Incoming message: translucent amber surface, amber outline, light foreground
+chat_inBubble=619239738
+chat_inBubbleSelected=1038670138
 chat_inBubbleShadow=0
 chat_messageTextIn=-1447195
 chat_messageLinkIn=-16052974
@@ -160,9 +160,9 @@ chat_inFileInfoText=-10331363
 chat_inAudioTitleText=-16052974
 chat_inAudioDurationText=-10331363
 
-# Outgoing message: near-black cyan plate, luminous foreground
-chat_outBubble=-16115167
-chat_outBubbleSelected=-15716036
+# Outgoing message: translucent cyan surface, luminous foreground
+chat_outBubble=520152575
+chat_outBubbleSelected=939582975
 chat_outBubbleShadow=0
 chat_outBubbleGradientSelectedOverlay=436266495
 chat_messageTextOut=-2622209
@@ -253,4 +253,3 @@ fill_RedNormal=-53690
 undo_background=-871690990
 undo_cancelColor=-16718337
 undo_infoColor=-1641742
-
