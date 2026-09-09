@@ -331,9 +331,17 @@ The user adds `CYBERGRAM_API_ID` / `CYBERGRAM_API_HASH` themselves; no credentia
 - `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` with no credentials -> fails at configuration with the exact message above (fail-fast instead of silent `APP_ID=4`).
 - `local.properties` is gitignored and untracked; no real credentials appear in the diff; no API_HASH is ever printed.
 
-### Honest status / pending
+### Credentials added / verified (2026-09-09)
 
-- The authorized build (`assembleAfatDebug`) and the login-screen runtime check (no `API_ID_PUBLISHED_FLOOD`; the phone number reaches `auth.sendCode`) are PENDING the user adding `CYBERGRAM_API_ID` and `CYBERGRAM_API_HASH` to `local.properties`. They were not fabricated, and the user performs the final login manually.
+- The user added `CYBERGRAM_API_ID` (8-digit numeric) and `CYBERGRAM_API_HASH` (32 chars) to `local.properties` (values not recorded here; gitignored).
+- `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL. Generated `BuildConfig.APP_ID` = real 8-digit id (29046501, no longer the sample `4`); `APP_HASH` 32 chars.
+- Installed over `org.telegram.messenger.beta` (streamed), no `pm clear`; official Telegram untouched.
+- Launched the app: launches to the Telegram intro/login screen (onboarding slide 1, «Начать общение»), no FATAL/ANR, no `API_ID_PUBLISHED_FLOOD` in logcat. The sample-based flood is resolved at source (the real api_id is compiled in).
+- The actual `auth.sendCode` step (entering the phone number) is performed manually by the user; the number was NOT entered here and OTP was not read.
+
+### Honest limitation (carries over)
+
+- Production ChatActivity header + ChatActivityEnterView composer seams remain compile/static-verified; full real-chat runtime validation still requires an authenticated session.
 
 ## Next implementation sequence
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
