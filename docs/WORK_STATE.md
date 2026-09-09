@@ -334,14 +334,25 @@ The user adds `CYBERGRAM_API_ID` / `CYBERGRAM_API_HASH` themselves; no credentia
 ### Credentials added / verified (2026-09-09)
 
 - The user added `CYBERGRAM_API_ID` (8-digit numeric) and `CYBERGRAM_API_HASH` (32 chars) to `local.properties` (values not recorded here; gitignored).
-- `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL. Generated `BuildConfig.APP_ID` = real 8-digit id (29046501, no longer the sample `4`); `APP_HASH` 32 chars.
+- `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL. Generated `BuildConfig.APP_ID` = a real 8-digit numeric api_id (no longer the sample `4`); `APP_HASH` is a 32-char string present but its exact value is never recorded/tracked.
 - Installed over `org.telegram.messenger.beta` (streamed), no `pm clear`; official Telegram untouched.
 - Launched the app: launches to the Telegram intro/login screen (onboarding slide 1, «Начать общение»), no FATAL/ANR, no `API_ID_PUBLISHED_FLOOD` in logcat. The sample-based flood is resolved at source (the real api_id is compiled in).
 - The actual `auth.sendCode` step (entering the phone number) is performed manually by the user; the number was NOT entered here and OTP was not read.
 
 ### Honest limitation (carries over)
 
-- Production ChatActivity header + ChatActivityEnterView composer seams remain compile/static-verified; full real-chat runtime validation still requires an authenticated session.
+- Production ChatActivity header + ChatActivityEnterView composer seams are now RUNTIME-validated in an authenticated real-chat session (see below). Stage D pass 2 (angular send control) and dialogs-list styling are still pending.
+
+## Authenticated real-chat runtime validation (2026-09-09, safe surface = «Избранное»/Saved Messages)
+
+The user completed login manually; validation ran against the real ChatActivity (beta, real api_id). No messages sent; no auth/session/OTP/prefs touched; no pm clear; official Telegram untouched.
+
+- Day baseline (`real_chat_day_v1.png`): plain Telegram header + normal rounded composer + rounded outgoing bubble; ZERO Cybergram decor leak (no border/header/composer decor); chrome (back/title/menu/composer) working; 0 FATAL/ANR.
+- Cybergram activation: theme switched via the theme UI; a fresh Saved Messages chat shows the full Cybergram presentation. Dark #080A0F background; header cyan bottom rule (pixel: single full-width line, no status-bar shift) + ~40dp amber segment (right of the back button, near the title) + 2 subtle HUD ticks at the bottom corners (small marks below the back/menu glyphs, non-intrusive); composer cyan chamfered frame around the field+emoji+attach (frame right edge left of the mic button), tap->focus->keyboard opens, emoji panel open/close works; outgoing bubbles dark w/ cyan border, 45° chamfered, no tail; timestamps + checks present; no clipping; 0 FATAL/ANR.
+- Showcase-vs-production: outgoing bubble silhouette/border and the composer frame match the showcase; real ChatMessageCell padding/metadata correct. Incoming content in this chat is rendered as rectangular content CARDS (code/audio/file/link) — Telegram's standard content-card background overlays the bubble chamfer, so the incoming chamfered *text*-bubble silhouette is not visible for those; EXPECTED difference vs the showcase's plain amber text bubbles (no plain incoming text bubble present in this chat -> incoming text-bubble chamfer is DEFERRED to a chat that has one, without opening arbitrary personal chats).
+- Theme-switch semantics: both states verified — Day active => no decor (Day baseline); Cybergram active => decor present. Telegram recreates the activity on theme change (standard behaviour), so the switch was observed across freshly rendered chats rather than forced in-place on a single instance.
+- No BLOCKER. Minor observation only: the header HUD ticks land at the bottom corners, under the back/menu buttons (small marks below the glyphs, subtle, non-intrusive) — left as-is since the slice works and redesign is out of scope this pass.
+- No production code changed this pass; docs/WORK_STATE.md only.
 
 ## Next implementation sequence
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
