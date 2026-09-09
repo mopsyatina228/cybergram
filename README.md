@@ -1,46 +1,68 @@
-## Telegram messenger for Android
+# Cybergram
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Cybergram is an experimental Android Telegram client fork focused on a distinct cyberpunk/HUD visual language while preserving Telegram's existing messaging behaviour and protocol implementation.
 
-## Creating your Telegram Application
+The project is based on the official [Telegram for Android](https://github.com/DrKLO/Telegram) source. `master` is kept as the upstream-aligned baseline; active Cybergram work belongs on `dev` and feature branches.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+The visual target is deliberately inspired by late-21st-century game HUDs rather than by copying proprietary game assets or branding. The first vertical slice is the chat experience: dialog list -> chat -> message bubbles -> composer -> replies/reactions/media. Network, storage and protocol logic should remain as close to upstream as possible.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+See `docs/CYBERGRAM_UI_SPEC.md` for the current UI direction and `AGENTS.md` for repository rules.
 
-### API, Protocol documentation
+## Upstream requirements
 
-Telegram API manuals: https://core.telegram.org/api
+This fork inherits Telegram's API and licensing requirements. Before distributing builds:
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+1. Obtain your own `api_id` from https://core.telegram.org/api/obtaining_api_id.
+2. Do not present the app as the official Telegram client.
+3. Do not use Telegram's standard logo as this app's logo.
+4. Follow Telegram's security guidelines: https://core.telegram.org/mtproto/security_guidelines.
+5. Publish the corresponding source code as required by the repository licence.
+6. Replace the dummy signing/Firebase material shipped for reproducible upstream builds with project-owned credentials before publishing APKs.
 
-### Compilation Guide
+## Build baseline
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+Current upstream baseline: Telegram Android 12.10.1 (7038), commit `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c`.
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
+Required upstream toolchain:
 
-1. Clone the Telegram source code with its submodules:
-   ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
-   ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
-   ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
-   ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+- Android Studio 2025.1.4
+- Android NDK 27.2.12479018
+- Android SDK 36
 
-### Localization
+Clone the fork with submodules:
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+```bash
+git clone --recursive --shallow-submodules https://github.com/mopsyatina228/cybergram.git
+cd cybergram
+git checkout dev
+```
+
+If submodules were omitted:
+
+```bash
+git submodule init
+git submodule update --init --recursive --depth=1
+```
+
+For local development, add the official repository as `upstream`:
+
+```bash
+git remote add upstream https://github.com/DrKLO/Telegram.git
+git fetch upstream
+```
+
+Before attempting a release build, follow the original Telegram requirements for `release.keystore`, `gradle.properties`, Firebase configuration and `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java`.
+
+## Project status
+
+The fork has been bootstrapped. The current phase is UI foundation: establish a Cybergram palette/theme asset and map the existing Telegram rendering surfaces before changing message geometry. No protocol or account-data behaviour is intentionally changed at this stage.
+
+## Telegram API and protocol documentation
+
+Telegram API: https://core.telegram.org/api
+
+MTProto: https://core.telegram.org/mtproto
+
+## Licence
+
+Cybergram remains subject to the upstream GNU GPL v2 or later licence and the notices already present in the source tree.
