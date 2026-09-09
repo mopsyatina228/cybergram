@@ -477,7 +477,23 @@ The user completed login manually; validation ran against the real ChatActivity 
 - Incoming palette is a at-theme override (Cybergram at theme only); Day/stock at-theme unaffected.
 - Chrome fixes NOT applied -> Day chrome unchanged (upstream rounded/glass preserved) by construction.
 
-## Next implementation sequence
+## Launcher icon integration (source logo -> simplified adaptive icon) (2026-09-09)
+
+### Audit of icon scheme
+- The active launcher icon = default `ic_launcher` (`mipmap-anydpi-v26/ic_launcher.xml`): background `@drawable/icon_background` (= layer-list of `icon_background_sa` gradient + `icon_background_clip`), foreground `@mipmap/icon_foreground` (shared, used by ic_launcher + icon_2/4), monochrome `@drawable/icon_plane`; round = `ic_launcher_round.xml` (bg `icon_background_round` + fg `icon_foreground_round`). Legacy `ic_launcher.png`/`ic_launcher_round.png` at mdpi..xxxhdpi (48..192px). Alternate launcher aliases (Vintage/Aqua/Nox, `activity-alias` `enabled="false"`) use `icon_*_launcher` with their own `icon_*_background` + the shared `icon_foreground`.
+
+### Source evaluation + adaptation
+- `design/branding/cybergram_logo_v1.png` is an intricate circular HUD emblem (glowing cyan ring, 4 amber compass triangles, dozens of segment dots + internal traces) — too detailed for a launcher icon; at 48px it would blur to noise.
+- Made a SAFE simplified adaptation on its basis: bold angular Telegram-like paper-plane silhouette (cyan #00E5FF body + amber #E8D93A fold), preserving the cyberpunk palette; readable at 48/96/192px (verified via preview render + launcher screenshot). No copyright/proprietary assets (original simplified vector).
+
+### Derived assets (tracked)
+- Adaptive foregrounds (transparent, plane in safe zone): `icon_foreground.png`/`_round` (plane ~58% of canvas) + `icon_foreground_sa.png` (~50%) at mdpi..xxxhdpi.
+- Legacy composites (dark #0B0D12 bg + plane): `ic_launcher.png` (square) + `ic_launcher_round.png` (circular) at mdpi..xxxhdpi.
+- `drawable/icon_background.xml` + `icon_background_round.xml` → dark gradient only (removed the blue `icon_background_clip` cloud layer); `drawable/icon_background_sa.xml` → #12151C→#080A0F gradient; `drawable/icon_plane.xml` → new white monochrome plane (themed-icons).
+- Source logo kept at `design/branding/cybergram_logo_v1.png` (tracked).
+
+### Runtime
+- BUILD SUCCESSFUL; `pm install -r` over beta. Launcher app-drawer shows "Telegram Beta" as dark near-black + cyan/amber angular plane (confirmed via screenshot `.local-artifacts/launcher_appdrawer.png` + `launcher_icon_zoom.png`); no old blue circle. No other UI touched. FATAL/ANR=0.
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
