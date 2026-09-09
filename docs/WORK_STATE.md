@@ -64,6 +64,17 @@ On a genuinely fresh Cybergram install (no `theme`/`nighttheme` preference and n
 
 With `core.autocrlf=true` on Windows, `.attheme` assets are checked out CRLF; the upstream `getThemeFileValues` parser keeps the trailing `\r` in the value string, which makes `Utilities.parseInt` return `0` for every colour. `getThemeFileValues` now strips a single trailing CR (`charAt(last) == 13`) before parsing, so CRLF `.attheme` files (imported or Windows-checked-out) parse correctly. `.gitattributes` pins `*.attheme text eol=lf`.
 
+### Palette key audit
+
+`cybergram.attheme` was audited against the actual `ThemeColors.createColorKeysMap()` dictionary (the same set `stringKeyToInt()` resolves). Two keys were not recognised by current upstream and were renamed while keeping their values:
+
+- `graySectionText` → `key_graySectionText` (registered upstream name carries the `key_` prefix)
+- `listSelector` → `listSelectorSDK21` (current upstream string name for `key_listSelector`)
+
+A deterministic repository-side regression check was added: `tools/validate_cybergram_theme.py` (pure Python, no Android SDK) reads `ThemeColors.java` and `cybergram.attheme`, and fails non-zero on unknown / duplicate / malformed keys. After the fix: `unknown=0 duplicates=0 malformed=0`.
+
+Control palette verified as intended: background `#080A0F`, header/panel `#0B0D12`/`#111820`, primary cyan `#00E5FF`, incoming bubble amber `#E8D93A`, outgoing bubble `#0A1A21`, danger `#FF2E46`, main text `#E6F2F2`, muted text `#7C8A91`. The only `alpha=00` values are deliberate disabled shadows (`chat_inBubbleShadow`, `chat_outBubbleShadow`, `chat_messagePanelShadow`).
+
 ## Verification status
 
 - Repository-side changes written successfully to GitHub.

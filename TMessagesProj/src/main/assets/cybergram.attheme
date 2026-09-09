@@ -33,8 +33,8 @@ windowBackgroundCheckText=-16250353
 progressCircle=-16718337
 divider=-14996686
 graySection=-15656928
-graySectionText=-8615279
-listSelector=436266495
+key_graySectionText=-8615279
+listSelectorSDK21=436266495
 
 radioBackground=-8615279
 radioBackgroundChecked=-16718337
