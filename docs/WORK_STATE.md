@@ -302,8 +302,40 @@ Two lifecycle/reusable-component fixes; no new artwork.
 
 - Production ChatActivity header + ChatActivityEnterView composer seams are compile/static-verified; full real-chat runtime validation still requires an authenticated beta session (no auth; no login/session touched).
 
-## Next implementation sequence
+## Telegram API credentials injection (local, gitignored, 2026-09-09)
 
+Root cause of the auth blocker: the tracked `BuildVars.java` carried upstream sample credentials (`APP_ID = 4` + a sample `APP_HASH`). The Telegram server rejects them with `API_ID_PUBLISHED_FLOOD`, so login was impossible. The developer user has their own `api_id`/`api_hash` (kept secret / local-only).
+
+### Scheme
+
+- Credentials are read from the gitignored root `local.properties` via `getProps("CYBERGRAM_API_ID")` / `getProps("CYBERGRAM_API_HASH")` in `TMessagesProj/build.gradle` (the library that owns `BuildVars.java`).
+- The library `defaultConfig` injects them into `BuildConfig` (`buildConfigField "int" APP_ID`, `buildConfigField "String" APP_HASH`).
+- `BuildVars.APP_ID` / `APP_HASH` now come from `BuildConfig.APP_ID` / `BuildConfig.APP_HASH` - no literal user values in tracked source.
+- Dev vs other variants:
+  - **Cybergram developer build** (`CYBERGRAM_ABI` set, e.g. `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a`): credentials REQUIRED. If missing, configuration fails with `Cybergram Telegram API credentials are missing; configure CYBERGRAM_API_ID and CYBERGRAM_API_HASH in local.properties.` - no silent `APP_ID=4`.
+  - **Other upstream/release variants** (no `CYBERGRAM_ABI`): keep the upstream sample fallback (`APP_ID=4`, sample hash) so they stay buildable.
+
+### local.properties contract (gitignored, .gitignore line 6)
+
+```
+sdk.dir=...
+CYBERGRAM_API_ID=<integer>
+CYBERGRAM_API_HASH=<string>
+```
+
+The user adds `CYBERGRAM_API_ID` / `CYBERGRAM_API_HASH` themselves; no credentials are committed, staged, or printed (diagnostics report only configured=yes / api_id / hash length, never the hash value).
+
+### Verification
+
+- `:TMessagesProj:help` (no `CYBERGRAM_ABI`) -> BUILD SUCCESSFUL (sample fallback configures; BuildVars compiles against `BuildConfig.APP_ID` / `APP_HASH`).
+- `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` with no credentials -> fails at configuration with the exact message above (fail-fast instead of silent `APP_ID=4`).
+- `local.properties` is gitignored and untracked; no real credentials appear in the diff; no API_HASH is ever printed.
+
+### Honest status / pending
+
+- The authorized build (`assembleAfatDebug`) and the login-screen runtime check (no `API_ID_PUBLISHED_FLOOD`; the phone number reaches `auth.sendCode`) are PENDING the user adding `CYBERGRAM_API_ID` and `CYBERGRAM_API_HASH` to `local.properties`. They were not fabricated, and the user performs the final login manually.
+
+## Next implementation sequence
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
 3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass; then border + grouped near-corners pass. Remaining follow-ups: `TYPE_PREVIEW` support, and validating replies/reactions/forwards/pressed states.)

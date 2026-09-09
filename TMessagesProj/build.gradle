@@ -141,6 +141,23 @@ android {
             }
         }
 
+        // Cybergram: inject Telegram API credentials from the gitignored root local.properties.
+        //   - Cybergram developer build (CYBERGRAM_ABI set): credentials are REQUIRED; fail fast if missing
+        //     rather than silently using the upstream sample APP_ID=4 (which is rejected with
+        //     API_ID_PUBLISHED_FLOOD).
+        //   - other upstream/release variants: fall back to the upstream sample so they stay buildable.
+        def cybergramApiId = getProps("CYBERGRAM_API_ID")
+        def cybergramApiHash = getProps("CYBERGRAM_API_HASH")
+        if (cybergramApiId != null && !cybergramApiId.trim().isEmpty() && cybergramApiHash != null && !cybergramApiHash.trim().isEmpty()) {
+            buildConfigField "int", "APP_ID", cybergramApiId.trim()
+            buildConfigField "String", "APP_HASH", "\"" + cybergramApiHash.trim() + "\""
+        } else if (rootProject.ext.cybergramAbiSingle != null) {
+            throw new GradleException("Cybergram Telegram API credentials are missing; configure CYBERGRAM_API_ID and CYBERGRAM_API_HASH in local.properties.")
+        } else {
+            buildConfigField "int", "APP_ID", "4"
+            buildConfigField "String", "APP_HASH", "\"014b35b6184100b085b0d0572f9b5103\""
+        }
+
         // Cybergram: when CYBERGRAM_ABI is set, compile native code for that ABI only
         // (instead of the default armeabi-v7a/arm64-v8a/x86/x86_64 set).
         if (rootProject.ext.cybergramAbiSingle != null) {
