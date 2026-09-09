@@ -52,7 +52,7 @@ public final class CybergramTheme {
     }
 
     /**
-     * Centralised activation gate for Cybergram angular message geometry.
+     * Centralised activation gate for Cybergram presentation.
      *
      * True when:
      *   - {@code provider} is a {@link GeometryProvider} (the debug showcase), OR
@@ -61,7 +61,7 @@ public final class CybergramTheme {
      *
      * False in every other case. It never infers Cybergram from colour values.
      */
-    public static boolean useAngularMessageGeometry(Theme.ResourcesProvider provider) {
+    public static boolean isCybergramPresentation(Theme.ResourcesProvider provider) {
         if (provider instanceof GeometryProvider) {
             return true;
         }
@@ -74,6 +74,16 @@ public final class CybergramTheme {
             // read-only gate; never propagate
         }
         return false;
+    }
+
+    /**
+     * Activation gate for the Cybergram angular message geometry.
+     *
+     * Thin delegation to {@link #isCybergramPresentation(Theme.ResourcesProvider)} so the
+     * message geometry and general HUD decoration share a single Cybergram detection path.
+     */
+    public static boolean useAngularMessageGeometry(Theme.ResourcesProvider provider) {
+        return isCybergramPresentation(provider);
     }
 
     private CybergramTheme() {

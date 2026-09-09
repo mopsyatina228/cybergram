@@ -227,12 +227,58 @@ Note (pre-existing, out of scope) carries over: the debug composer placeholder "
 - `TYPE_PREVIEW` angular support.
 - The border re-strokes each frame by design (never baked into the cached nine-patch); revisit only if profiling shows a cost.
 
+## Chat header + composer structural decoration (Stage D, pass 1, 2026-09-09)
+
+First decoration pass over the chat header and composer. Presentation only: no rewrite of `ChatActivityEnterView`, no input-mode replacement, no size/touch-target changes. Cybergram presentation is added on top of the existing Telegram mechanics through narrow, non-interactive, gated seams.
+
+### Generic Cybergram presentation gate
+
+- `CybergramTheme.isCybergramPresentation(Theme.ResourcesProvider provider)` — true iff `provider instanceof GeometryProvider` OR the active `Theme.getCurrentTheme()` is built-in Cybergram; false otherwise; never inferred from colours.
+- `CybergramTheme.useAngularMessageGeometry(provider)` is now a thin delegation to it, so message geometry and HUD decoration share a single Cybergram detection path. The showcase `Palette` still enables via the marker.
+
+### Reusable HUD primitive
+
+- New `CybergramHudDrawable` (ActionBar): a pure `Drawable` that draws a rectangular panel with 45° chamfered corners using the SAME `CybergramBubbleDrawable.buildPath` (per-corner cuts supported; fill and stroke independently optional; stroke MITER/SQUARE; alpha). No touch/event handling, no assets. Used for the composer frame and (via `buildPath`) the header ticks — the polygon is never duplicated.
+
+### Composer seam (`ChatActivityEnterView`)
+
+- Background-owner audit: the composer panel background is a full `drawRect` (compose paint) at the EnterView level; `messageEditText` has `setBackgroundDrawable(null)`; `messageEditTextContainer` (the pill) has no background. So decorating the field means a chamfered cyan frame over `messageEditTextContainer` — no rounded-pill conflict.
+- Integrated in the `messageEditTextContainer` anonymous FrameLayout: a `dispatchDraw` override that post-draws a `CybergramHudDrawable` frame (1dp cyan stroke via `key_chat_messagePanelSend`, 6dp cut) around the container's bounds, only when `isCybergramPresentation(resourcesProvider)`.
+- It follows the container automatically (multiline expansion, edit message, reply panel, attach/emoji/bot keyboard changes) because it draws in the container's local space; when the container is hidden/GONE the decoration disappears with it. Not styled this pass (recording UI / voice lock / slow mode / bot menu / stickers) — the frame does not break or cover them.
+
+### Header seam (`ChatActivity`)
+
+- `ActionBar extends FrameLayout` but overrides `onLayout` to position only its known children, so a foreign child is not laid out — the decoration is instead a dedicated non-interactive overlay added as a sibling over the action bar.
+- New `CybergramHeaderDecorationView` (ui): added to `contentView` right before `return fragmentView` (top z-order), gated by `isCybergramPresentation(getResourceProvider())`, so non-Cybergram chats add nothing. It draws at the action bar's window position (follows the header/hierarchy): a 1dp cyan bottom rule (colour from `key_actionBarDefaultIcon`), a short ~40dp amber accent segment near the identity/title zone (`CybergramTheme.AMBER`), and two very small chamfered corner ticks via the shared `buildPath`. No microtext, no fake SECURE/ID badges; non-clickable/non-focusable.
+
+### Send button
+
+- No change to `SendButton` geometry / touch / animation this pass. The cybergram palette already makes the send cyan (`key_chat_messagePanelSend`). A dedicated angular send control is deferred to Stage D pass 2.
+
+### Showcase
+
+- Header/composer now use the same HUD primitive (composer frame via `CybergramHudDrawable`; header rule/segment/ticks via `CybergramBubbleDrawable.buildPath`), not standalone geometry. v4 bubble samples preserved; banner unchanged.
+- Screenshot: `.local-artifacts/cybergram_showcase_v5_header_composer.png` (1080x2340, git-ignored).
+
+### Verified
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL (final APK SHA-256 `81235d588f6216551bf452db6ceaff0ad56e9ffb398eb02e6d9de90b81400a25`). The production ChatActivity / ChatActivityEnterView seams compile (compile/static safety verified); full real-chat runtime validation pending an authenticated beta session.
+- Install over `org.telegram.messenger.beta` (`adb install -r`, streamed), Success; no `pm clear`. Pre-launch prefs `theme=Day`, `nighttheme=Day`.
+- Launch showcase: explicit intent -> `topResumedActivity=...CybergramShowcaseActivity`, no FATAL/ANR. Banner verbatim: `Showcase: Cybergram | dark=true` / `Active app theme: Day` / `BG #080A0F | IN #E8D93A | OUT #0A1A21`.
+- Visual (showcase, runtime): header shows the thin cyan bottom rule + short amber segment + two subtle ticks (technical, not cluttered; pixel-confirmed cyan line y143-145/967px, amber x146-258); composer shows a 1px cyan chamfered frame over the field, no rounded pill (pixel-confirmed edges x~23..910 with chamfered top corners, clear of the send control); bubbles unchanged (angular, chamfered, no tails); no clipping; readable, not overloaded. NOTE: a colour-application bug in `CybergramHudDrawable` (its setters stored the colour but did not apply it to the Paint) was found and fixed during this pass.
+- Regression: normal beta client at `theme=Day` launched (no FATAL/ANR); the Cybergram header/composer gate is false, so nothing is added/drawn at Day; prefs still `theme=Day`, `nighttheme=Day`.
+
+### Deferred / honest limitation
+
+- Production ChatActivity header + ChatActivityEnterView composer seams are compile/static-verified only; real-chat runtime validation requires an authenticated beta session (no auth this build; no login/session touched).
+- Send button angular control: Stage D pass 2.
+
 ## Next implementation sequence
 
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
 3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass; then border + grouped near-corners pass. Remaining follow-ups: `TYPE_PREVIEW` support, and validating replies/reactions/forwards/pressed states.)
-4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list.
+4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list. (Stage D pass 1 started: header + composer structural decoration added via gated seams; composer/dialog-list full runtime validation pending an authenticated beta session; angular send control = Stage D pass 2.)
 
 ## Explicitly deferred
 

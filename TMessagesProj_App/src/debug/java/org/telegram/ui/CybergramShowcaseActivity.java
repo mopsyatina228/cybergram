@@ -14,6 +14,8 @@ import android.util.SparseIntArray;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
@@ -178,6 +180,26 @@ public class CybergramShowcaseActivity extends Activity {
             canvas.drawLine(cx - dp(5), dp(19), cx + dp(5), dp(19), paint);
             canvas.drawLine(cx - dp(5), dp(26), cx + dp(5), dp(26), paint);
             canvas.drawLine(cx - dp(5), dp(33), cx + dp(5), dp(33), paint);
+
+            // Cybergram header structural decoration (mirrors the production header View):
+            // 1dp cyan bottom rule, short amber accent near the title zone, two restrained
+            // chamfered corner ticks, all via the shared buildPath polygon.
+            int ruleTop = bar - dp(1);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(headerIcon);
+            canvas.drawRect(0, ruleTop, w, bar, paint);
+            paint.setColor(CybergramTheme.AMBER);
+            canvas.drawRect(dp(52), ruleTop, dp(52) + dp(40), bar, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            paint.setStrokeJoin(Paint.Join.MITER);
+            paint.setStrokeCap(Paint.Cap.SQUARE);
+            paint.setColor(headerIcon);
+            int tick = dp(8);
+            CybergramBubbleDrawable.buildPath(path, dp(24), ruleTop - tick, dp(24) + tick, ruleTop, dp(3), dp(3), dp(3), dp(3));
+            canvas.drawPath(path, paint);
+            CybergramBubbleDrawable.buildPath(path, w - dp(24) - tick, ruleTop - tick, w - dp(24), ruleTop, dp(3), dp(3), dp(3), dp(3));
+            canvas.drawPath(path, paint);
         }
 
         private void drawDebugBanner(Canvas canvas, int w) {
@@ -333,6 +355,15 @@ public class CybergramShowcaseActivity extends Activity {
             canvas.drawCircle(w - dp(34), top + dp(32), dp(17), paint);
             paint.setColor(composerBg);
             canvas.drawCircle(w - dp(34), top + dp(32), dp(9), paint);
+
+            // Cybergram composer frame: 1dp cyan chamfered outline around the field pill,
+            // via the same HUD primitive used by the production composer seam. Sits clear of
+            // the send control and leaves the existing (rect) panel background untouched.
+            CybergramHudDrawable frame = new CybergramHudDrawable();
+            frame.setStroke(sendCol, dp(1), true);
+            frame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            frame.setBounds(dp(8), top + dp(8), w - dp(60), h - dp(8));
+            frame.draw(canvas);
         }
 
         /** Natural text width (widest line) clamped to the max bubble inner width. */

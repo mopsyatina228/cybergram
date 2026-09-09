@@ -172,6 +172,8 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
@@ -2625,6 +2627,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 1, 0, 0));
 
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
+            private CybergramHudDrawable cybergramComposerFrame;
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -2662,6 +2666,30 @@ public class ChatActivityEnterView extends FrameLayout implements
                     return true;
                 }
                 return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                drawCybergramComposerFrame(canvas);
+            }
+
+            private void drawCybergramComposerFrame(Canvas canvas) {
+                if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    return;
+                }
+                int w = getWidth();
+                int h = getHeight();
+                if (w <= 0 || h <= 0) {
+                    return;
+                }
+                if (cybergramComposerFrame == null) {
+                    cybergramComposerFrame = new CybergramHudDrawable();
+                    cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                }
+                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend), dp(1), true);
+                cybergramComposerFrame.setBounds(0, 0, w, h);
+                cybergramComposerFrame.draw(canvas);
             }
         };
         frameLayout.setClipChildren(false);
