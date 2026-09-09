@@ -133,9 +133,10 @@ chat_lockIcon=-16718337
 chat_muteIcon=-8615279
 chat_selectedBackground=436266495
 
-# Incoming message: translucent amber surface, amber outline, light foreground
-chat_inBubble=619239738
-chat_inBubbleSelected=1038670138
+# Incoming message: amber-tinted surface, amber outline, light foreground
+# Opaque composite of ~14% amber over Cybergram #080A0F wallpaper; selected ~24%.
+chat_inBubble=-14145771
+chat_inBubbleSelected=-12698599
 chat_inBubbleShadow=0
 chat_messageTextIn=-1447195
 chat_messageLinkIn=-16052974
@@ -160,9 +161,10 @@ chat_inFileInfoText=-10331363
 chat_inAudioTitleText=-16052974
 chat_inAudioDurationText=-10331363
 
-# Outgoing message: translucent cyan surface, luminous foreground
-chat_outBubble=520152575
-chat_outBubbleSelected=939582975
+# Outgoing message: cyan-tinted surface, luminous foreground
+# Opaque composite of ~12% cyan over Cybergram #080A0F wallpaper; selected ~22%.
+chat_outBubble=-16308948
+chat_outBubbleSelected=-16369084
 chat_outBubbleShadow=0
 chat_outBubbleGradientSelectedOverlay=436266495
 chat_messageTextOut=-2622209
