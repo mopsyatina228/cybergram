@@ -20,6 +20,8 @@ import androidx.annotation.RawRes;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
@@ -47,6 +49,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     private final Theme.ResourcesProvider resourcesProvider;
     private ArrayList<View> additionalContentViews;
     private final boolean isSubButton;
+    private boolean cybergramPresentationEnabled;
 
     public FragmentFloatingButton(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, resourcesProvider, false);
@@ -147,6 +150,11 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     private BlurredBackgroundDrawable iBlur3Background;
     private BlurredBackgroundColorProviderThemed iBlur3ColorProviderTabs;
 
+    public void setCybergramPresentationEnabled(boolean enabled) {
+        cybergramPresentationEnabled = enabled;
+        updateColors();
+    }
+
     public void updateColors() {
         if (isSubButton) {
             imageView.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
@@ -163,10 +171,18 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
         } else {
             imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
-            ));
+            if (cybergramPresentationEnabled && CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                CybergramHudDrawable plate = new CybergramHudDrawable();
+                plate.setFillColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                plate.setStroke(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider), dpf2(1), true);
+                plate.setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                setBackground(plate);
+            } else {
+                setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
+                ));
+            }
         }
     }
 

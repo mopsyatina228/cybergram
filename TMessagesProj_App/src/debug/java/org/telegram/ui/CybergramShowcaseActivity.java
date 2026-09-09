@@ -411,6 +411,26 @@ public class CybergramShowcaseActivity extends Activity {
             int leftPad = dp(4);
             String[] titles = {"ALIAS // open channel", "ВЕСТНИК · УЗЕЛ 07", "DATA RELAY", "CONTACT 07"};
             String[] previews = {"привет, фид виден", "3 новых сообщения", "muted · сетевой инцидент", "выбрано: 1"};
+            // dialogs top chrome: dark strip + 1dp cyan rule + amber segment + restrained ticks
+            int absBottom = top - dp(8);
+            int absTop = absBottom - dp(30);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(palette.color(Theme.key_windowBackgroundWhite));
+            canvas.drawRect(0, absTop, w, absBottom, paint);
+            paint.setColor(palette.color(Theme.key_chats_name));
+            paint.setTextSize(dp(16));
+            canvas.drawText("CYBERGRAM", dp(16), absTop + dp(20), paint);
+            paint.setColor(palette.color(Theme.key_chat_messagePanelSend));
+            canvas.drawRect(0, absBottom - dp(1), w, absBottom, paint);
+            paint.setColor(CybergramTheme.AMBER);
+            canvas.drawRect(dp(52), absBottom - dp(1), dp(52) + dp(40), absBottom, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            int tk = dp(8);
+            paint.setColor(palette.color(Theme.key_chat_messagePanelSend));
+            canvas.drawLine(dp(24), absBottom - tk - dp(1), dp(24) + tk, absBottom - dp(1), paint);
+            canvas.drawLine(w - dp(24) - tk, absBottom - tk - dp(1), w - dp(24), absBottom - dp(1), paint);
+            paint.setStyle(Paint.Style.FILL);
             for (int i = 0; i < 4; i++) {
                 int y = top + i * rowH;
                 boolean unread = i == 1;
@@ -427,14 +447,14 @@ public class CybergramShowcaseActivity extends Activity {
                 }
                 paint.setStyle(Paint.Style.FILL);
                 paint.setColor(palette.color(Theme.key_chat_messagePanelSend));
-                paint.setAlpha(66);
+                paint.setAlpha(CybergramTheme.DIALOGS_ROW_SEPARATOR_ALPHA);
                 canvas.drawRect(0, y + rowH - dp(1), w, y + rowH, paint);
-                paint.setAlpha(206);
+                paint.setAlpha(CybergramTheme.DIALOGS_ROW_ACCENT_ALPHA);
                 float accTop = y + rowH * 0.30f;
                 canvas.drawRect(0, accTop, dp(2), accTop + dp(16), paint);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(dp(1));
-                paint.setAlpha(150);
+                paint.setAlpha(CybergramTheme.DIALOGS_ROW_TICK_ALPHA);
                 canvas.drawLine(dp(2), accTop, dp(2) + dp(6), accTop - dp(6), paint);
                 paint.setStyle(Paint.Style.FILL);
 
@@ -456,6 +476,26 @@ public class CybergramShowcaseActivity extends Activity {
                 }
                 paint.setTextAlign(Paint.Align.LEFT);
             }
+
+            // angular FAB mock (shared CybergramHudDrawable primitive)
+            int fabSize = dp(48);
+            int fabLeft = w - dp(16) - fabSize;
+            int fabTop = top + 4 * rowH + dp(6);
+            CybergramHudDrawable fabPlate = new CybergramHudDrawable();
+            fabPlate.setFillColor(palette.color(Theme.key_windowBackgroundWhite));
+            fabPlate.setStroke(palette.color(Theme.key_chat_messagePanelSend), dp(1), true);
+            fabPlate.setCornerCut(dp(6));
+            fabPlate.setBounds(fabLeft, fabTop, fabLeft + fabSize, fabTop + fabSize);
+            fabPlate.draw(canvas);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(palette.color(Theme.key_chats_actionIcon));
+            int cx = fabLeft + fabSize / 2;
+            int cy = fabTop + fabSize / 2;
+            int r = dp(8);
+            canvas.drawLine(cx - r, cy, cx + r, cy, paint);
+            canvas.drawLine(cx, cy - r, cx, cy + r, paint);
+            paint.setStyle(Paint.Style.FILL);
         }
 
         private void drawBubble(Canvas canvas, int type, boolean out, boolean selected, boolean topNear, boolean bottomNear, float left, float y, float w, float h) {

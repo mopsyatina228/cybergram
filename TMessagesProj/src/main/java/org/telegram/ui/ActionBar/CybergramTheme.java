@@ -43,6 +43,15 @@ public final class CybergramTheme {
     /** Cybergram message outline stroke width, in dp. */
     public static final float BUBBLE_BORDER_WIDTH_DP = 1f;
 
+    /** Alpha (0..255) of the thin cyan-dark separator on a dialogs row bottom edge. */
+    public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 66;
+
+    /** Alpha (0..255) of the short left-edge cyan accent tab on a dialogs row. */
+    public static final int DIALOGS_ROW_ACCENT_ALPHA = 150;
+
+    /** Alpha (0..255) of the small 45-degree HUD tick on a dialogs row. */
+    public static final int DIALOGS_ROW_TICK_ALPHA = 110;
+
     /**
      * Marker {@link Theme.ResourcesProvider} that opts a renderer into Cybergram
      * angular message geometry. The debug showcase implements this so it can exercise

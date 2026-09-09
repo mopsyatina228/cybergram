@@ -4744,7 +4744,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         contentView.addView(floatingButtonStories, FragmentFloatingButton.createSubButtonLayoutParams());
 
         floatingButton3 = new FragmentFloatingButton(context, resourceProvider);
+        floatingButton3.setCybergramPresentationEnabled(true);
         contentView.addView(floatingButton3, FragmentFloatingButton.createDefaultLayoutParams());
+
+        CybergramHeaderDecorationView cybergramHeaderDecoration = new CybergramHeaderDecorationView(context, actionBar, resourceProvider);
+        cybergramHeaderDecoration.setDecorStateProvider(() -> {
+            if (actionBar.isActionModeShowed()) {
+                return CybergramHeaderDecorationView.DECOR_RULE_ONLY;
+            }
+            if (searchViewPager != null && searchViewPager.getAlpha() > 0.5f) {
+                return CybergramHeaderDecorationView.DECOR_NONE;
+            }
+            return CybergramHeaderDecorationView.DECOR_FULL;
+        });
+        contentView.addView(cybergramHeaderDecoration, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         floatingButton3.setOnClickListener(v -> {
             if (parentLayout != null && parentLayout.isInPreviewMode()) {
                 finishPreviewFragment();

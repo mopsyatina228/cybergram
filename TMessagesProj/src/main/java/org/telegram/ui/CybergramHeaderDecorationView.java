@@ -42,6 +42,23 @@ public class CybergramHeaderDecorationView extends View {
     private final int[] actionBarLoc = new int[2];
     private final int[] selfLoc = new int[2];
 
+    /** Decor states: full language, neutral cyan rule only, or nothing at all. */
+    public static final int DECOR_FULL = 0;
+    public static final int DECOR_RULE_ONLY = 1;
+    public static final int DECOR_NONE = 2;
+    private int decorState = DECOR_FULL;
+    private DecorStateProvider decorStateProvider;
+
+    /** Optional per-draw decor-state resolver (e.g. dialogs host suppresses on search/action-mode). */
+    public interface DecorStateProvider {
+        int get();
+    }
+
+    public void setDecorStateProvider(DecorStateProvider provider) {
+        this.decorStateProvider = provider;
+        invalidate();
+    }
+
     public CybergramHeaderDecorationView(Context context, ActionBar actionBar, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.actionBar = actionBar;
@@ -69,6 +86,10 @@ public class CybergramHeaderDecorationView extends View {
         if (actionBar == null || !CybergramTheme.isCybergramPresentation(resourcesProvider)) {
             return;
         }
+        int state = decorStateProvider != null ? decorStateProvider.get() : decorState;
+        if (state == DECOR_NONE) {
+            return;
+        }
         actionBar.getLocationInWindow(actionBarLoc);
         getLocationInWindow(selfLoc);
         float ax = actionBarLoc[0] - selfLoc[0];
@@ -82,10 +103,14 @@ public class CybergramHeaderDecorationView extends View {
         int ruleH = dp(1);
         float ruleTop = bottom - ruleH;
 
-        // 1dp cyan bottom rule
+        // 1dp cyan bottom rule (drawn for FULL and RULE_ONLY states)
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(cyanColor());
         canvas.drawRect(ax, ruleTop, ax + aw, bottom, paint);
+
+        if (state != DECOR_FULL) {
+            return;
+        }
 
         // short amber accent segment near the identity/title zone (sits below the title text)
         paint.setColor(CybergramTheme.AMBER);

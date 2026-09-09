@@ -410,7 +410,36 @@ The user completed login manually; validation ran against the real ChatActivity 
 ### Deferred (Stage E pass 2 / not in scope this pass)
 - Dialogs action-bar structural header decor (cyan line + amber identity + HUD ticks) — the action bar is already Cybergram-dark via theme; adding the structural language is a focused pass-2 item (different hierarchy from ChatActivity's header). Bottom-nav geometry + FAB (still round/Material) — pass 2. Amber attention tint for the unread counter — the existing at theme uses cyan (readable + coherent); switching to amber is an optional pass-2 semantic palette change. Settings/Contacts/Profile/media viewer — untouched.
 
+## Stage E pass 2: Dialogs Chrome (action-bar decor + opt-in angular FAB + bottom-nav recon) (2026-09-09)
+
+### Row consistency cleanup
+- Production DialogCell + showcase now share CybergramTheme constants: `DIALOGS_ROW_SEPARATOR_ALPHA` (=66), `DIALOGS_ROW_ACCENT_ALPHA` (=150), `DIALOGS_ROW_TICK_ALPHA` (=110). The showcase v7 accent/tick mismatch (206/150) is fixed; the selected-panel cut now uses `CybergramTheme.BUBBLE_CORNER_CUT_DP` (was hardcoded dpf2(6)). No visual change to the pass-1 production result.
+### Action-bar ownership + seam
+- The dialogs action bar is a local `ActionBar` in `DialogsActivity.createView` (contentView is full-screen; the fragment root overlays it). Reused the existing `CybergramHeaderDecorationView` (non-interactive: clickable=false, focusable=false, importantForAccessibility=NO, onTouchEvent=false) as the shared header primitive — no mechanical copy, no second polygon implementation.
+- Added to `DialogsActivity` contentView (MATCH_PARENT overlay, top z-order, non-blocking) passing the local `actionBar`; it measures the real action-bar bounds via `getLocationInWindow` (no magic constants; follows stories/filter-tab heights).
+- Gated on `CybergramTheme.isCybergramPresentation(resourcesProvider)`; at Day the overlay draws nothing.
+
+### Header state visibility policy
+- Added `DECOR_FULL / DECOR_RULE_ONLY / DECOR_NONE` + a `DecorStateProvider`. `DialogsActivity` provider: action-mode (multiselect) -> `DECOR_RULE_ONLY`; search active (`searchViewPager.getAlpha()>0.5`) -> `DECOR_NONE`; else `DECOR_FULL` (rule + amber segment + 2 restrained ticks). ChatActivity keeps default `DECOR_FULL`.
+- Verified: normal dialogs show the cyan bottom rule + amber segment + corner ticks at the real action-bar bottom (no status-bar offset, no overlap with title/buttons/icons).
+
+### FAB opt-in (clean)
+- `FragmentFloatingButton` (shared) got `setCybergramPresentationEnabled(boolean)` (default false). Only the non-sub updateColors branch swaps the background: opt-in && Cybergram -> `CybergramHudDrawable` dark chamfered plate (fill `key_windowBackgroundWhite`, stroke `key_chat_messagePanelSend` 1dp, cut `BUBBLE_CORNER_CUT_DP`) at the same 48dp View/touch target; icon + visibility/scale/progress animations untouched. Else upstream circle selector. `DialogsActivity` enables it only on `floatingButton3`. Non-Cybergram ignores it (upstream circle). Pressed feedback preserved via the existing view-level scale animator (documented). `floatingButtonStories` NOT styled in pass 2.
+
+### Bottom-nav actual owner (recon)
+- `MainTabsActivityController` is only a `setTabsVisible(boolean)` visibility controller — NOT the owner. Actual owner: `MainTabsActivity` -> `MainTabsLayout` (tabsView) hosting `GlassTabView[]`(5) + a `tabsViewBackground` (BlurredBackgroundDrawable); selected item, icons/text and press/selection animations live in `GlassTabView`/`MainTabsLayout`. Complex shared nav component; a Cybergram restyle is a separate risky redesign. No production bottom-nav code changed. Documented -> Stage E pass 3.
+
+### Runtime findings
+- Real Chats screen (authenticated): header cyan rule + amber segment + ticks at the action-bar bottom; FAB renders as an angular chamfered dark plate with cyan stroke; rows keep pass-1 separator + left accent. Search open/close, more menu, «Избранное» open+back, scroll — all work, no touch regression, no clipping, FATAL/ANR=0. Local (gitignored) screenshots: `cybergram_showcase_v8_dialogs_chrome.png`, `real_dialogs_cybergram_v2_chrome.png` (private content not transcribed, not committed).
+
+### Day regression
+- Static: header onDraw gate, FAB opt-in branch, row gate are all false at Day -> upstream header/circular FAB/upstream rows. Real Day screenshot optional (theme switch = human).
+
+### Defects / deferred
+- No BLOCKER. One search-state nuance documented (decor stacked above the search field, no overlap). Deferred: bottom-nav restyle (pass 3), floatingButtonStories styling, amber attention tint for the unread counter.
+
 ## Next implementation sequence
+
 1. Make `Cybergram` selectable/automatically applied using the existing Telegram theme pipeline (done — built-in registration + fresh-install default).
 2. Tune the `.attheme` palette from device screenshots.
 3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass; then border + grouped near-corners pass. Remaining follow-ups: `TYPE_PREVIEW` support, and validating replies/reactions/forwards/pressed states.)

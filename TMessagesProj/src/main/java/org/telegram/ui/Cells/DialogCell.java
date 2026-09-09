@@ -4002,7 +4002,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                 cybergramSelectedPanel.setFillColor(Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider));
                 cybergramSelectedPanel.setStroke(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider), dpf2(1), true);
-                cybergramSelectedPanel.setCornerCut(dpf2(6));
+                cybergramSelectedPanel.setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
                 cybergramSelectedPanel.setBounds((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
                 cybergramSelectedPanel.draw(canvas);
             } else {
@@ -4974,20 +4974,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // thin cyan-dark separator along the bottom edge (sub-1dp, subtle — not a neon full line)
         cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
         cybergramSeparatorPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
-        cybergramSeparatorPaint.setAlpha(66);
+        cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SEPARATOR_ALPHA);
         canvas.drawRect(0, h - dpf2(1), w, h, cybergramSeparatorPaint);
 
         // short cyan technical accent tab at the left edge + a small 45° HUD cut/tick tied to row geometry
         int accH = dp(16);
         int accX = 0;
         int accTop = (int) (h * 0.30f);
-        cybergramSeparatorPaint.setAlpha(150);
+        cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_ACCENT_ALPHA);
         canvas.drawRect(accX, accTop, accX + dpf2(2), accTop + accH, cybergramSeparatorPaint);
 
         int tick = dp(6);
         cybergramSeparatorPaint.setStyle(Paint.Style.STROKE);
         cybergramSeparatorPaint.setStrokeWidth(dpf2(1));
-        cybergramSeparatorPaint.setAlpha(110);
+        cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_TICK_ALPHA);
         canvas.drawLine(accX + dpf2(2), accTop, accX + dpf2(2) + tick, accTop - tick, cybergramSeparatorPaint);
     }
 
