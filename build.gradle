@@ -13,6 +13,24 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
 }
+
+// ---------------------------------------------------------------------------
+// Cybergram: optional single-ABI developer build (fast native compile).
+// CYBERGRAM_ABI accepts exactly one of the supported ABIs. When set, both the
+// TMessagesProj native compilation and the APK packaging are restricted to it.
+// When omitted, the default upstream 4-ABI build is used unchanged.
+// ---------------------------------------------------------------------------
+def cybergramAllAbis = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+def cybergramAbiProp = project.findProperty('CYBERGRAM_ABI')
+def cybergramAbiSingle = null
+if (cybergramAbiProp != null) {
+    if (!cybergramAllAbis.contains(cybergramAbiProp)) {
+        throw new GradleException("CYBERGRAM_ABI='" + cybergramAbiProp + "' is not supported. Allowed values: " + cybergramAllAbis.join(', ') + ". Omit the property to build all four ABIs (default).")
+    }
+    cybergramAbiSingle = cybergramAbiProp
+}
+ext.cybergramAbis = cybergramAbiSingle != null ? [cybergramAbiSingle] : cybergramAllAbis
+ext.cybergramAbiSingle = cybergramAbiSingle
 repositories {
     google()
 }

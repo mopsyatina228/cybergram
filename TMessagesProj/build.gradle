@@ -140,6 +140,14 @@ android {
                 targets 'tmessages.49'
             }
         }
+
+        // Cybergram: when CYBERGRAM_ABI is set, compile native code for that ABI only
+        // (instead of the default armeabi-v7a/arm64-v8a/x86/x86_64 set).
+        if (rootProject.ext.cybergramAbiSingle != null) {
+            ndk {
+                abiFilters(rootProject.ext.cybergramAbiSingle)
+            }
+        }
     }
 
     buildTypes {
