@@ -66,6 +66,9 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -821,6 +824,8 @@ public class FilterTabsView extends FrameLayout {
 
     private int scrollingToChild = -1;
     private final GradientDrawable selectorDrawable;
+    private final CybergramHudDrawable cybergramSelectorDrawable;
+    private final CybergramHudDrawable cybergramPanelDrawable;
 
     private int tabLineColorKey = Theme.key_actionBarTabLine;
     private int activeTextColorKey = Theme.key_actionBarTabActiveText;
@@ -918,6 +923,15 @@ public class FilterTabsView extends FrameLayout {
         float rad = AndroidUtilities.dpf2(14);
         selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, rad, rad, rad, rad});
         selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
+
+        cybergramSelectorDrawable = new CybergramHudDrawable()
+                .setFillColor(CybergramTheme.PANEL_RAISED)
+                .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
+                .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+        cybergramPanelDrawable = new CybergramHudDrawable()
+                .setFillColor(CybergramTheme.PANEL)
+                .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.24f), dpf2(1f), true)
+                .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
 
         setHorizontalScrollBarEnabled(false);
         listView = new RecyclerListView(context) {
@@ -1161,7 +1175,8 @@ public class FilterTabsView extends FrameLayout {
     BlurredBackgroundDrawable blurredBackgroundDrawable;
 
     public void setBlurredBackground(BlurredBackgroundDrawable drawable) {
-        setBackground(blurredBackgroundDrawable = drawable);
+        blurredBackgroundDrawable = drawable;
+        applyPresentationBackground();
     }
 
     public void scrollToTab(Tab tab, int position) {
@@ -1449,7 +1464,9 @@ public class FilterTabsView extends FrameLayout {
 
     private void drawSelector(Canvas canvas) {
         final int height = getMeasuredHeight();
-        selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
+        if (!useCybergramPresentation()) {
+            selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
+        }
         float indicatorX = 0;
         float indicatorWidth = 0;
         float counterVisible = 0;
@@ -1509,9 +1526,10 @@ public class FilterTabsView extends FrameLayout {
             final float add = additionalTabWidth / 2f;
 
             final int y = height / 2 - dp(14);
-            selectorDrawable.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
-            selectorDrawable.setAlpha(31);
-            selectorDrawable.draw(canvas);
+            Drawable selectedPlate = useCybergramPresentation() ? cybergramSelectorDrawable : selectorDrawable;
+            selectedPlate.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
+            selectedPlate.setAlpha(useCybergramPresentation() ? (int) (255 * listView.getAlpha()) : 31);
+            selectedPlate.draw(canvas);
             canvas.restore();
         }
     }
@@ -1521,25 +1539,57 @@ public class FilterTabsView extends FrameLayout {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        clipPath.rewind();
-        clipPath.addRoundRect(dp(9), dp(9), w - dp(9), h - dp(9),
-            dp(16), dp(16), Path.Direction.CW);
+        rebuildClipPath(w, h);
     }
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        if (useCybergramPresentation()) {
+            cybergramPanelDrawable.setBounds(dp(7), dp(7), getWidth() - dp(7), getHeight() - dp(7));
+            cybergramPanelDrawable.draw(canvas);
+        }
         canvas.save();
         canvas.clipPath(clipPath);
         super.dispatchDraw(canvas);
         canvas.restore();
     }
 
+    private boolean useCybergramPresentation() {
+        return CybergramTheme.isCybergramPresentation(resourcesProvider);
+    }
+
+    private void applyPresentationBackground() {
+        Drawable background = useCybergramPresentation() ? null : blurredBackgroundDrawable;
+        if (getBackground() != background) {
+            setBackground(background);
+        }
+    }
+
+    private void rebuildClipPath(int w, int h) {
+        clipPath.rewind();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+        if (useCybergramPresentation()) {
+            CybergramBubbleDrawable.buildPath(
+                    clipPath,
+                    dp(9), dp(9), w - dp(9), h - dp(9),
+                    dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP)
+            );
+        } else {
+            clipPath.addRoundRect(
+                    dp(9), dp(9), w - dp(9), h - dp(9),
+                    dp(16), dp(16), Path.Direction.CW
+            );
+        }
+    }
+
     /**
      * Cybergram chrome typography for the dialog filter tabs (labels + counters).
      *
      * These paints are per-instance component paints, so nothing global is touched: the
-     * non-Cybergram branch returns the exact upstream bold typeface. Typography only — the
-     * rounded container / selected pill geometry is deliberately untouched.
+     * non-Cybergram branch returns the exact upstream bold typeface. Geometry is handled
+     * independently by the Cybergram presentation seam below.
      */
     private Typeface chromeLabelTypeface() {
         return CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold());
@@ -1549,6 +1599,8 @@ public class FilterTabsView extends FrameLayout {
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();
         }
+        applyPresentationBackground();
+        rebuildClipPath(getWidth(), getHeight());
         textCounterPaint.setTypeface(chromeLabelTypeface());
         textPaint.setTypeface(chromeLabelTypeface());
         invalidate();
