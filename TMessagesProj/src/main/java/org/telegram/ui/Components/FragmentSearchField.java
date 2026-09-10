@@ -38,6 +38,8 @@ import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -66,6 +68,7 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     private boolean closeButtonForcedVisible;
     public final EditTextBoldCursor editText;
     private BlurredBackgroundDrawable blurredBackgroundDrawable;
+    private float blurredBackgroundVisibility = Float.NaN;
 
     public FragmentSearchField(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -180,6 +183,10 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
 
     private Drawable bg;
 
+    private boolean useCybergramPresentation() {
+        return CybergramTheme.isCybergramPresentation(resourcesProvider);
+    }
+
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         canvas.save();
@@ -192,7 +199,7 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             );
             bg.draw(canvas);
         }
-        if (blurredBackgroundDrawable != null) {
+        if (!useCybergramPresentation() && blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.setBounds(
                     getPaddingLeft() - dp(4),
                     getPaddingTop() - dp(4),
@@ -208,10 +215,40 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         drawable.setRadius(dp(20));
         drawable.setPadding(dp(4));
         blurredBackgroundDrawable = drawable;
+        applyBlurredBackgroundVisibility();
     }
 
     public void setBlurredBackgroundVisibility(float visibility) {
-        final int alpha = (int) (255 * visibility);
+        blurredBackgroundVisibility = visibility;
+        applyBlurredBackgroundVisibility();
+    }
+
+    private void applyBlurredBackgroundVisibility() {
+        if (useCybergramPresentation()) {
+            boolean changed = false;
+            if (blurredBackgroundDrawable != null && blurredBackgroundDrawable.getAlpha() != 0) {
+                blurredBackgroundDrawable.setAlpha(0);
+                changed = true;
+            }
+            if (bg != null && bg.getAlpha() != 255) {
+                bg.setAlpha(255);
+                changed = true;
+            }
+            if (changed) {
+                invalidate();
+            }
+            return;
+        }
+
+        if (Float.isNaN(blurredBackgroundVisibility)) {
+            if (blurredBackgroundDrawable != null && blurredBackgroundDrawable.getAlpha() != 255) {
+                blurredBackgroundDrawable.setAlpha(255);
+                invalidate();
+            }
+            return;
+        }
+
+        final int alpha = (int) (255 * blurredBackgroundVisibility);
         boolean changed = false;
         if (blurredBackgroundDrawable != null) {
             if (blurredBackgroundDrawable.getAlpha() != alpha) {
@@ -270,9 +307,17 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     @Override
     public void updateColors() {
         final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
-        bg = isSectionBackground ?
-            Theme.createRoundRectDrawableShadowed(dp(20), getThemedColor(Theme.key_windowBackgroundWhite)) :
-            Theme.createRoundRectDrawable(dp(20), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText, isDark ? 0.07f : 0.05f));
+        if (useCybergramPresentation()) {
+            CybergramHudDrawable plate = new CybergramHudDrawable();
+            plate.setFillColor(CybergramTheme.PANEL_RAISED);
+            plate.setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.48f), AndroidUtilities.dpf2(1f), true);
+            plate.setCornerCut(AndroidUtilities.dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            bg = plate;
+        } else {
+            bg = isSectionBackground ?
+                Theme.createRoundRectDrawableShadowed(dp(20), getThemedColor(Theme.key_windowBackgroundWhite)) :
+                Theme.createRoundRectDrawable(dp(20), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText, isDark ? 0.07f : 0.05f));
+        }
         searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
         closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
         closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(17)));
@@ -282,6 +327,7 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();
         }
+        applyBlurredBackgroundVisibility();
 
         for (int i = 0, N = additionalIconsLayout.getChildCount(); i < N; i++) {
             final View view = additionalIconsLayout.getChildAt(i);
