@@ -89,6 +89,19 @@ actionBarTabUnactiveText=-8615279
 actionBarTabLine=-16718337
 actionBarTabSelector=436266495
 
+# Telegram liquid-glass bridge: keep shared glass surfaces dark in Cybergram.
+# Geometry is still owned upstream; these targets remove the light/material mass until narrow seams land.
+chat_topPanelBackground=-16052974
+chat_topPanelClose=-16718337
+chat_topPanelLine=-53690
+chat_topPanelTitle=-1641742
+chat_topPanelMessage=-13379841
+glass_targetMainTabs=-16052974
+glass_targetMainTopPanel=-16052974
+glass_tabSelected=-16718337
+glass_tabSelectedText=-13379841
+glass_tabUnselected=-8615279
+
 # Dialog list
 chats_name=-1641742
 chats_nameArchived=-8615279
