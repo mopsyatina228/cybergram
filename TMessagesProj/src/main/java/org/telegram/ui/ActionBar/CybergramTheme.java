@@ -4,9 +4,8 @@ package org.telegram.ui.ActionBar;
  * Cybergram-owned visual constants.
  *
  * Keep project-specific styling values here instead of scattering literals
- * through Telegram's upstream UI classes. The initial .attheme prototype uses
- * the same palette. Geometry-specific constants will be added only when the
- * custom message drawable work starts.
+ * through Telegram's upstream UI classes. The checked-in .attheme uses the
+ * same core palette; screen-specific semantic keys may refine it further.
  */
 public final class CybergramTheme {
 
@@ -24,14 +23,17 @@ public final class CybergramTheme {
     public static final int TEXT_MUTED = 0xFF7C8A91;
     public static final int TEXT_ON_AMBER = 0xFF101216;
 
-    public static final int OUT_BUBBLE = 0xFF0A1A21;
-    public static final int OUT_BUBBLE_SELECTED = 0xFF10313C;
+    /** Stable opaque composites matching restrained translucent-looking message surfaces. */
+    public static final int IN_BUBBLE = 0xFF282715;
+    public static final int IN_BUBBLE_SELECTED = 0xFF3E3C19;
+    public static final int OUT_BUBBLE = 0xFF07252C;
+    public static final int OUT_BUBBLE_SELECTED = 0xFF063A44;
     public static final int OUT_TEXT = 0xFFD7FCFF;
 
     public static final int DIVIDER = 0xFF1B2B32;
     public static final int HINT = 0xFF66777E;
 
-    /** Built-in Cybergram theme name; used only for the angular-geometry activation gate. */
+    /** Built-in Cybergram theme name; used only for the presentation activation gate. */
     public static final String THEME_NAME = "Cybergram";
 
     /** Corner chamfer cut, in dp, for the Cybergram message silhouette (45-degree corners). */
@@ -42,6 +44,12 @@ public final class CybergramTheme {
 
     /** Cybergram message outline stroke width, in dp. */
     public static final float BUBBLE_BORDER_WIDTH_DP = 1f;
+
+    /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
+    public static final int HEADER_RULE_ALPHA = 190;
+
+    /** Alpha of secondary cyan header ticks/identity segment. */
+    public static final int HEADER_TECH_ALPHA = 180;
 
     /** Alpha (0..255) of the thin cyan-dark separator on a dialogs row bottom edge. */
     public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 66;
