@@ -196,11 +196,29 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean glassMode;
     private boolean glassOnlyBack;
     private boolean glassModeIsForum;
+    /**
+     * Cybergram opt-in (default false): keep glass-mode layout semantics but suppress the
+     * translucent rounded capsule surfaces, so the header reads as one flat technical panel.
+     */
+    private boolean cybergramFlatHeader;
 
     private ChatAvatarContainer chatAvatarContainer;
 
     public void setGlassOnlyBack() {
         glassOnlyBack = true;
+    }
+
+    /**
+     * Cybergram presentation seam (see docs/CYBERGRAM_UI_SPEC.md, "Chat screen target").
+     *
+     * When enabled, {@link #setupGlass} still applies every glass-mode positioning side effect
+     * (menu/action-mode item margins and translation, back button translation, clipChildren),
+     * but does not create the {@link BlurredBackgroundDrawable} capsules and restores the opaque
+     * action bar colour instead of a transparent bar. Callers that never opt in (every upstream
+     * non-Cybergram screen) behave exactly as before.
+     */
+    public void setCybergramFlatHeader(boolean value) {
+        cybergramFlatHeader = value;
     }
 
     public void setChatAvatarContainer(ChatAvatarContainer chatAvatarContainer) {
@@ -214,30 +232,38 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public void setupGlass(BlurredBackgroundDrawableViewFactory factory,
                            BlurredBackgroundColorProvider colorProvider,
                            boolean isForum) {
-        setBackground(null);
         setClipChildren(false);
         glassMode = true;
         glassModeIsForum = isForum;
 
-        glassDrawable = factory.create(this)
-            .setColorProvider(colorProvider)
-            .setPadding(dp(6));
-        if (isForum) {
-            glassDrawable.setRadius(dp(18.33f), dp(23), dp(23), dp(18.33f));
+        if (cybergramFlatHeader) {
+            // Cybergram: no glass capsules. Restore the same opaque action bar colour that
+            // BaseFragment.createActionBar assigns to a regular (non-glass) action bar;
+            // ChatActivity clears the background beforehand because glass supplies the surface.
+            setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
         } else {
-            glassDrawable.setRadius(dp(23));
+            setBackground(null);
+
+            glassDrawable = factory.create(this)
+                .setColorProvider(colorProvider)
+                .setPadding(dp(6));
+            if (isForum) {
+                glassDrawable.setRadius(dp(18.33f), dp(23), dp(23), dp(18.33f));
+            } else {
+                glassDrawable.setRadius(dp(23));
+            }
+
+
+            glassDrawableBack = factory.create(this)
+                .setColorProvider(colorProvider)
+                .setRadius(dp(23))
+                .setPadding(dp(6));
+
+            glassDrawableMenu = factory.create(this)
+                .setColorProvider(colorProvider)
+                .setRadius(dp(23))
+                .setPadding(dp(6));
         }
-
-
-        glassDrawableBack = factory.create(this)
-            .setColorProvider(colorProvider)
-            .setRadius(dp(23))
-            .setPadding(dp(6));
-
-        glassDrawableMenu = factory.create(this)
-            .setColorProvider(colorProvider)
-            .setRadius(dp(23))
-            .setPadding(dp(6));
 
         if (menu != null) {
             menu.setTranslationX(-dp(10));
@@ -1862,7 +1888,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (chatAvatarContainer != null && glassMode) {
+        // glassDrawable is null only when the Cybergram flat header suppressed the capsules;
+        // without this guard the (nonexistent) capsule bounds would reject every touch.
+        if (chatAvatarContainer != null && glassMode && glassDrawable != null) {
             if (ev.getAction() == MotionEvent.ACTION_DOWN) {
                 final int x = (int) ev.getX();
                 final int y = (int) ev.getY();

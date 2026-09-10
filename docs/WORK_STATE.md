@@ -1,6 +1,6 @@
 # Cybergram work state
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 ## Repository authority
 
@@ -476,6 +476,41 @@ The user completed login manually; validation ran against the real ChatActivity 
 ### Day regression
 - Incoming palette is a at-theme override (Cybergram at theme only); Day/stock at-theme unaffected.
 - Chrome fixes NOT applied -> Day chrome unchanged (upstream rounded/glass preserved) by construction.
+
+## Stage D pass 3: Cybergram flat chat header (glass capsule suppression) (2026-09-10)
+
+Resolves defect 1 of the Chrome Normalization audit above ("chat header glass capsules not suppressed"; `e70c790` only darkened the tint). Presentation-only: one opt-in seam, no behaviour/state-machine change, no global `ActionBar` behaviour change for the rest of Telegram.
+
+### Ownership audit (exact glass pipeline)
+
+- The three header capsules are all owned by **`ActionBar`**: `glassDrawable` (identity -> call/menu capsule), `glassDrawableBack` (back capsule), `glassDrawableMenu` (menu capsule) -- `BlurredBackgroundDrawable`s built by `BlurredBackgroundDrawableViewFactory` and drawn in `ActionBar.dispatchDraw()` (bounds computed there, radius `dp(23)`, padding `dp(6)`). `ActionBarMenu`/`ActionMode` only carry a `glassMode` flag that tightens item margins (`-dp(5)`).
+- `ChatAvatarContainer.setGlassMode()` owns **no** surface at all (verified: no blur/glass drawable in that file). It is pure text/layout metrics: title `17.5dp` / subtitle `13.5dp`, title left `dp(49.66)` vs `dp(55)`, subtitle top `dp(23.66)` vs `dp(24)`, title top `dp(1.66)` vs `dp(11)` without subtitle.
+- Lifecycle: `ChatActivity.createView` calls `avatarContainer.setGlassMode()` (~L4170) and `actionBar.setupGlass(factory, topPanelChatActivity, isForum)` (~L4576). `setupGlass` is also called by `ChannelAdminLogActivity`, `CommunityCreateActivity`, `CommunityEditActivity`, `ChatAttachAlert`; `DialogsActivity` never calls it.
+- Non-surface side effects of `setupGlass` (must be preserved): `setClipChildren(false)`; `menu.setTranslationX(-dp(10))` + `menu.setGlassMode(true)`; `actionMode.setTranslationX(-dp(10))` + `actionMode.setGlassMode(true)`; `backButtonImageView.setTranslationX(dp(2))`; `glassMode = true` (drives ActionBar title sizing, `textLeft`, the capsule hit-test in `dispatchTouchEvent`, and the status-bar-colour branch); and in `dispatchDraw` the capsule-derived `chatAvatarContainer` centering translation, which only applies to pinned / welcome-messages / comments modes (in a normal chat `ActionBar.chatAvatarContainer == null`, so identity position is independent of glass).
+- Root cause of the translucency: `setupGlass` also calls `setBackground(null)`, so the chat header has **no opaque background** and chat content shows through it (`BaseFragment.createActionBar` had assigned `key_actionBarDefault`). Restoring that colour is `#0B0D12`, identical to `chat_topPanelBackground` (pinned bar) and to `CybergramTheme.PANEL`.
+
+### Implementation seam
+
+- `ActionBar.setCybergramFlatHeader(boolean)` -- new opt-in, **default false**. When enabled, `setupGlass` keeps every layout side effect above but skips creating the three capsules and restores `setBackgroundColor(getThemedColor(Theme.key_actionBarDefault))`. Upstream/Day callers execute the original branch unchanged (same `setBackground(null)` + same drawable creation).
+- `ActionBar.dispatchTouchEvent` capsule hit-test is now additionally guarded by `glassDrawable != null` (a null-safety no-op upstream, where `glassDrawable` is non-null whenever `glassMode` is set); without it a capsule-less header would have rejected every touch in the pinned/welcome/comments modes.
+- `ChatActivity`: one line before `setupGlass(...)`: `actionBar.setCybergramFlatHeader(CybergramTheme.isCybergramPresentation(getResourceProvider()))` (+ the import). No change to `ActionBar.setupGlass` callers outside ChatActivity.
+- Deliberately **not** changed: `avatarContainer.setGlassMode()` is still called, so title/subtitle metrics and identity geometry are byte-identical to the previous build; `ActionBarMenu.setGlassMode` behaviour; the `CybergramHeaderDecorationView` rail/segment/ticks; the round avatar; all touch targets.
+
+### Verified (build + real device, SM-A256E / Android 16 / arm64-v8a)
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` -> **BUILD SUCCESSFUL in 5m 2s** (JDK 17.0.20.1+1; Gradle 8.11.1). APK package `org.telegram.messenger.beta`, 83,583,818 bytes, SHA-256 `516839C711B37015CB39536EF96890186377E92D8D82E661D8F6745B499839D2`.
+- Install: `adb install -r` (streamed) -> `Success`; `org.telegram.messenger.beta` lastUpdateTime `22:12:05`; **`org.telegram.messenger` untouched** (`2026-08-25 21:32:01`). No `pm clear`, no uninstall, no logout, no OTP/2FA/session action.
+- Launch: `monkey` -> `topResumedActivity=org.telegram.messenger.beta/org.telegram.messenger.DefaultIcon`, same PID 27598 before/after capture; logcat main+crash scanned repeatedly: **no `FATAL EXCEPTION`, no `E AndroidRuntime`, no `ANR in`**.
+- Header measurement (same real chat, human-opened; device pixels): before/after capsule-edge detection over `y=85..225` at columns x=40/300/700/980 -> **BEFORE: top edge at y~91-93 and bottom edge at y~204-221 at every column (delta up to 107); AFTER: zero transitions at all four columns**. Header background probes (old back capsule, capsule interior, bleed zone, status zone, screen-edge margin) are **all exactly `#0B0D12`** after the fix, versus varying `#090A0F..#1C1C14` (translucent content bleed) before. Distinct colours in the identity band (y=90..215, x=310..780): **1424 -> 254** (residual = glyph antialiasing).
+- Decoration preserved: the red rail occupies exactly rows y=232-234 in both captures; cyan identity segment/ticks present (cyan pixel x-range 67..1012 in both); round avatar, title, status, call and overflow controls unchanged in place and colour; composer row profile pixel-identical (light-pixel counts 53/52, 28/28, 28/28, 29/29, 26/26 on the same rows).
+- Regression: dialogs screen is on an untouched code path (`DialogsActivity` never calls `setupGlass`; the opt-in defaults false) and its Cybergram decoration rows are identical across pre/post-install captures. The dialogs captures themselves were **different UI states** (post-back header tone `#0F161E` vs launch `#080A0F`, ~50% difference in the filter-chip/search bands), so cross-capture dialogs pixel diffs are not build-attributable and were not used as evidence.
+- Out of scope and untouched this pass: dialogs search pill, `FilterTabsView`, bottom navigation, FAB, message bubbles, composer, pinned bar, service/date cells, chat HUD/background, media renderer.
+
+### Honest limitations
+
+- Vision comparison of the before/after header crops was performed while the session was on the image-capable model; the numeric evidence above is the durable record.
+- The header status line differs between the two captures ("в сети" -> "был(а) в 21:48") because presence is live content; it is not a layout change.
+- In pinned / welcome-messages / comments modes the capsules also used to center `chatAvatarContainer`; with the capsules suppressed the identity block stays at its layout margin (left-aligned) there, which is consistent with the flat-header target but was not exercised on device this pass.
 
 ## Launcher icon integration (source logo -> simplified adaptive icon) (2026-09-09)
 

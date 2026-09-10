@@ -218,6 +218,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.INavigationLayout;
@@ -4573,6 +4574,9 @@ public class ChatActivity extends BaseFragment implements
 
         contentView.setOccupyStatusBar(!inBubbleMode && !isInsideContainer && !inPreviewMode);
 
+        // Cybergram: keep Telegram's glass-mode header layout semantics but drop the translucent
+        // rounded capsules so the header stays a single flat dark technical surface.
+        actionBar.setCybergramFlatHeader(CybergramTheme.isCybergramPresentation(getResourceProvider()));
         actionBar.setupGlass(
             glassBackgroundDrawableFactory,
             BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
