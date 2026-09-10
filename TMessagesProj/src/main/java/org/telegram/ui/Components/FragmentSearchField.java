@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
@@ -40,6 +41,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -98,6 +100,10 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             }
         };
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        // Cybergram chrome typography for the search hint and the entered query. The angular
+        // search plate itself is drawn from this view's own bounds, so its geometry, background
+        // and stroke are unaffected by the typeface change.
+        editText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
         editText.setCursorWidth(1.5f);
         editText.setInputType(editText.getInputType() | InputType.TYPE_TEXT_VARIATION_FILTER);
         editText.setSingleLine(true);
@@ -324,6 +330,8 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.5f));
         editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorColor(getThemedColor(Theme.key_groupcreate_cursor));
+        // Two-way: restores the upstream typeface when Cybergram presentation is not active.
+        editText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();
         }

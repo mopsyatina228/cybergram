@@ -26,6 +26,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
@@ -65,6 +66,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -905,9 +907,9 @@ public class FilterTabsView extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
         textCounterPaint.setTextSize(dpf2(11f));
-        textCounterPaint.setTypeface(AndroidUtilities.bold());
+        textCounterPaint.setTypeface(chromeLabelTypeface());
         textPaint.setTextSize(dpf2(14f));
-        textPaint.setTypeface(AndroidUtilities.bold());
+        textPaint.setTypeface(chromeLabelTypeface());
         deletePaint.setStyle(Paint.Style.STROKE);
         deletePaint.setStrokeCap(Paint.Cap.ROUND);
         deletePaint.setStrokeWidth(dp(1.5f));
@@ -1532,10 +1534,23 @@ public class FilterTabsView extends FrameLayout {
         canvas.restore();
     }
 
+    /**
+     * Cybergram chrome typography for the dialog filter tabs (labels + counters).
+     *
+     * These paints are per-instance component paints, so nothing global is touched: the
+     * non-Cybergram branch returns the exact upstream bold typeface. Typography only — the
+     * rounded container / selected pill geometry is deliberately untouched.
+     */
+    private Typeface chromeLabelTypeface() {
+        return CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold());
+    }
+
     public void updateColors() {
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();
         }
+        textCounterPaint.setTypeface(chromeLabelTypeface());
+        textPaint.setTypeface(chromeLabelTypeface());
         invalidate();
     }
 

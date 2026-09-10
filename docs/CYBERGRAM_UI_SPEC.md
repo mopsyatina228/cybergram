@@ -93,7 +93,20 @@ Dialogs top filters and main bottom navigation should eventually use the same da
 
 Do not bundle or rip proprietary game fonts.
 
-Initial implementation should use Telegram/Android typography while geometry and palette are stabilized. A redistributable open font may be evaluated later for headings or compact HUD labels, but message body text should remain highly readable.
+Message body text stays on Telegram's typography for now; it must remain highly readable.
+
+Primary chrome (chat header identity and status, dialogs row titles and timestamps, dialog filter
+tabs, the dialogs search field) uses the Android system family `sans-serif-condensed` through one
+central Cybergram helper, to give the chrome a narrower and more technical voice without turning the
+client into a decorative display-font terminal:
+
+- the family is a system family — no asset is bundled, nothing proprietary is referenced;
+- sizes, layout and geometry are unchanged in this pass: only the typeface is isolated;
+- no aggressive letter spacing;
+- the choice is resolved through the normal Cybergram gate and always falls back to the upstream
+  typeface for Day/stock presentation;
+- a redistributable open font may still be evaluated later for headings or compact HUD labels, and
+  message body text should remain on a highly readable family.
 
 ## HUD decoration
 

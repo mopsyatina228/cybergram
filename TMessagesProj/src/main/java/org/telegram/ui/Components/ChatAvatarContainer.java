@@ -21,6 +21,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -56,6 +57,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.BusinessLinksController;
@@ -281,7 +283,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         titleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         titleTextView.setTextSize(18);
         titleTextView.setGravity(Gravity.LEFT);
-        titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setTypeface(chromeTitleTypeface());
         titleTextView.setLeftDrawableTopPadding(-dp(1.3f));
         titleTextView.setCanHideRightDrawable(false);
         titleTextView.setRightDrawableOutside(true);
@@ -298,6 +300,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             animatedSubtitleTextView.setGravity(Gravity.LEFT);
             animatedSubtitleTextView.setPadding(0, 0, dp(10), 0);
             animatedSubtitleTextView.setTranslationY(-dp(1));
+            animatedSubtitleTextView.setTypeface(chromeSubtitleTypeface());
             addView(animatedSubtitleTextView);
         } else {
             subtitleTextView = new SimpleTextConnectedView(context, subtitleTextLargerCopyView);
@@ -307,6 +310,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             subtitleTextView.setTextSize(14);
             subtitleTextView.setGravity(Gravity.LEFT);
             subtitleTextView.setPadding(0, 0, dp(10), 0);
+            subtitleTextView.setTypeface(chromeSubtitleTypeface());
             addView(subtitleTextView);
         }
 
@@ -707,7 +711,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         titleTextLargerCopyView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         titleTextLargerCopyView.setTextSizePx(dp(glassMode ? 17.5f : 18));
         titleTextLargerCopyView.setGravity(Gravity.LEFT);
-        titleTextLargerCopyView.setTypeface(AndroidUtilities.bold());
+        titleTextLargerCopyView.setTypeface(chromeTitleTypeface());
         titleTextLargerCopyView.setLeftDrawableTopPadding(-dp(1.3f));
         titleTextLargerCopyView.setRightDrawable(titleTextView.getRightDrawable());
         titleTextLargerCopyView.setRightDrawable2(titleTextView.getRightDrawable2());
@@ -733,6 +737,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         subtitleTextLargerCopyView.setTag(Theme.key_actionBarDefaultSubtitle);
         subtitleTextLargerCopyView.setTextSizePx(dp(glassMode ? 13.5f : 14));
         subtitleTextLargerCopyView.setGravity(Gravity.LEFT);
+        subtitleTextLargerCopyView.setTypeface(chromeSubtitleTypeface());
         if (subtitleTextView != null) {
             subtitleTextLargerCopyView.setText(subtitleTextView.getText());
         } else if (animatedSubtitleTextView != null) {
@@ -1696,7 +1701,45 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         if (verifiedCheck != null) {
             verifiedCheck.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedCheck), PorterDuff.Mode.MULTIPLY));
         }
+        updateChromeTypography();
         invalidate();
+    }
+
+    /**
+     * Cybergram chrome typography for the chat identity block (title / online-status subtitle).
+     *
+     * The gate is evaluated on every call and the non-Cybergram branch returns the exact upstream
+     * typefaces (bold title, default subtitle), so Day/stock presentation is unchanged and a live
+     * switch back to Day restores stock typography. SimpleTextView caches its Layout and rebuilds
+     * it from the paint in onMeasure, so a runtime change also requests a layout pass.
+     */
+    private Typeface chromeTitleTypeface() {
+        return CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold());
+    }
+
+    private Typeface chromeSubtitleTypeface() {
+        return CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT);
+    }
+
+    private static void applyChromeTypeface(SimpleTextView view, Typeface typeface) {
+        if (view == null || view.getPaint().getTypeface() == typeface) {
+            return;
+        }
+        view.setTypeface(typeface);
+        view.requestLayout();
+        view.invalidate();
+    }
+
+    private void updateChromeTypography() {
+        final Typeface titleTypeface = chromeTitleTypeface();
+        final Typeface subtitleTypeface = chromeSubtitleTypeface();
+        applyChromeTypeface(titleTextView, titleTypeface);
+        applyChromeTypeface(subtitleTextView, subtitleTypeface);
+        if (animatedSubtitleTextView != null) {
+            animatedSubtitleTextView.setTypeface(subtitleTypeface);
+        }
+        applyChromeTypeface(titleTextLargerCopyView.get(), titleTypeface);
+        applyChromeTypeface(subtitleTextLargerCopyView.get(), subtitleTypeface);
     }
 
     private ActionBar actionBar;

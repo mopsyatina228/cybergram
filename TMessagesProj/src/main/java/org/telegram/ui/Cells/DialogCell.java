@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -643,6 +644,44 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean isSelected;
     private final Paint cybergramSeparatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final CybergramHudDrawable cybergramSelectedPanel = new CybergramHudDrawable();
+
+    /**
+     * Cybergram chrome typography (dialogs row title + timestamp).
+     *
+     * The upstream {@code Theme.dialogs_namePaint} / {@code dialogs_timePaint*} statics are shared
+     * with the contacts, call-log, topics, shared-media and search surfaces, so they are NEVER
+     * mutated here. Under Cybergram the row uses its own copy of the upstream paint carrying the
+     * condensed chrome typeface; otherwise the upstream paint object is returned as-is. The gate is
+     * re-evaluated on every access, so recycled cells automatically revert after a theme change.
+     */
+    private TextPaint[] cybergramNamePaints;
+    private TextPaint[] cybergramTimePaints;
+
+    /** Mirrors the upstream shared paint's size onto {@code paint} (never mutates the shared paint). */
+    private static void mirrorUpstreamTextSize(TextPaint paint, TextPaint upstream) {
+        if (paint.getTextSize() != upstream.getTextSize()) {
+            paint.setTextSize(upstream.getTextSize());
+        }
+    }
+
+    /** Dialogs row title paint: upstream shared paint, or the row's own condensed chrome copy. */
+    private TextPaint getNamePaint(int paintIndex) {
+        final TextPaint upstream = Theme.dialogs_namePaint[paintIndex];
+        if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            return upstream;
+        }
+        if (cybergramNamePaints == null) {
+            cybergramNamePaints = new TextPaint[2];
+        }
+        TextPaint paint = cybergramNamePaints[paintIndex];
+        if (paint == null) {
+            paint = cybergramNamePaints[paintIndex] = new TextPaint(upstream);
+            paint.setTypeface(CybergramTypography.chromeBold());
+        }
+        // The size is still driven by the upstream shared paint (see onMeasure), so keep in sync.
+        mirrorUpstreamTextSize(paint, upstream);
+        return paint;
+    }
 
     private RectF rect = new RectF();
     private DialogsAdapter.DialogsPreloader preloader;
@@ -2211,7 +2250,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             topicIconInName = new Drawable[1];
                         }
                         topicIconInName[0] = null;
-                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, Theme.dialogs_namePaint[paintIndex], topicIconInName, false) : AndroidUtilities.escape(forumTopic.title);
+                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, getNamePaint(paintIndex), topicIconInName, false) : AndroidUtilities.escape(forumTopic.title);
                     } else if (chat.monoforum && chat.linked_monoforum_id != 0) {
                         final TLRPC.Chat chat2 = MessagesController.getInstance(currentAccount).getChat(chat.linked_monoforum_id);
                         if (chat2 != null) {
@@ -2248,7 +2287,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             topicIconInName = new Drawable[1];
                         }
                         topicIconInName[0] = null;
-                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, Theme.dialogs_namePaint[paintIndex], topicIconInName, false) : AndroidUtilities.escape(forumTopic.title);
+                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, getNamePaint(paintIndex), topicIconInName, false) : AndroidUtilities.escape(forumTopic.title);
                     } else {
                         nameString = AndroidUtilities.escape(UserObject.getUserName(user));
                     }
@@ -2390,18 +2429,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameString = ((String) nameString).replace('\n', ' ');
             }
             CharSequence nameStringFinal = nameString;
+            // Cybergram: resolves to the upstream shared paint when Cybergram is not active.
+            final TextPaint namePaint = getNamePaint(paintIndex);
             if (nameLayoutEllipsizeByGradient) {
-                nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
+                nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, namePaint, ellipsizeWidth, TextUtils.TruncateAt.END).length();
                 ellipsizeWidth += dp(48);
                 channelShouldUseLineWidth = nameLayoutFits;
             } else if (isForChannelSubscriberCell) {
-                channelShouldUseLineWidth = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
+                channelShouldUseLineWidth = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, namePaint, ellipsizeWidth, TextUtils.TruncateAt.END).length();
             }
-            nameIsEllipsized = Theme.dialogs_namePaint[paintIndex].measureText(nameStringFinal.toString()) > ellipsizeWidth;
+            nameIsEllipsized = namePaint.measureText(nameStringFinal.toString()) > ellipsizeWidth;
             if (!twoLinesForName) {
-                nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END);
+                nameStringFinal = TextUtils.ellipsize(nameStringFinal, namePaint, ellipsizeWidth, TextUtils.TruncateAt.END);
             }
-            nameStringFinal = Emoji.replaceEmoji(nameStringFinal, Theme.dialogs_namePaint[paintIndex].getFontMetricsInt(), false);
+            nameStringFinal = Emoji.replaceEmoji(nameStringFinal, namePaint.getFontMetricsInt(), false);
             if (message != null && message.hasHighlightedWords()) {
                 CharSequence s = AndroidUtilities.highlightText(nameStringFinal, message.highlightedWords, resourcesProvider);
                 if (s != null) {
@@ -2409,9 +2450,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
             }
             if (twoLinesForName) {
-                nameLayout = StaticLayoutEx.createStaticLayout(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, ellipsizeWidth, 2);
+                nameLayout = StaticLayoutEx.createStaticLayout(nameStringFinal, namePaint, ellipsizeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, ellipsizeWidth, 2);
             } else {
-                nameLayout = new StaticLayout(nameStringFinal, Theme.dialogs_namePaint[paintIndex], Math.max(ellipsizeWidth, nameWidth), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                nameLayout = new StaticLayout(nameStringFinal, namePaint, Math.max(ellipsizeWidth, nameWidth), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
             nameLayoutTranslateX = nameLayoutEllipsizeByGradient && nameLayout.isRtlCharAt(0) ? -dp(36) : 0;
             nameLayoutEllipsizeLeft = nameLayout.isRtlCharAt(0);
@@ -4110,11 +4151,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     canvas.clipRect(nameLeft, 0, nameLeft + nameWidth, getMeasuredHeight());
                 }
                 if (currentDialogFolderId != 0) {
-                    Theme.dialogs_namePaint[paintIndex].setColor(Theme.dialogs_namePaint[paintIndex].linkColor = Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider));
+                    getNamePaint(paintIndex).setColor(getNamePaint(paintIndex).linkColor = Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider));
                 } else if (encryptedChat != null || customDialog != null && customDialog.type == 2) {
-                    Theme.dialogs_namePaint[paintIndex].setColor(Theme.dialogs_namePaint[paintIndex].linkColor = Theme.getColor(Theme.key_chats_secretName, resourcesProvider));
+                    getNamePaint(paintIndex).setColor(getNamePaint(paintIndex).linkColor = Theme.getColor(Theme.key_chats_secretName, resourcesProvider));
                 } else {
-                    Theme.dialogs_namePaint[paintIndex].setColor(Theme.dialogs_namePaint[paintIndex].linkColor = Theme.getColor(Theme.key_chats_name, resourcesProvider));
+                    getNamePaint(paintIndex).setColor(getNamePaint(paintIndex).linkColor = Theme.getColor(Theme.key_chats_name, resourcesProvider));
                 }
                 canvas.save();
                 canvas.translate(nameLeft + nameLayoutTranslateX, nameTop);
@@ -4928,7 +4969,23 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     }
 
     private TextPaint getTimeTextPaint() {
-        return drawCount ? (isCounterMuted() ? Theme.dialogs_timePaintBold : Theme.dialogs_timePaintBoldAccent) : Theme.dialogs_timePaint;
+        final TextPaint upstream = drawCount ? (isCounterMuted() ? Theme.dialogs_timePaintBold : Theme.dialogs_timePaintBoldAccent) : Theme.dialogs_timePaint;
+        if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            return upstream;
+        }
+        // Dialogs row timestamp: its own condensed copy, keyed by the upstream variant so the
+        // measure and draw passes keep using the same paint object (see the colour handoff below).
+        final int variant = upstream == Theme.dialogs_timePaint ? 0 : upstream == Theme.dialogs_timePaintBold ? 1 : 2;
+        if (cybergramTimePaints == null) {
+            cybergramTimePaints = new TextPaint[3];
+        }
+        TextPaint paint = cybergramTimePaints[variant];
+        if (paint == null) {
+            paint = cybergramTimePaints[variant] = new TextPaint(upstream);
+            paint.setTypeface(variant == 0 ? CybergramTypography.chromeRegular() : CybergramTypography.chromeBold());
+        }
+        mirrorUpstreamTextSize(paint, upstream);
+        return paint;
     }
 
     private boolean isCounterMuted() {

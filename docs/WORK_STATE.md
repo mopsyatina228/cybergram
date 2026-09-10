@@ -512,6 +512,62 @@ Resolves defect 1 of the Chrome Normalization audit above ("chat header glass ca
 - The header status line differs between the two captures ("в сети" -> "был(а) в 21:48") because presence is live content; it is not a layout change.
 - In pinned / welcome-messages / comments modes the capsules also used to center `chatAvatarContainer`; with the capsules suppressed the identity block stays at its layout margin (left-aligned) there, which is consistent with the flat-header target but was not exercised on device this pass.
 
+## Cybergram typography v1 — primary chrome (sans-serif-condensed) (2026-09-10)
+
+First Cybergram-specific typography pass. Geometry, colour and behaviour are untouched: this pass isolates the *typeface* only, using the Android system family `sans-serif-condensed` (no bundled asset, nothing proprietary). Message body typography is deliberately excluded.
+
+### Ownership audit (who owns the text)
+
+| surface | owner | paint/view |
+|---|---|---|
+| chat header title / online status | `ChatAvatarContainer` | `titleTextView` (upstream bold), `subtitleTextView` / `animatedSubtitleTextView` (upstream default), plus the accessibility "larger text" transition copies |
+| dialogs row title | `DialogCell` | `Theme.dialogs_namePaint[paintIndex]` |
+| dialogs row timestamp | `DialogCell` | `getTimeTextPaint()` -> `Theme.dialogs_timePaint` / `dialogs_timePaintBold` / `dialogs_timePaintBoldAccent` |
+| dialogs filter tabs (label + counter) | `FilterTabsView` | per-instance `textPaint` / `textCounterPaint` |
+| dialogs search hint + query | `FragmentSearchField` | `editText` (EditTextBoldCursor; sets no typeface of its own) |
+
+**Trap found and avoided:** `Theme.dialogs_namePaint` / `dialogs_timePaint*` are *static shared* paints also consumed by `ProfileSearchCell` (contacts/search), `CallCell` (call log), `DialogMeUrlCell`, `TopicsFragment` and `SharedMediaLayout`, and their `textSize` is initialised as a side effect of `DialogCell.onMeasure`. A naive `Theme.dialogs_namePaint[i].setTypeface(...)` would have leaked condensed text into contacts/call-log/topics/shared-media and needed a global restore path. No shared `Theme` paint is mutated by this pass.
+
+### Implementation
+
+- New `CybergramTypography` (`ui/ActionBar`): caches `chromeRegular()` / `chromeBold()` (`Typeface.create("sans-serif-condensed", NORMAL|BOLD)`) and exposes two-way resolvers `chromeRegular(provider, upstream)` / `chromeBold(provider, upstream)` that return the upstream typeface verbatim when `CybergramTheme.isCybergramPresentation(provider)` is false. No Context, no asset loading; nothing is created per draw/layout.
+- `DialogCell`: per-instance `TextPaint` copies (`cybergramNamePaints` / `cybergramTimePaints`) with the condensed typeface, created lazily and only under Cybergram. Sizes are *mirrored* from the shared upstream paint so the upstream initialisation side effects are preserved. All title read/measure/ellipsize/`StaticLayout`/colour sites in the cell now resolve through the accessor, so the row layout and the drawn layout use the same object. Gate is re-evaluated per access, so recycled cells revert by construction.
+- `ChatAvatarContainer`: `chromeTitleTypeface()` / `chromeSubtitleTypeface()` applied where upstream applies its own `AndroidUtilities.bold()` (title, and the larger-text copy) plus the subtitle / animated subtitle; `updateColors()` re-applies with `requestLayout()` (SimpleTextView caches its `Layout` and rebuilds it in `onMeasure`) so a live Day switch restores stock text.
+- `FilterTabsView`: the constructor and `updateColors()` set the per-instance label/counter paints through the gate (typography only).
+- `FragmentSearchField`: `editText` typeface set in the constructor and `updateColors()`; the angular plate from `c261aae71` is drawn from the view's own bounds, so it is unaffected.
+- Surfaces deliberately **skipped**: the dialogs action-bar heading. `DialogsActivity` sets it as `SpannableStringBuilder(AppName)` with an `ImageSpan` over the whole string (`DialogsActivity.java:3523-3525`) — it renders as the `telegram_logo_2` **drawable**, not text, so it has no typography owner and needs no ActionBar change.
+
+### Runtime evidence (SM-A256E / Android 16, Cybergram active, `org.telegram.messenger.beta`)
+
+Same view/strings before (`c261aae71`) vs after, measured on device pixels:
+
+| element | before | after | delta |
+|---|---|---|---|
+| search hint `Поиск чатов` (idle) | 240 px ink | **211 px** | −12.1 % |
+| search hint (search open) | 244 px ink | **214 px** | −12.3 % |
+| filter tab labels (4 tabs) | 231 / 195 / 268 / 18 | **215 / 184 / 246 / 16** | −6.9 / −5.6 / −8.2 / −11 % |
+| dialogs row titles (5 rows) | 227 / 364 / 358 / 534 / 392 | **196 / 326 / 321 / 480 / 345** | −13.7 / −10.4 / −10.3 / −10.1 / −12.0 % |
+| dialogs row timestamps (3 rows) | 120 / 83 / 83 | **112 / 75 / 75** | −6.7 / −9.6 / −9.6 % |
+| chat header title `Борис` | 248 px | **217 px** | −12.5 % |
+| chat header status | 249 px | **218 px** | −12.4 % |
+
+- Vertical metrics unchanged everywhere: identical ink y-extents for the search hint (30 px), row titles (identical band y-ranges), timestamps and the header title/status (status 168..205 in both). No baseline shift, no clipping, no ellipsize regression (ink counts slightly up while width drops, i.e. same weight compressed).
+- Timestamps are right-aligned: the right edge stays fixed and the left edge moves right (−8 px), i.e. no reflow of the time column.
+- Scope discipline is visible in the pixels: message **preview/sender lines** in the rows are unchanged (5 bands byte-identical) because `dialogs_messageNamePaint` / `dialogs_messagePaint` were not touched; the pinned-panel message string keeps an identical 832 px ink width and glyph coverage.
+- Geometry preserved: the `c261aae71` search plate is **byte-identical** in both idle and open states (fill `#111820`, 4440 / 4868 outline px, same bbox `x31..1048`, same 45° chamfer, same `[32,241][1048,352]` / `[32,118][1048,229]` field bounds); the `72613dad` flat header keeps 0 capsule edge transitions and the same red rail rows (232-234); the filter pill's rounded left edge profile is unchanged (only its width follows the narrower label).
+- Day/non-Cybergram safety: every resolver returns the upstream typeface when the gate is false; no shared `Theme` paint is written, so nothing can persist across a switch. Telegram recreates the activity on theme change (its standard behaviour), and `updateColors()` additionally re-applies the gate with a layout rebuild for the chat header and search field.
+- Build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a` BUILD SUCCESSFUL; installed over beta only (official `org.telegram.messenger` untouched); `pm clear`/uninstall/logout/OTP never used; no FATAL/ANR; the app was launched and search opened/closed on the dialogs screen only.
+
+### Out of scope, unchanged
+
+Message body/captions/replies/reactions/pinned-message text, composer input, service/date cells, settings, contacts, bottom navigation, secondary screens; all geometry (filter pill, search plate, bottom nav, FAB, bubbles, chat header, composer, pinned panel); colours.
+
+### Deferred / honest limitations
+
+- No bundled redistributable font yet; `sans-serif-condensed` is the system approximation and is an experimental baseline pending a visual ruling.
+- Filter tab **width** shrinks with the label (the tab width is measured from the label): tabs moved 334->330 / 587->583 / 914->900 px. The pill's rounded geometry and colours are untouched — that is a separate pass.
+- The `updateColors()` re-apply for `FilterTabsView` is paint-level; the cached per-tab `StaticLayout` is only rebuilt on the next `setTitle`, so a hypothetical *in-place* theme switch without activity recreation could leave a stale tab label. Revert is guaranteed for the dialogs rows, chat header and search field.
+
 ## Launcher icon integration (source logo -> simplified adaptive icon) (2026-09-09)
 
 ### Audit of icon scheme
