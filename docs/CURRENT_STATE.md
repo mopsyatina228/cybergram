@@ -10,6 +10,8 @@ Executable remaining-work plan: `docs/EXECUTION_BACKLOG.md`. It contains the cur
 
 Static source-ownership evidence for those pass boundaries: `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`. It records the actual bottom-navigation, message-state and service/date owners found in the current source tree; it is static evidence, not runtime validation.
 
+Handoff-ready individual pass specifications are indexed by `docs/passes/README.md`. They are designed so a local executor can receive one bounded file instead of reconstructing the project from chat history.
+
 ## Repository authority
 
 Repository: `mopsyatina228/cybergram`
@@ -62,7 +64,7 @@ The **latest final filter-tabs patch** at product-code commit `52b8e219729d0a90d
 
 GitHub reports no commit-status checks and no Actions run for that HEAD. Do not inherit validation from an older revision merely because most of the app was previously exercised successfully.
 
-`docs/EXECUTION_BACKLOG.md` defines validation-only pass `B0` for closing this exact gap without mixing validation and opportunistic production fixes.
+`docs/EXECUTION_BACKLOG.md` defines validation-only pass `B0` for closing this exact gap without mixing validation and opportunistic production fixes. The executor-ready form is `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
 
 ## Side branches
 
@@ -81,6 +83,8 @@ The next implementation choice has **not** been automatically authorized by this
 
 Current sequence starts with final filter-tabs build/device validation (`B0`), then a bounded bottom-navigation presentation pass (`B1`). Message-state work begins with an evidence/ownership audit (`B2`) rather than a broad `ChatMessageCell` patch. Service/date work similarly begins with ownership isolation before any `ChatActionCell` restyle. Optional chat-canvas HUD treatment and secondary screens remain later work.
 
+Individual handoff specs currently exist for B0, B1, B2 and B5 under `docs/passes/`. Conditional B3/B4/B6 implementation specs must be derived from audit evidence instead of being guessed in advance.
+
 Release identity, real credentials, signing/Firebase and any package/application-ID decision remain separate release work, not UI cleanup.
 
 ## Documentation semantics
@@ -88,6 +92,8 @@ Release identity, real credentials, signing/Firebase and any package/application
 `docs/EXECUTION_BACKLOG.md` is the execution-planning authority for remaining bounded work. It does not override the design language in `docs/CYBERGRAM_UI_SPEC.md` or validation evidence in `docs/WORK_STATE.md`.
 
 `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` is the static source-ownership map supporting the backlog. It does not claim new build/device evidence.
+
+`docs/passes/` contains handoff-ready individual execution specs. A pass file does not authorize itself or the next pass; it defines boundaries once the user chooses to execute it.
 
 `docs/WORK_STATE.md` is the detailed chronological evidence log. It is useful precisely because it preserves what was known at each pass, but its tail predates the final `52b8e219...` filter-tabs landing. Do not use its last paragraph as the sole current-state oracle.
 
@@ -108,8 +114,9 @@ Before making a new repository decision:
 1. fresh-fetch `dev` and `master`;
 2. read `AGENTS.md`, this file and `docs/EXECUTION_BACKLOG.md`;
 3. read `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` for remaining-surface ownership when the task touches bottom navigation, messages or service/date cells;
-4. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
-5. distinguish repository evidence from local-machine state;
-6. never claim a local worktree is clean merely because GitHub is complete.
+4. for an already-designed bounded pass, read the matching file under `docs/passes/`;
+5. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
+6. distinguish repository evidence from local-machine state;
+7. never claim a local worktree is clean merely because GitHub is complete.
 
 As of this checkpoint there is no **known** required Cybergram product patch that exists only outside GitHub. A future local-machine inspection may discover additional uncommitted work; treat that as a new fact requiring fresh evidence.
