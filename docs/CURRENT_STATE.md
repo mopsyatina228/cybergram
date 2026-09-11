@@ -6,6 +6,8 @@ This is the concise recovery entrypoint for the current Cybergram repository sta
 
 Detailed preservation snapshot: `docs/PROJECT_CHECKPOINT_2026-09-11.md`, created in commit `a85af75f2dc86673259d11ddb2f4533bdafc93ef`.
 
+Executable remaining-work plan: `docs/EXECUTION_BACKLOG.md`. It contains the current architecture map, risk boundaries, executor contract and bounded passes for filter-tabs validation, bottom navigation, message-state coverage, service/date treatment and later work. Read it before authorizing or implementing the next UI pass.
+
 ## Repository authority
 
 Repository: `mopsyatina228/cybergram`
@@ -22,7 +24,7 @@ Cybergram integration branch: `dev`.
 The product-code cut captured by the 2026-09-11 checkpoint is:
 `52b8e219729d0a90dd3335165cf4ef44acf46e5e`
 
-Preservation/documentation commits after that cut do not imply additional product implementation.
+Preservation/planning/documentation commits after that cut do not imply additional product implementation.
 
 ## Current product state
 
@@ -58,6 +60,8 @@ The **latest final filter-tabs patch** at product-code commit `52b8e219729d0a90d
 
 GitHub reports no commit-status checks and no Actions run for that HEAD. Do not inherit validation from an older revision merely because most of the app was previously exercised successfully.
 
+`docs/EXECUTION_BACKLOG.md` defines validation-only pass `B0` for closing this exact gap without mixing validation and opportunistic production fixes.
+
 ## Side branches
 
 At the preservation cut:
@@ -71,11 +75,15 @@ The automation branch is temporary runner history and returns to the pre-final-f
 
 ## Highest-value unfinished surfaces
 
-The next implementation choice has **not** been automatically authorized by this file. Known remaining work includes final filter-tabs build/device validation; bottom-navigation normalization (`MainTabsLayout` / `GlassTabView`); remaining message-state/edge-case coverage; service/date geometry; optional sparse chat-canvas HUD treatment; and later secondary screens.
+The next implementation choice has **not** been automatically authorized by this file. The executable ordering and exact pass boundaries now live in `docs/EXECUTION_BACKLOG.md`.
+
+Current sequence starts with final filter-tabs build/device validation (`B0`), then a bounded bottom-navigation presentation pass (`B1`). Message-state work begins with an evidence/ownership audit (`B2`) rather than a broad `ChatMessageCell` patch. Service/date work similarly begins with ownership isolation before any `ChatActionCell` restyle. Optional chat-canvas HUD treatment and secondary screens remain later work.
 
 Release identity, real credentials, signing/Firebase and any package/application-ID decision remain separate release work, not UI cleanup.
 
 ## Documentation semantics
+
+`docs/EXECUTION_BACKLOG.md` is the execution-planning authority for remaining bounded work. It does not override the design language in `docs/CYBERGRAM_UI_SPEC.md` or validation evidence in `docs/WORK_STATE.md`.
 
 `docs/WORK_STATE.md` is the detailed chronological evidence log. It is useful precisely because it preserves what was known at each pass, but its tail predates the final `52b8e219...` filter-tabs landing. Do not use its last paragraph as the sole current-state oracle.
 
@@ -94,7 +102,7 @@ Repository inspection, documentation/preservation and explicit GitHub mutations 
 Before making a new repository decision:
 
 1. fresh-fetch `dev` and `master`;
-2. read `AGENTS.md` and this file;
+2. read `AGENTS.md`, this file and `docs/EXECUTION_BACKLOG.md`;
 3. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
 4. distinguish repository evidence from local-machine state;
 5. never claim a local worktree is clean merely because GitHub is complete.
