@@ -8,6 +8,8 @@ Detailed preservation snapshot: `docs/PROJECT_CHECKPOINT_2026-09-11.md`, created
 
 Executable remaining-work plan: `docs/EXECUTION_BACKLOG.md`. It contains the current architecture map, risk boundaries, executor contract and bounded passes for filter-tabs validation, bottom navigation, message-state coverage, service/date treatment and later work. Read it before authorizing or implementing the next UI pass.
 
+Static source-ownership evidence for those pass boundaries: `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`. It records the actual bottom-navigation, message-state and service/date owners found in the current source tree; it is static evidence, not runtime validation.
+
 ## Repository authority
 
 Repository: `mopsyatina228/cybergram`
@@ -85,6 +87,8 @@ Release identity, real credentials, signing/Firebase and any package/application
 
 `docs/EXECUTION_BACKLOG.md` is the execution-planning authority for remaining bounded work. It does not override the design language in `docs/CYBERGRAM_UI_SPEC.md` or validation evidence in `docs/WORK_STATE.md`.
 
+`docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` is the static source-ownership map supporting the backlog. It does not claim new build/device evidence.
+
 `docs/WORK_STATE.md` is the detailed chronological evidence log. It is useful precisely because it preserves what was known at each pass, but its tail predates the final `52b8e219...` filter-tabs landing. Do not use its last paragraph as the sole current-state oracle.
 
 `docs/REFERENCE_ALIGNMENT_2026-09-10.md` is also chronological: its original static-only warning applies to that pass at that time; later recorded passes validate some subsequent implementations. Do not rewrite the old warning into a blanket claim that every current surface is validated.
@@ -103,8 +107,9 @@ Before making a new repository decision:
 
 1. fresh-fetch `dev` and `master`;
 2. read `AGENTS.md`, this file and `docs/EXECUTION_BACKLOG.md`;
-3. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
-4. distinguish repository evidence from local-machine state;
-5. never claim a local worktree is clean merely because GitHub is complete.
+3. read `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` for remaining-surface ownership when the task touches bottom navigation, messages or service/date cells;
+4. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
+5. distinguish repository evidence from local-machine state;
+6. never claim a local worktree is clean merely because GitHub is complete.
 
 As of this checkpoint there is no **known** required Cybergram product patch that exists only outside GitHub. A future local-machine inspection may discover additional uncommitted work; treat that as a new fact requiring fresh evidence.
