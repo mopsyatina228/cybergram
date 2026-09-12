@@ -100,35 +100,41 @@ E validation passed. A validation is still required before the actual main-tabs 
 
 ### B2 — message-state coverage audit
 
-Status: `READY — AUDIT/DEBUG ONLY`.
+Status: `AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING`.
 
-Spec: `docs/passes/B2_MESSAGE_STATE_AUDIT.md`.
+Spec: `docs/passes/B2_MESSAGE_STATE_AUDIT.md`. Evidence matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
 
-Goal: replace the vague item “message edge cases” with an evidence matrix assigning every visible mismatch to its real owner. No production rendering changes are authorized in B2.
+Tested revision `e000ef8286a406fc27fc55889c286ebbffef2890`, audit branch `audit/cybergram-message-states` (not merged). Result: 14 PASS / 6 DEFECT / 15 UNTESTED across 35 cases; A/P tiers open.
 
-Current known boundaries:
+Goal: replace the vague item “message edge cases” with an evidence matrix assigning every visible mismatch to its real owner. No production rendering changes were made in B2.
 
-- `MessageDrawable`: body geometry; Cybergram currently covers `TYPE_TEXT` / `TYPE_MEDIA` only;
-- `TYPE_PREVIEW`: deliberately excluded until actual product callers/desired behaviour are proven;
-- `ReplyMessageLine`: reply-specific paths/colour state;
-- `ReactionsLayoutInBubble`: reaction layout/drawing/state;
-- `ChatMessageCell`: caller/layout integration, not an excuse for an omnibus restyle.
+Current known boundaries (confirmed by the audit):
 
-Extend DEBUG showcase fixtures where useful so the audit is reproducible without a Telegram account.
+- `MessageDrawable`: body geometry; Cybergram covers `TYPE_TEXT` / `TYPE_MEDIA`; the angular work is additive-only versus upstream `master` (+111/-0), and grouped joins rely on near-corner cuts plus cell-side slice clipping;
+- `TYPE_PREVIEW`: both production call sites are theme-preview surfaces (`Theme.createThemePreviewImage`, `ThemePreviewDrawable`); remaining rounded is correct there;
+- `ReplyMessageLine`: reply/quote/link/contact plates and bars; rounded, no Cybergram seam;
+- `ReactionsLayoutInBubble`: reaction measure/draw/touch and pill geometry (`ReactionButton.drawRoundRect`); rounded, no Cybergram seam;
+- `ChatMessageCell`: caller/layout integration, not an excuse for an omnibus restyle — it consumes the angular path and owns no geometry defect.
+
+The debug probe `CybergramB2MessageStatesFixture` (debug source set only) keeps the geometry part of this audit reproducible without a Telegram account.
 
 ### B3 — conditional MessageDrawable TYPE_PREVIEW geometry
 
-Status: `NOT AUTHORIZED — DERIVE FROM B2`.
+Status: `CLOSED — NOT JUSTIFIED BY B2 EVIDENCE`.
 
-Create this implementation pass only if B2 proves a real Cybergram product surface using `TYPE_PREVIEW` should be angular. Do not enable it merely for conceptual symmetry with text/media.
+B2 identified every `TYPE_PREVIEW` instantiation: `Theme.java:7362` (inside `createThemePreviewImage`, only caller `MessagesController.java:9119`) and `Components/ThemePreviewDrawable.java:78` (`.attheme` thumbnail via `ImageLoader.java:882`). No normal messaging surface uses it, and its provider bypass/slot/no-invalidation behaviour exists for standalone preview rasterization.
 
-Likely owner: `MessageDrawable.java` only, unless B2 produces contrary evidence.
+Therefore the deliberate `TYPE_PREVIEW` exclusion in `MessageDrawable` stays, and **no B3 implementation pass is created**. Do not reopen this merely for symmetry with text/media.
 
-### B4 — conditional reply/reaction/message-owner fixes
+### B4 — conditional reply/reaction angular plates
 
-Status: `NOT AUTHORIZED — DERIVE FROM B2`.
+Status: `PROPOSED BY B2 — NOT AUTHORIZED (design ruling required)`.
 
-Split by actual owner. Do not create one broad “fix message UI” change. A reply defect and a reaction defect are separate bounded passes unless evidence proves they require the same seam.
+Owner-proven and measured: `ReplyMessageLine.drawBackground` plates and `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` pills are circular while the message bodies are 45-degree chamfered. Classified as `polish`/design-ruling, not a regression.
+
+Split by actual owner. Do not create one broad “fix message UI” change: the reply plate and the reaction pill are separate bounded passes unless a future seam proves they share one.
+
+Preconditions before execution: an explicit design ruling that reply/reaction surfaces should be angular, and closure of the authenticated matrix items in B2 (reply layout, reaction interaction, metadata, service/date adjacency). Both classes are shared well beyond the message flow, so an explicit per-instance opt-in would be required, exactly as in B1.
 
 ### B5 — service/date ownership and geometry audit
 
@@ -174,7 +180,7 @@ Do not mix with UI cleanup. Real credentials remain local/secret; package/applic
 
 B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-Recommended production order is B1 first (now integrated, with A/P tiers open), then B2 and B5 audits (which may run independently because they are evidence-oriented), followed only by the B3/B4/B6 tasks actually justified by those audits. B7 and B8 remain later.
+Recommended production order is B1 first (now integrated, with A/P tiers open), then B2 and B5 audits (which may run independently because they are evidence-oriented), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with the `TYPE_PREVIEW` question closed and B4 merely proposed; B5 remains the next evidence-oriented pass. B7 and B8 remain later.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 

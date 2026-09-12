@@ -1,10 +1,16 @@
 # B2 — message-state coverage and ownership audit
 
-Status: READY
+Status: `AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING`
 
 Type: evidence/audit
 
 Production fixes: FORBIDDEN IN THIS PASS
+
+Tested revision: `e000ef8286a406fc27fc55889c286ebbffef2890` (`dev`)
+
+Audit branch: `audit/cybergram-message-states`
+
+Evidence matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`
 
 Design authority: `docs/CYBERGRAM_UI_SPEC.md`
 
@@ -169,6 +175,34 @@ B2 succeeds when:
 - no production rendering fix was made.
 
 Write the matrix durably into the repository. Generate B3/B4 specs only for confirmed production defects.
+
+## Execution record (2026-09-12)
+
+Status: AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING.
+
+- Tested revision `e000ef8286a406fc27fc55889c286ebbffef2890`; worktree clean; audit branch
+  `audit/cybergram-message-states` (not merged into `dev`).
+- Local source reconnaissance completed and recorded with line-level ownership
+  (`TYPE_PREVIEW`, `new MessageDrawable`, `ReplyMessageLine`, `ReactionsLayoutInBubble`,
+  `ChatMessageCell` composition, `ChatActionCell` service/date, plus a `dev`-vs-`master` diff proving the
+  `MessageDrawable` Cybergram work is additive-only, +111/-0).
+- E evidence: debug-only probe `CybergramB2MessageStatesFixture` (new file in the debug source set) plus a
+  two-line wiring change in `CybergramShowcaseActivity`; `:TMessagesProj_App:assembleAfatDebug
+  -PCYBERGRAM_ABI=x86_64` BUILD SUCCESSFUL; APK 74,277,072 bytes, SHA-256
+  `a9d6d5ed8e4bc05c98bf561a6107696d0d692bc2faeac75ac7a4ae7623e22e08`; install and both launches clean;
+  no FATAL/ANR; saved preferences byte-identical before/after the showcase.
+- Matrix result: **14 PASS / 6 DEFECT / 15 UNTESTED** across 35 cases
+  (`docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`).
+- `TYPE_PREVIEW` verdict: both production call sites are theme-preview surfaces only
+  (`Theme.createThemePreviewImage`, `ThemePreviewDrawable`); **no B3**. Staying rounded is correct there.
+- Defects are all `polish` and confined to two owner files with proven geometry ownership:
+  `ReplyMessageLine.drawBackground` and `ReactionsLayoutInBubble.ReactionButton.drawRoundRect`. A single
+  conditional pass **B4 — Cybergram angular reply/reaction plates** is proposed (not authorized; requires a
+  design ruling and, for validation, the authenticated matrix).
+- No `ChatMessageCell` defect was recorded: its composition/metadata/forwarding/bot-button/group-slicing
+  states are UNTESTED, and the source evidence shows the cell consumes the angular path rather than
+  re-implementing geometry.
+- A/P tiers remain open; every account-dependent case is explicitly UNTESTED rather than assumed.
 
 ## Required handoff report
 

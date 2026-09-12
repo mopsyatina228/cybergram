@@ -91,6 +91,15 @@ B1 (main bottom navigation) is integrated on `dev` at
 
 Its E evidence (build, install, launch, no FATAL/ANR, DEBUG opt-in fixture, APK size/SHA-256) is recorded in `docs/WORK_STATE.md` and `docs/passes/B1_MAIN_TABS_FLAT.md`. The authenticated main-tabs interaction matrix and physical-device confidence remain open, and the outer-panel footprint has no authenticated visual confirmation yet.
 
+B2 (message-state coverage and ownership audit) is complete on `audit/cybergram-message-states` against
+`e000ef8286a406fc27fc55889c286ebbffef2890`, not merged into `dev`: **14 PASS / 6 DEFECT / 15 UNTESTED**
+across 35 cases, no production rendering fix. Matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
+`TYPE_PREVIEW` is closed as theme-preview-only (no B3); the six defects are all `polish` and confined to
+`ReplyMessageLine.drawBackground` and `ReactionsLayoutInBubble.ReactionButton.drawRoundRect`, for which a
+single conditional B4 is proposed but not authorized. Its state is:
+
+`AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING`
+
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
 ## Remaining architecture / next work
@@ -106,7 +115,7 @@ B1 (flat/angular main bottom navigation) is implemented and integrated; see the 
 
 The B1 spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-B2 audits message-state ownership without production fixes, and B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits.
+B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only and correctly stays rounded; reply plates and reaction pills are rounded (owner-proven, `polish`, design ruling required before any B4). B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence.
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 

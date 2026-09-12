@@ -649,6 +649,109 @@ This demonstrates at runtime, with the Cybergram gate active in both rows, that 
 - **P PENDING**: no physical device was used in this pass; no OEM-sensitive change was made.
 - Outer-panel/fadeView uncertainty: the Cybergram panel is drawn flush to `MainTabsLayout` bounds, while the upstream glass capsule was inset by `dp(MAIN_TABS_MARGIN - 0.334)` (~7.7dp per side). Padding and measurement are provably unchanged, but the flat-bar footprint is larger than the old capsule and has **no authenticated visual confirmation**. The bottom `fadeView` was deliberately left unchanged; revisit only if A-tier evidence shows it conflicts with the flat panel.
 
+## B2 — message-state coverage and ownership audit (2026-09-12)
+
+Status: **AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING**. Type: evidence/audit; no production
+rendering file was changed.
+
+Tested revision: `e000ef8286a406fc27fc55889c286ebbffef2890` (`dev`, clean worktree). Audit branch:
+`audit/cybergram-message-states` (not merged into `dev`). Matrix document:
+`docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
+
+### Local source reconnaissance (authoritative for this tree)
+
+Commands: `git grep -n "TYPE_PREVIEW" | "new MessageDrawable" | "ReplyMessageLine" |
+"ReactionsLayoutInBubble" | "new ReactionsLayoutInBubble("` over `*.java`, plus a `dev` vs upstream
+`master` diff of `MessageDrawable`.
+
+- `MessageDrawable` (ActionBar): the Cybergram seam is **additive only** — `git diff master` shows
+  **+111 / -0**. Angular gate `generatePath:676` (`TYPE_TEXT`/`TYPE_MEDIA`), polygon
+  `generateCybergramPath` (832-858, per-corner near cuts 846-856), outline `drawCybergramBorder`
+  (891-901, called from draw at 619-621).
+- Every `ChatMessageCell` bubble body comes from `getThemedDrawable(Theme.key_drawable_msgIn/Out[/Media]
+  [Selected])` (20489-20573, 21913-21921, 23162-23170), which map to `Theme.java:8202-8209` and construct
+  `TYPE_TEXT`/`TYPE_MEDIA` only. The cell never uses `TYPE_PREVIEW`.
+- Selection/pressed state reuses the same drawable path (`ChatMessageCell:20342`,
+  `drawCached(..., selectionOverlayPaint)`; gate `isDrawSelectionBackground()` 18640-18642).
+- Grouping: `MessageDrawable` hardcodes `drawFullTop/Bottom = true` (591-599) — **identical in upstream
+  `master`**, not a Cybergram change — so grouped joins use the near-corner cuts plus the cell's slice
+  clip (`ChatMessageCell:23641-23645`). Media clipping uses `backgroundDrawable.makePath()`
+  (16914, 26040).
+- `ReplyMessageLine` (Components): **no Cybergram code**. Owns the reply/quote/link/contact/fact-check
+  plate + bar geometry (`drawBackground` 614-664 = `drawRoundRect`/`addRoundRect` + `drawLine` 536-580);
+  `check(...)` is null-safe (247-252). Hosted by `ChatMessageCell` (fields 1653; created 15496…25454;
+  drawn 22801-22823) and by `StoryCaptionView`, `RichEditorListView`/`RichTextCell`,
+  `TextMessageEnterTransition`.
+- `ReactionsLayoutInBubble` (Components/Reactions): **no Cybergram code**. Exactly two production
+  instantiations (`ChatMessageCell:1034`, `ChatActionCell:361`); owns layout (`measure` 339-431),
+  composition (`draw` 436-485), overlay/preview/touch/animation, and the pill geometry
+  (`ReactionButton.draw` with `rad = height/2f` at 1111 and `drawRoundRect(...)` at 1138, implemented at
+  969-979 where the tag branch already uses `fillTagPath`). The cell only positions it.
+- `TYPE_PREVIEW` production call sites: **two**, both theme-preview surfaces —
+  `Theme.java:7362` inside `createThemePreviewImage` (only caller `MessagesController:9119`) and
+  `Components/ThemePreviewDrawable.java:78` (`.attheme` thumbnail, `ImageLoader:882`). Special behaviour:
+  global `Theme` colour lookup ignoring the provider (161-175), motion-background slot 1 (214), no parent
+  invalidation (232), always-full-bubble path (687/701/740/749/764), radius `dp(6)` (573-575).
+- `ChatActionCell` service/date adjacency: **no Cybergram code**; ordinary silhouette is upstream rounded
+  (`corner = dp(11)` 3333, `arcTo` construction 3367-3463, `addRoundRect(dp(15))` fallback 3471-3473,
+  drawn 3500-3510; simpler rounded variants 3524-3579). Matches the existing B5 ownership map.
+
+### E evidence (debug-only probe)
+
+New debug-only file `TMessagesProj_App/src/debug/java/org/telegram/ui/CybergramB2MessageStatesFixture.java`
+plus a two-line wiring change in `CybergramShowcaseActivity` (second probe bitmap at `(dp(8), dp(536))`,
+396x268 dp). Release sources/manifests untouched.
+
+- Build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` -> BUILD SUCCESSFUL; APK
+  74,277,072 bytes, SHA-256 `a9d6d5ed8e4bc05c98bf561a6107696d0d692bc2faeac75ac7a4ae7623e22e08`.
+- Install over `org.telegram.messenger.beta` -> Success; normal launch and showcase launch both stable;
+  **no FATAL/ANR**.
+- Preference safety: `shared_prefs/mainconfig.xml` byte-identical before/after the showcase launch; the
+  saved theme stayed `Cybergram`.
+- Screenshots (local only): `.local-artifacts/b2/03_normal_launch.png`,
+  `.local-artifacts/b2/04_showcase_b2_probe.png`.
+
+Measured pixel results (decoded programmatically, not eyeballed):
+
+| measurement | result |
+|---|---|
+| incoming `TYPE_TEXT` corner | left inset 54->37 px over 17 rows with repeating `-2,-1` deltas = **slope 1.0 (45-degree chamfer)**; fill `#282715`, outline `#e8d93a` |
+| `TYPE_TEXT` selected | fill `#3e3c19`; outgoing selected fill `#063a44`, outline `#33d6ff` |
+| outgoing plain text | fill `#07252c`, outline `#00e5ff` |
+| outgoing `TYPE_MEDIA` | fill `#07252c`, outline `#00e5ff`, placeholder `#06090d` |
+| grouped middle slice | left ramp ~4 px (2 dp near cut) vs right ramp ~14 px (6 dp full cut) |
+| `TYPE_PREVIEW` control | inset 54->42 with deltas `-4,-3,-1,-2` then accelerating = **circular arc** |
+| `ReplyMessageLine` plate | inset 22->3, deltas `-8,-4,-2,-1,-1,-1` = **circular arc** inside the angular bubble |
+| reaction pill | inset 31->2 over ~28 rows, deltas `-4,-3,-2,-2,-2,-2,-1...`, height 68 px = **stadium (radius = height/2)** |
+| reaction emoji glyph | no glyph pixels (pre-auth `MediaDataController` reactions map empty) |
+
+### Matrix result
+
+**14 PASS / 6 DEFECT / 15 UNTESTED** across 35 cases.
+
+- PASS: text/media body geometry, all four body colour states, grouped top/middle/bottom near-corner
+  joins, media+caption bubble geometry, reactions-absent, non-Cybergram path intact, `TYPE_PREVIEW`
+  geometry and its colour-source behaviour.
+- DEFECT (`polish`, design ruling required, owners proven, no regression introduced):
+  `ReplyMessageLine.drawBackground` reply plates (2 cases) and
+  `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` pills (4 cases) are rounded inside/next to
+  45-degree-chamfered bodies.
+- UNTESTED: everything account- or cell-dependent — cell-side group slicing, incoming media render,
+  caption/time layout, media clipping/touch, multi-select overlay, reply layout/ripple, quote/code/link/
+  contact/fact-check lines, reaction emoji glyphs, reaction interaction/animation, time/check/view
+  metadata, forwarded header, bot buttons, service/date adjacency, live Cybergram theme preview.
+
+### Verdicts
+
+- **B3 closed**: `TYPE_PREVIEW` has only theme-preview call sites, so its rounded upstream path is correct
+  and no implementation pass is justified.
+- **B4 proposed, not authorized**: one conditional pass for angular reply/reaction plates, scoped to
+  `ReplyMessageLine.java` and `ReactionsLayoutInBubble.java`, requiring a design ruling plus an explicit
+  per-instance opt-in (both classes are shared beyond the message flow) and closure of the authenticated
+  matrix first.
+- **No `ChatMessageCell` defect**: its states are UNTESTED, and source evidence shows it consumes the
+  angular path rather than owning geometry.
+
 ## Explicitly deferred
 
 - package/application ID rename;
