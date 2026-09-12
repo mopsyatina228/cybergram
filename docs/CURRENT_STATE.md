@@ -1,122 +1,138 @@
 # Cybergram current state
 
-Last reconciled: 2026-09-11
+Last reconciled: 2026-09-12
 
-This is the concise recovery entrypoint for the current Cybergram repository state. Read `AGENTS.md` first. Use `docs/CYBERGRAM_UI_SPEC.md` for design authority and `docs/WORK_STATE.md` for the detailed chronological implementation/evidence log.
+This is the concise recovery entrypoint for `mopsyatina228/cybergram`.
 
-Detailed preservation snapshot: `docs/PROJECT_CHECKPOINT_2026-09-11.md`, created in commit `a85af75f2dc86673259d11ddb2f4533bdafc93ef`.
+Read in this order:
 
-Executable remaining-work plan: `docs/EXECUTION_BACKLOG.md`. It contains the current architecture map, risk boundaries, executor contract and bounded passes for filter-tabs validation, bottom navigation, message-state coverage, service/date treatment and later work. Read it before authorizing or implementing the next UI pass.
+1. `AGENTS.md` — repository and safety rules;
+2. this file — current state and validation boundary;
+3. `docs/CYBERGRAM_UI_SPEC.md` — design/product authority;
+4. `docs/EXECUTION_BACKLOG.md` — current pass status, dependencies and validation tiers;
+5. the relevant file under `docs/passes/` before executing a bounded pass;
+6. `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` when ownership of remaining UI matters;
+7. `docs/WORK_STATE.md` for chronological historical build/device evidence.
 
-Static source-ownership evidence for those pass boundaries: `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`. It records the actual bottom-navigation, message-state and service/date owners found in the current source tree; it is static evidence, not runtime validation.
-
-Handoff-ready individual pass specifications are indexed by `docs/passes/README.md`. They are designed so a local executor can receive one bounded file instead of reconstructing the project from chat history.
+Detailed preservation snapshot: `docs/PROJECT_CHECKPOINT_2026-09-11.md`.
 
 ## Repository authority
 
-Repository: `mopsyatina228/cybergram`
-
-Upstream: `DrKLO/Telegram`
+Upstream: `DrKLO/Telegram`.
 
 Upstream-aligned baseline:
-- branch: `master`
-- Telegram Android: 12.10.1 (7038)
-- commit: `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c`
+
+- branch `master`;
+- Telegram Android 12.10.1 (7038);
+- commit `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c`.
 
 Cybergram integration branch: `dev`.
 
-The product-code cut captured by the 2026-09-11 checkpoint is:
+Preserved product-code cut:
+
 `52b8e219729d0a90dd3335165cf4ef44acf46e5e`
 
-Preservation/planning/documentation commits after that cut do not imply additional product implementation.
+Subsequent preservation/planning/runbook commits do not imply product implementation unless explicitly stated. Always fresh-fetch `dev` rather than trusting a documentation HEAD copied into an old chat.
 
 ## Current product state
-
-Cybergram is no longer merely a palette/bootstrap experiment. The primary messaging UI has an established Cybergram presentation layer while Telegram behaviour remains intentionally upstream-oriented.
 
 Durably landed on `dev`:
 
 - built-in Cybergram theme and `.attheme` palette;
-- fresh-install Cybergram theme default without overwriting existing user choices;
+- fresh-install Cybergram day/night default without overwriting existing user choice;
 - deterministic theme-key validator;
 - shared Cybergram theme/HUD/angular geometry primitives;
-- angular text/media message-bubble geometry and Cybergram semantic borders/palette;
+- angular text/media message-body geometry and semantic borders/palette;
 - chat header HUD decoration;
 - composer frame and angular send control;
-- Cybergram flat chat header that suppresses glass capsules without globally disabling Telegram's glass-mode layout behaviour;
-- dialogs row treatment and Cybergram selected-state panel;
+- Cybergram-only flat chat-header seam preserving upstream layout/state behaviour;
+- dialogs row treatment and selected-state panel;
 - dialogs action-bar decoration;
 - opt-in angular dialogs FAB;
-- Cybergram dialogs search presentation;
-- Cybergram primary-chrome typography using system `sans-serif-condensed`;
-- original Cybergram launcher icon treatment;
-- final Cybergram flattening seam for dialog filter/folder tabs in `FilterTabsView`.
+- dialogs search presentation;
+- Cybergram primary-chrome `sans-serif-condensed` typography;
+- original launcher icon treatment;
+- Cybergram flat/angular dialog filter/folder tabs in `FilterTabsView`.
 
-No intentional protocol, encryption, account/session, database/storage or networking redesign is part of this state.
+No intentional Cybergram protocol, encryption, account/session, storage/database or networking redesign belongs to this state.
 
 ## Validation boundary
 
-Earlier integrated passes have durable successful local-build and Samsung SM-A256E / Android 16 device-smoke evidence in `docs/WORK_STATE.md`.
+Earlier revisions have recorded successful arm64 debug builds and Samsung SM-A256E / Android 16 device smoke in `docs/WORK_STATE.md`.
 
-The **latest final filter-tabs patch** at product-code commit `52b8e219729d0a90dd3335165cf4ef44acf46e5e` is landed but must be treated as:
+A new reproducible emulator baseline was established on 2026-09-11 using `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`.
 
-`LANDED / POST-LANDING BUILD+DEVICE VALIDATION PENDING`
+Tested documentation HEAD was `5663bf329d9d78bad5a991350740fe51912f88fb`; the executor confirmed the product-source tree was byte-identical to preserved product cut `52b8e219...`.
 
-GitHub reports no commit-status checks and no Actions run for that HEAD. Do not inherit validation from an older revision merely because most of the app was previously exercised successfully.
+Evidence:
 
-`docs/EXECUTION_BACKLOG.md` defines validation-only pass `B0` for closing this exact gap without mixing validation and opportunistic production fixes. The executor-ready form is `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
+- AVD `Cybergram_API36`, Android 16 / API 36 / Google APIs / `x86_64`;
+- `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` -> `BUILD SUCCESSFUL`;
+- APK size `68,939,062` bytes;
+- APK SHA-256 `66055766015812f92a7de4e396379671fca741b30d3b44b15995066699edef61`;
+- `org.telegram.messenger.beta` installed successfully;
+- normal pre-auth launch succeeded;
+- DEBUG `CybergramShowcaseActivity` launched/rendered successfully;
+- no immediate FATAL/ANR observed in either test window.
 
-## Side branches
+This proves current product-tree build/install/basic API 36 runtime. It does not prove authenticated Telegram surfaces, network/push behaviour or Samsung/OEM-specific behaviour.
 
-At the preservation cut:
+In particular, the final `FilterTabsView` patch is no longer accurately described as “build validation pending”. Its state is:
 
-- `feature/cybergram-filter-tabs-flat` -> `db255faa1a98733fe18f164fbbe3fde460af4621`
-- `automation/filter-tabs-runner` -> `dbdca3e9febed1a18ce87b225b1822061587f582`
+`LANDED / GENERIC E BUILD+RUNTIME BASELINE PASSED / AUTHENTICATED FILTER-TABS MATRIX PENDING`
 
-The feature branch's final tree is byte-identical at Git tree level to the captured `dev` product tree. It contains no product result missing from `dev` and should not be merged just for recovery.
+B0 in `docs/passes/B0_FILTER_TABS_VALIDATION.md` now contains only the remaining authenticated-surface validation work.
 
-The automation branch is temporary runner history and returns to the pre-final-filter-patch tree. It is not active work and not an execution authority.
+Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
-## Highest-value unfinished surfaces
+## Remaining architecture / next work
 
-The next implementation choice has **not** been automatically authorized by this file. The executable ordering and exact pass boundaries now live in `docs/EXECUTION_BACKLOG.md`.
+The highest-value production pass is B1: flat/angular main bottom navigation.
 
-Current sequence starts with final filter-tabs build/device validation (`B0`), then a bounded bottom-navigation presentation pass (`B1`). Message-state work begins with an evidence/ownership audit (`B2`) rather than a broad `ChatMessageCell` patch. Service/date work similarly begins with ownership isolation before any `ChatActionCell` restyle. Optional chat-canvas HUD treatment and secondary screens remain later work.
+Fresh static reconciliation established:
 
-Individual handoff specs currently exist for B0, B1, B2 and B5 under `docs/passes/`. Conditional B3/B4/B6 implementation specs must be derived from audit evidence instead of being guessed in advance.
+- authenticated root navigation is `MainTabsActivity`;
+- outer panel/glass ownership is in `MainTabsActivity`;
+- long-press/drag selector ownership is in `MainTabsLayout`;
+- normal selected plate/icon/label/counter/avatar ownership is in `Components/glass/GlassTabView`;
+- `MainTabsLayout` and `GlassTabView` were still upstream-identical at the preserved product cut;
+- `GlassTabView` is also used by attach/bot tabs, so B1 **must not** use a Cybergram-wide selector branch there. Main-tab instances require explicit local opt-in in addition to `CybergramTheme.isCybergramPresentation(...)`.
 
-Release identity, real credentials, signing/Firebase and any package/application-ID decision remain separate release work, not UI cleanup.
+The hardened executor spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
+
+After/alongside B1, B2 audits message-state ownership without production fixes, and B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits.
+
+Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 
 ## Documentation semantics
 
-`docs/EXECUTION_BACKLOG.md` is the execution-planning authority for remaining bounded work. It does not override the design language in `docs/CYBERGRAM_UI_SPEC.md` or validation evidence in `docs/WORK_STATE.md`.
+`docs/CYBERGRAM_UI_SPEC.md` decides what Cybergram should look/behave like as a product.
 
-`docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` is the static source-ownership map supporting the backlog. It does not claim new build/device evidence.
+`docs/EXECUTION_BACKLOG.md` is the current status/dependency index. It deliberately no longer duplicates full implementation specs.
 
-`docs/passes/` contains handoff-ready individual execution specs. A pass file does not authorize itself or the next pass; it defines boundaries once the user chooses to execute it.
+`docs/passes/` contains handoff-ready bounded execution contracts.
 
-`docs/WORK_STATE.md` is the detailed chronological evidence log. It is useful precisely because it preserves what was known at each pass, but its tail predates the final `52b8e219...` filter-tabs landing. Do not use its last paragraph as the sole current-state oracle.
+`docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` records static ownership/seam evidence and does not claim runtime validation.
 
-`docs/REFERENCE_ALIGNMENT_2026-09-10.md` is also chronological: its original static-only warning applies to that pass at that time; later recorded passes validate some subsequent implementations. Do not rewrite the old warning into a blanket claim that every current surface is validated.
-
-`docs/CYBERGRAM_UI_SPEC.md` remains the design/product authority. This file describes implementation status, not visual policy.
+`docs/WORK_STATE.md` is chronological historical evidence. Older statements remain historically true for their revision and must not override this newer state boundary.
 
 ## Current operating boundary
 
-At this preservation point the user requested **repository-only operation, no orchestration**.
+The user requested repository-only project control, without autonomous orchestration.
 
-Repository inspection, documentation/preservation and explicit GitHub mutations are allowed. Do not infer permission to start autonomous agents, background runners, supervisor loops, Android builds/runtime sessions or new implementation from this status file.
+Allowed in this mode: inspect/reconcile GitHub state, improve repository documentation, prepare bounded specs/runbooks and perform explicit repository mutations requested by the user.
+
+Do not infer permission to start background agents, supervisor loops, local builds/runtime sessions or implementation merely because a pass is marked ready. Hermes/local execution is used only when the user explicitly routes a bounded task there.
 
 ## Recovery rule
 
-Before making a new repository decision:
+Before a new decision:
 
 1. fresh-fetch `dev` and `master`;
-2. read `AGENTS.md`, this file and `docs/EXECUTION_BACKLOG.md`;
-3. read `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` for remaining-surface ownership when the task touches bottom navigation, messages or service/date cells;
-4. for an already-designed bounded pass, read the matching file under `docs/passes/`;
-5. read the relevant part of `docs/WORK_STATE.md` and the UI spec;
-6. distinguish repository evidence from local-machine state;
-7. never claim a local worktree is clean merely because GitHub is complete.
+2. read `AGENTS.md` and this file;
+3. read `docs/EXECUTION_BACKLOG.md` and the selected pass spec;
+4. read the relevant UI spec/architecture evidence;
+5. distinguish repository evidence from local-machine evidence and validation tier;
+6. never claim local workspace cleanliness from GitHub state alone.
 
-As of this checkpoint there is no **known** required Cybergram product patch that exists only outside GitHub. A future local-machine inspection may discover additional uncommitted work; treat that as a new fact requiring fresh evidence.
+There is currently no known required Cybergram product patch that exists only outside GitHub. A future local-machine inspection may discover new local work; treat that as new evidence, not something to infer from this checkpoint.
