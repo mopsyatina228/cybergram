@@ -2,504 +2,190 @@
 
 Status: active planning / execution handoff
 
-Planning snapshot inspected: `dev` at `0c9cd8ebccab3122003905a08be3408926ea689e` on 2026-09-11.
+Last reconciled: 2026-09-12
 
-Product-code cut captured by the preservation checkpoint: `52b8e219729d0a90dd3335165cf4ef44acf46e5e`.
+Repository: `mopsyatina228/cybergram`
 
-Upstream-aligned baseline: Telegram Android 12.10.1 (7038), `master` at `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c`.
+Upstream baseline: Telegram Android 12.10.1 (7038), `master` at `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c`.
 
-This file converts the remaining Cybergram work into bounded, executable passes. It is not design authority. Read `AGENTS.md`, `docs/CURRENT_STATE.md` and `docs/CYBERGRAM_UI_SPEC.md` first. Use `docs/WORK_STATE.md` for chronological build/device evidence.
+Preserved product-code cut: `52b8e219729d0a90dd3335165cf4ef44acf46e5e`.
 
-## Operating rule
+Current documentation/validation HEAD at the start of this reconciliation: `5663bf329d9d78bad5a991350740fe51912f88fb`.
 
-Cybergram remains a presentation fork. Preserve Telegram behaviour and state machines. Prefer a small Cybergram-only presentation branch around an existing upstream renderer over replacing, subclassing or refactoring the component that owns the behaviour.
+This file is the status/dependency index for remaining Cybergram work. Detailed implementation instructions live in `docs/passes/`; source-ownership evidence lives in `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`; design authority remains `docs/CYBERGRAM_UI_SPEC.md`; chronological machine evidence remains `docs/WORK_STATE.md`.
 
-The central presentation gate is:
+Do not duplicate full pass instructions here. Humans are already quite capable of creating two contradictory copies of the same plan without our assistance.
 
-`CybergramTheme.isCybergramPresentation(Theme.ResourcesProvider provider)`
+## Operating contract
 
-Do not introduce scattered theme-name checks and do not infer Cybergram from colour values.
+Cybergram remains a presentation fork. Preserve Telegram behaviour and state machines. Prefer a narrow Cybergram-only presentation seam around an upstream renderer rather than replacing or refactoring the component that owns behaviour.
 
-When angular geometry is required, reuse `CybergramBubbleDrawable.buildPath(...)` or `CybergramHudDrawable`. Do not create another independent chamfer/path implementation unless the existing primitives demonstrably cannot represent the target.
+Use `CybergramTheme.isCybergramPresentation(Theme.ResourcesProvider provider)` as the central presentation gate. Do not scatter theme-name checks and do not infer Cybergram from colour values.
 
-A pass that cannot preserve the exact non-Cybergram path is not a presentation-only pass and must stop for redesign.
+Use `CybergramBubbleDrawable.buildPath(...)` / `CybergramHudDrawable` for angular geometry instead of introducing another chamfer implementation.
 
-## Architecture map and risk boundary
+Any shared component that serves both the main Cybergram surface and unrelated Telegram surfaces requires an explicit local opt-in in addition to the central theme gate. The important current example is `GlassTabView`: it is used by main bottom navigation and by attach/bot tabs, so a Cybergram-wide branch inside `GlassTabView` would leak main-navigation styling into unrelated surfaces.
 
-### Low-conflict Cybergram-owned primitives
+For high-risk upstream files, do not combine presentation changes with cleanup/refactoring.
 
-These are project-owned seams and are the preferred place for reusable constants/helpers:
+## Validation baseline established 2026-09-11
 
-- `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramTheme.java`
-- `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramBubbleDrawable.java`
-- `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramHudDrawable.java`
-- `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramTypography.java`
-- `TMessagesProj/src/main/java/org/telegram/ui/CybergramHeaderDecorationView.java`
+A reproducible emulator path now exists in `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`.
 
-Changes here are still subject to regression risk because several screens share them, but upstream merge conflict risk is comparatively low.
+Current product tree was validated from documentation HEAD `5663bf329d9d78bad5a991350740fe51912f88fb`, which was confirmed byte-identical to product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e` for product sources.
 
-### Medium-risk presentation components
+Machine evidence from the completed run:
 
-These are upstream-owned components with already-established narrow Cybergram seams:
+- AVD: `Cybergram_API36`, Android 16 / API 36, Google APIs, `x86_64`, 1080x2400;
+- emulator 37.1.11 with WHPX hardware acceleration;
+- build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64`;
+- result: `BUILD SUCCESSFUL`;
+- APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`;
+- size: `68,939,062` bytes;
+- SHA-256: `66055766015812f92a7de4e396379671fca741b30d3b44b15995066699edef61`;
+- package: `org.telegram.messenger.beta`, version `12.10.1` / versionCode `70389`;
+- install succeeded;
+- normal onboarding launch succeeded;
+- DEBUG `CybergramShowcaseActivity` launch/render succeeded;
+- no immediate FATAL/ANR was observed in the validation windows.
 
-- `FilterTabsView.java`
-- `FragmentSearchField.java`
-- `FragmentFloatingButton.java`
-- `DialogCell.java`
-- `ChatAvatarContainer.java`
+This closes the generic current-tree build/install/basic-start gap. It does **not** prove authenticated Telegram surfaces such as `FilterTabsView` or `MainTabsActivity`, network/push behaviour, or Samsung/OEM-specific behaviour.
 
-The `FilterTabsView` implementation is the current reference pattern: keep the scrolling/reorder/delegate machinery untouched, branch only the visible background/selector/clip/typography under the central Cybergram gate, and retain the original rounded/blurred path otherwise.
+Use two validation tiers from now on:
 
-### High-risk shared/rendering components
+- **E (emulator):** build/install/start, debug showcase/harness, generic Android 16 runtime, screenshots and logcat. This is the default remote validation tier and should be run for every implementation pass that can use it.
+- **A (authenticated UI):** the real product surface is exercised with an authenticated Telegram session, on an emulator or physical device. Required when the pass changes UI that cannot be reached pre-auth.
+- **P (physical device):** final/OEM confidence on real hardware. Required before calling Samsung/OEM-sensitive behaviour validated; otherwise it is a release-confidence check rather than a reason to block every repository-side implementation.
 
-These own significant upstream state, gesture, layout or rendering behaviour and must only be changed by tightly bounded passes:
+Never promote E evidence into A or P evidence.
 
-- `MainTabsActivity.java`
-- `MainTabsLayout.java`
-- `Components/glass/GlassTabView.java`
-- `MessageDrawable.java`
-- `ChatMessageCell.java`
-- `ReplyMessageLine.java`
-- `Components/Reactions/ReactionsLayoutInBubble.java`
-- `ChatActionCell.java`
-- `ActionBar.java`
-- `ChatActivityEnterView.java`
+## Execution queue
 
-Do not mix a visual change with cleanup/refactoring in these files.
+### B0 — final FilterTabs authenticated validation
 
-## Remaining-surface ownership findings
+Status: `PARTIAL — E BASELINE PASSED / AUTHENTICATED FILTER-TABS MATRIX PENDING`
 
-### Bottom navigation
+Type: validation only.
 
-The bottom navigation is owned by three layers, not by `DialogsActivity` alone.
+Spec: `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
 
-`MainTabsActivity` creates the `MainTabsLayout`, five `GlassTabView` instances (Chats, Contacts, Settings, Calls, Profile), the blur source/background, bottom fade, wrappers, insets, call/settings visibility switching and ViewPager selection/reselection behaviour.
+The 2026-09-11 emulator run proves the exact current product tree builds, installs and starts. It did not reach an authenticated dialogs screen, so it does not prove the final `FilterTabsView` interaction/visual matrix. B0 now consists only of closing that remaining authenticated-surface gap. No production fixes are authorized inside B0.
 
-`MainTabsLayout` owns responsive measurement, animated child visibility, visual-width interpolation, long-press drag selection, touch handling and the special long-press selector.
+B0 no longer blocks static design of B1. It blocks only claims that final filter tabs are fully runtime-validated.
 
-`GlassTabView` owns normal selected-state rendering, icon/Lottie state, labels, counters/badges and profile avatar presentation.
+### B1 — flat/angular main bottom navigation
 
-Therefore a correct flat/angular Cybergram bottom-navigation pass must preserve all three behavioural layers and replace only their presentation seams.
+Status: `DESIGN-READY — EXECUTION NOT STARTED`.
 
-### Message body and adjacent states
+Priority: highest-value remaining production presentation pass.
 
-`MessageDrawable` owns the message-body drawable. Current Cybergram geometry is intentionally limited to supported text/media paths; historical implementation evidence explicitly left `TYPE_PREVIEW` on the upstream path.
+Spec: `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-Replies are not merely a small branch inside the bubble renderer. `ReplyMessageLine` has its own paths, paints, peer-colour resolution, animation and loading state.
-
-Reactions are similarly independent. `ReactionsLayoutInBubble` owns reaction-button layout, drawing, counters, animations and touch state.
-
-Do not create a single broad "fix ChatMessageCell" task for replies/reactions/forwards/selection. First identify the actual owner of each visible mismatch.
-
-### Service/date cells
-
-`ChatActionCell` is a large mixed-purpose component containing ordinary service messages plus many special actions/cards, gift states, reactions, buttons, images, spoilers and navigation behaviour.
-
-Do not restyle or clip the whole cell just to obtain an angular date/service plate. First isolate the ordinary text/date background drawing path from special interactive states. A first production pass must leave special cards/actions on their upstream presentation unless explicitly scoped later.
-
-## Global executor contract
-
-Every implementation or validation pass starts from a fresh repository check, not chat/model memory.
-
-Before work:
-
-1. fetch `dev` and `master`;
-2. read `AGENTS.md`, `docs/CURRENT_STATE.md`, this file and the relevant `docs/CYBERGRAM_UI_SPEC.md` section;
-3. record the starting `dev` SHA;
-4. inspect local status before claiming the worktree is clean;
-5. for implementation work, use a dedicated feature/fix branch when the pass changes a high-risk shared component.
-
-During work:
-
-- touch only the explicitly allowed files unless new evidence proves another owner is required;
-- do not perform unrelated formatting or cleanup;
-- do not alter protocol/networking/storage/auth/encryption behaviour;
-- do not weaken the non-Cybergram path to simplify the Cybergram path;
-- use the central Cybergram presentation gate;
-- reuse existing Cybergram geometry/HUD primitives;
-- stop rather than silently broadening scope.
-
-Before handoff:
-
-- run `git diff --check`;
-- run `python tools/validate_cybergram_theme.py` whenever theme/palette data is touched;
-- run the smallest relevant build, then the established debug build when practical;
-- never report a build/device pass without exact machine evidence;
-- return starting SHA, resulting SHA/commit, changed files, commands run, results, unresolved observations and whether the branch is ready to integrate.
-
-Historical local build command:
-
-`:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a`
-
-Historical output APK:
-
-`TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`
-
-Historical validation device/package:
-
-- Samsung SM-A256E / Android 16 / arm64-v8a
-- development package `org.telegram.messenger.beta`
-
-These are evidence of the existing workflow, not permission to assume the same machine/toolchain is currently available.
-
----
-
-# Bounded pass B0: validate final flat filter tabs
-
-Type: validation only
-
-Priority: immediate blocker cleanup
-
-Current target result: product patch `52b8e219729d0a90dd3335165cf4ef44acf46e5e`, now contained by later documentation-only `dev` commits.
-
-## Goal
-
-Close the only explicit validation gap in the preserved primary-dialogs UI: prove the final `FilterTabsView` implementation builds and behaves correctly on a real device at the exact source revision being tested.
-
-## Production-code scope
-
-No production code changes are authorized by this pass.
-
-If validation exposes a defect, stop and report the smallest reproducible defect. Do not opportunistically repair or refactor `FilterTabsView` in the validation pass.
-
-## Required checks
-
-Repository/static:
-
-- record exact checked-out SHA;
-- `git diff --check`;
-- `python tools/validate_cybergram_theme.py`;
-- verify the inspected `FilterTabsView.java` still contains the Cybergram-only presentation gate and retains the non-Cybergram blurred/rounded path.
-
-Build/device:
-
-- build the established single-ABI afat debug variant if the machine supports it;
-- record command, result, APK path, APK size and SHA-256;
-- install/update `org.telegram.messenger.beta`, leaving official Telegram untouched;
-- launch and record device/OS/package evidence;
-- check for FATAL/ANR around the test window.
-
-Visual/interaction matrix:
-
-- selected and unselected folder/filter tabs;
-- horizontal overflow/scroll if enough tabs exist;
-- tap selection;
-- page-swipe/manual selection interpolation;
-- unread counters where available;
-- long-press/menu behaviour;
-- edit/reorder/delete mode where available;
-- active Cybergram presentation has the dark chamfered panel and selected plate without the old large blurred pill;
-- a non-Cybergram theme retains the upstream rounded/blurred presentation when practical to verify.
-
-## Acceptance
-
-Pass only when build + device evidence exists for the exact tested SHA and the interaction matrix shows no functional regression.
-
-After success, update `docs/WORK_STATE.md` with the exact evidence and update `docs/CURRENT_STATE.md` so the final filter-tabs result is no longer described as validation pending.
-
----
-
-# Bounded pass B1: flat/angular main bottom navigation
-
-Suggested branch: `feature/cybergram-main-tabs-flat`
-
-Type: production presentation change
-
-Risk: high, because shared navigation/gesture/layout components are involved
-
-## Goal
-
-Replace the remaining large rounded/glass bottom-navigation presentation with a Cybergram dark technical panel and angular selected plates while preserving the complete Telegram navigation state machine.
-
-This pass is deliberately narrower than "redesign bottom navigation". It changes panel/selector shape and surface treatment only.
-
-## Allowed production files
-
-Primary allowed files:
+Primary owners:
 
 - `TMessagesProj/src/main/java/org/telegram/ui/MainTabsActivity.java`
 - `TMessagesProj/src/main/java/org/telegram/ui/MainTabsLayout.java`
 - `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java`
 
-`CybergramTheme.java` may be changed only if a truly shared semantic constant is needed. Prefer existing `PANEL`, `PANEL_RAISED`, `CYAN` and `BUBBLE_CORNER_CUT_DP` first.
+Critical architecture rule discovered during fresh reconciliation: `GlassTabView` is shared with attach/bot tabs. B1 must add an explicit main-tabs presentation opt-in, default false, and combine that opt-in with the central Cybergram presentation gate. Do not angularize every `GlassTabView` merely because Cybergram is active.
 
-No other production file is in scope without evidence and an explicit scope update.
+B1 preserves all ViewPager, long-press, drag-selection, visibility, badge, counter, avatar, inset and update-layout behaviour. Only the visible outer panel and selected-plate shapes/surfaces are in scope.
 
-## Required design seam
+E validation is required after implementation. A validation is required before the actual main-tabs interaction matrix can be called complete. P is desirable before release but does not need to block repository-side design/integration if E + A are otherwise clean and the remaining limitation is recorded.
 
-Use `CybergramTheme.isCybergramPresentation(resourcesProvider)`.
+### B2 — message-state coverage audit
 
-Reuse `CybergramHudDrawable` for panel-like drawables and `CybergramBubbleDrawable.buildPath(...)` when direct Canvas path drawing is required.
+Status: `READY — AUDIT/DEBUG ONLY`.
 
-### `MainTabsActivity`
+Spec: `docs/passes/B2_MESSAGE_STATE_AUDIT.md`.
 
-Keep unchanged in behaviour:
+Goal: replace the vague item “message edge cases” with an evidence matrix assigning every visible mismatch to its real owner. No production rendering changes are authorized in B2.
 
-- tab creation/order;
-- Chats/Contacts/Settings/Calls/Profile mapping;
-- call/settings visibility switching;
-- click and long-click actions;
-- ViewPager selection/reselection/scroll-to-top;
-- blur-source lifecycle;
-- bottom wrapper/insets/navigation-bar handling;
-- update-layout offsets;
-- tab visibility animation;
-- notification observers and badge updates.
+Current known boundaries:
 
-Cybergram may replace the *visible background assigned to `tabsView`* with an angular dark panel. Do not globally disable or delete the blur infrastructure merely because Cybergram does not display the glass background. Keep the upstream blur drawable available for non-Cybergram presentation and theme switching.
+- `MessageDrawable`: body geometry; Cybergram currently covers `TYPE_TEXT` / `TYPE_MEDIA` only;
+- `TYPE_PREVIEW`: deliberately excluded until actual product callers/desired behaviour are proven;
+- `ReplyMessageLine`: reply-specific paths/colour state;
+- `ReactionsLayoutInBubble`: reaction layout/drawing/state;
+- `ChatMessageCell`: caller/layout integration, not an excuse for an omnibus restyle.
 
-A safe shape is an `applyTabsPresentationBackground()`-style seam that selects the Cybergram HUD background or the existing upstream `tabsViewBackground` based on the central gate and is also called when theme colours/presentation update.
+Extend DEBUG showcase fixtures where useful so the audit is reproducible without a Telegram account.
 
-Do not alter the separate bottom `fadeView` in the first implementation unless real-device evidence shows that it creates an unacceptable visible glass capsule/wash in Cybergram. If it must be changed, do so with a Cybergram-only presentation branch while retaining its layout/visibility role.
+### B3 — conditional MessageDrawable TYPE_PREVIEW geometry
 
-### `MainTabsLayout`
+Status: `NOT AUTHORIZED — DERIVE FROM B2`.
 
-Do not change measurement, animated visibility, hit testing, long-press navigation, `performClick()` behaviour, spring state or ClickHelper logic.
+Create this implementation pass only if B2 proves a real Cybergram product surface using `TYPE_PREVIEW` should be angular. Do not enable it merely for conceptual symmetry with text/media.
 
-The only intended Cybergram change is the long-press custom selector currently rendered as a full rounded `drawRoundRect`: under Cybergram, render the same computed bounds as a shared chamfered Cybergram plate. The non-Cybergram draw path must remain the existing rounded selector.
+Likely owner: `MessageDrawable.java` only, unless B2 produces contrary evidence.
 
-### `GlassTabView`
+### B4 — conditional reply/reaction/message-owner fixes
 
-Do not change icon/Lottie state, selection animator timing, labels, counters, profile avatar loading, click behaviour or tab sizing.
+Status: `NOT AUTHORIZED — DERIVE FROM B2`.
 
-The normal selected-state background currently renders a scaled full rounded plate. Under Cybergram, use the same `selectedFactor`, scaling and bounds but draw a chamfered dark/cyan selected plate.
+Split by actual owner. Do not create one broad “fix message UI” change. A reply defect and a reaction defect are separate bounded passes unless evidence proves they require the same seam.
 
-Keep counters/badges rounded in this first pass. They are compact semantic indicators and are not the large glass capsule anti-target this pass is intended to remove.
+### B5 — service/date ownership and geometry audit
 
-Keep the profile avatar round.
+Status: `READY — AUDIT/DEBUG FIRST`.
 
-Typography changes are out of scope unless needed to preserve an already-established Cybergram chrome typeface through an existing helper. Do not combine a typography redesign with this pass.
+Spec: `docs/passes/B5_SERVICE_DATE_AUDIT.md`.
 
-## Visual target
+Static ownership is already narrowed to the ordinary `ChatActionCell.backgroundPath` pipeline. `ChatActionCell` also owns many rich cards/actions, so B5 must decide the plain service/date angular strategy and prove which states are ordinary versus special before production code changes.
 
-- outer panel: `CybergramTheme.PANEL`, restrained cyan outline, approximately the existing 1dp project language, 6dp-family chamfer;
-- selected plate: `CybergramTheme.PANEL_RAISED` plus restrained cyan outline/accent;
-- existing icon/text colour theme keys continue to carry state;
-- no large opaque cyan fill;
-- no decorative microtext and no fake security labels;
-- no new red treatment is required in this pass.
+Use single-line date, multi-line ordinary service text and representative rich/special actions in the evidence matrix.
 
-## Stop conditions
+### B6 — conditional angular plain service/date plate
 
-Stop and report instead of broadening scope if:
+Status: `NOT AUTHORIZED — DERIVE FROM B5`.
 
-- the desired result appears to require rewriting ViewPager/tab selection behaviour;
-- the Cybergram branch would change child measurement or hit targets;
-- non-Cybergram presentation cannot be preserved exactly enough;
-- more shared files need modification for reasons unrelated to visible panel/selector presentation;
-- counters/avatar/icon state would need a behavioural rewrite.
+Expected owner: `ChatActionCell.java`, limited to the ordinary text/date background path. Rich gifts/cards/buttons/ribbons remain upstream unless B5 explicitly proves a separate need.
 
-## Validation matrix
+Preserve text measurement, line-width calculations, paints, darken/dim layers, touch behaviour and special-state geometry.
 
-Build + real-device smoke is required before integration.
+### B7 — optional chat-canvas HUD/background layer
 
-Exercise:
+Status: `DEFERRED`.
 
-- Chats -> Contacts -> Settings/Profile navigation;
-- Calls tab enabled and disabled, including the Settings/Calls position swap;
-- reselect current tab and verify scroll-to-top behaviour;
-- long press on each supported tab and long-drag selection behaviour;
-- unread/permission badge presentation;
-- profile avatar rendering;
-- tab show/hide animation;
-- app-update layout if reasonably reproducible;
-- portrait plus configuration/insets change where practical;
-- Android navigation-bar bottom inset;
-- Cybergram active: no large rounded glass outer capsule or selected pill;
-- non-Cybergram theme: upstream glass/rounded navigation remains intact;
-- no FATAL/ANR.
+Do not start before B1 and the primary message/service presentation are coherent. It must be non-interactive and must not reduce message readability or wallpaper/media behaviour.
 
-Do not integrate on static inspection alone.
+Likely ownership must be re-audited at execution time around `ChatActivity` / chat-background layers. Do not infer a file scope from this backlog entry alone.
 
----
+### B8 — secondary client surfaces and onboarding
 
-# Bounded pass B2: message-state coverage audit
+Status: `DEFERRED / STAGE F`.
 
-Suggested branch: documentation/debug-only branch if repository changes are needed
+Settings, profiles, media viewers, calls, login/onboarding and secondary sheets come only after the primary messaging flow is coherent. The current emulator screenshot confirms pre-auth onboarding is still essentially upstream Telegram; that is known, not a regression in the current primary-flow scope.
 
-Type: evidence/audit, not a production fix
+Split secondary work by surface rather than creating a global theme rewrite.
 
-Risk: low to production because fixes are forbidden in this pass
+### R1 — release identity / credentials / signing / Firebase / package policy
 
-## Goal
+Status: `SEPARATE RELEASE TRACK`.
 
-Replace the vague backlog item "remaining message edge cases" with an evidence matrix that assigns each visible mismatch to the component that actually owns it.
+Do not mix with UI cleanup. Real credentials remain local/secret; package/application ID, signing and Firebase decisions require explicit release work.
 
-## Production-code scope
+## Dependency order
 
-No production rendering change is authorized.
+B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-The debug-only `CybergramShowcaseActivity` may be extended if necessary to produce deterministic cases that are difficult to create in a live account, provided it remains in the debug source set/manifests only.
+Recommended production order is B1 first, then B2 and B5 audits (which may run independently because they are evidence-oriented), followed only by the B3/B4/B6 tasks actually justified by those audits. B7 and B8 remain later.
 
-## Coverage matrix
+A pass does not authorize the next pass. The user chooses execution priority.
 
-Capture or inspect, at minimum:
+## Executor startup rule
 
-- incoming and outgoing plain text;
-- selected/pressed incoming and outgoing;
-- grouped message top/middle/bottom adjacency;
-- incoming/outgoing media;
-- media caption;
-- reply block incoming/outgoing;
-- forwarded header/state;
-- reactions: none, one, multiple, selected reaction where reproducible;
-- links and metadata/checks;
-- bot-buttons-bottom interaction with message body where reproducible;
-- service/date boundary adjacent to normal messages;
-- any real product surface that instantiates `MessageDrawable.TYPE_PREVIEW`.
+For any pass:
 
-For each mismatch, record:
+1. fresh-fetch `dev` and `master`;
+2. read `AGENTS.md`, `docs/CURRENT_STATE.md`, this file, the relevant `docs/passes/<PASS>.md`, and the applicable section of `docs/CYBERGRAM_UI_SPEC.md`;
+3. record starting SHA and local `git status`;
+4. do not destroy unknown local work;
+5. use a feature/fix branch for production changes to high-risk shared components;
+6. stay inside the allowed file scope; stop and report before broadening it;
+7. preserve the exact non-Cybergram behaviour/presentation path;
+8. run `git diff --check` and the smallest relevant checks;
+9. use the emulator runbook for E validation when possible;
+10. report exact machine evidence and unresolved validation tier gaps.
 
-- screenshot/reproduction;
-- expected Cybergram result;
-- actual result;
-- owning component, selected from `MessageDrawable`, `ChatMessageCell`, `ReplyMessageLine`, `ReactionsLayoutInBubble`, `ChatActionCell` or another evidenced owner;
-- whether the defect is colour, geometry, clipping, layout, state transition or interaction;
-- smallest candidate file scope for a later fix.
-
-## Special rule for `TYPE_PREVIEW`
-
-Do not automatically angularize `MessageDrawable.TYPE_PREVIEW` just because `TYPE_TEXT` and `TYPE_MEDIA` are angular.
-
-`TYPE_PREVIEW` has distinct scaling/theme behaviour in `MessageDrawable`, including its own dp scaling and global-theme colour path. First identify where it is actually used and whether changing it is a product requirement or merely changes a theme-preview/editor surface.
-
-Only create a production `TYPE_PREVIEW` geometry task after evidence establishes the desired surface and regression boundary.
-
-## Acceptance
-
-The pass succeeds when every observed mismatch has a concrete owner and no broad "fix ChatMessageCell" placeholder remains.
-
-Write the evidence/result into `docs/WORK_STATE.md` or a dedicated dated audit document and derive separate bounded implementation passes only for confirmed defects.
-
----
-
-# Conditional pass B3: message preview geometry
-
-Type: production change only if B2 establishes a real requirement
-
-Default status: NOT AUTHORIZED / CONDITIONAL
-
-Likely owner: `MessageDrawable.java`
-
-The pass must preserve the existing `TYPE_PREVIEW` theme/scaling semantics while introducing only the required Cybergram geometry branch. A debug showcase case is required before production integration when possible.
-
-Do not execute B3 merely because this entry exists.
-
----
-
-# Conditional pass B4: reply/reaction/message-state corrections
-
-Type: production fixes derived from B2
-
-Default status: NOT AUTHORIZED UNTIL OWNER IS KNOWN
-
-Each confirmed problem becomes its own pass. Do not combine `ReplyMessageLine`, `ReactionsLayoutInBubble` and `ChatMessageCell` into one omnibus patch.
-
-Examples of acceptable scopes after evidence:
-
-- reply-line palette/plate only;
-- reaction selected/unselected plate only;
-- one message-body clipping interaction;
-- one forwarded-header visual mismatch.
-
-Each pass must retain all touch/animation/content behaviour and preserve the non-Cybergram branch.
-
----
-
-# Bounded pass B5: service/date ownership audit
-
-Type: evidence/static audit first
-
-Risk: high if converted prematurely into implementation, because `ChatActionCell` owns many unrelated interactive/special states
-
-## Goal
-
-Identify the exact drawing path for ordinary date separators and ordinary text service messages, and prove it can be restyled without clipping or changing gift/special/action states.
-
-## Audit questions
-
-- Which method/drawable owns the simple date/service text background?
-- Is the background shared with special `ChatActionCell` cards or only simple actions?
-- Which Theme keys feed its surface/text?
-- Can a Cybergram-only chamfered background be injected without changing measurement/touch?
-- Are there shader/blur paths that must remain intact for special states?
-
-## Stop condition
-
-Do not create a whole-cell clip, background override or broad `ChatActionCell` restyle as part of this audit.
-
-## Result
-
-Produce a concrete implementation scope for a later `B6` pass limited to ordinary service/date plates. Special cards, gifts, interactive buttons, story/giveaway states and other rich action cells remain upstream unless separately authorized.
-
----
-
-# Conditional pass B6: plain service/date plates
-
-Type: production presentation change derived from B5
-
-Default status: CONDITIONAL ON B5 FINDINGS
-
-Visual target from `CYBERGRAM_UI_SPEC.md`:
-
-- compact dark technical plate;
-- restrained amber/cyan semantic accent;
-- chamfered rather than large translucent rounded bubble;
-- existing text/layout/accessibility/touch behaviour unchanged.
-
-Use the central Cybergram gate and shared geometry. Do not clip the full `ChatActionCell` canvas if that can affect effects, images or interactive special content.
-
----
-
-# Optional pass B7: sparse chat-canvas HUD layer
-
-Type: optional polish after primary messaging chrome is stable
-
-Priority: low
-
-The layer must be dedicated, non-interactive and sparse. It must not add per-message noise, fake security claims or intercept touches. It must not silently replace Telegram wallpaper semantics or degrade scroll performance.
-
-Prefer one screen-level background/overlay seam over decorations inside every message cell.
-
-Do not start this pass while bottom navigation or confirmed message-state defects remain open.
-
----
-
-# Later inventory B8: secondary surfaces
-
-Do not globally restyle the remainder of the client in one pass.
-
-Inventory settings, profiles, media viewer, calls and other secondary screens first. For each surface, identify ownership and create one bounded presentation pass with explicit files and non-Cybergram regression requirements.
-
-Primary messaging coherence remains the gate before broad Stage F work.
-
----
-
-# Separate release track
-
-The following are intentionally outside the UI backlog and must not be mixed into visual commits:
-
-- final application/package identity;
-- release signing and keystores;
-- production Telegram API credentials;
-- Firebase/service configuration;
-- release/distribution packaging;
-- any migration implications of changing application ID/package.
-
-Keep secrets outside version control. A future release-preparation pass must define its own security and migration boundaries.
-
-## Recommended execution order
-
-Unless new evidence changes priority:
-
-1. `B0` final filter-tabs build/device validation;
-2. `B1` bottom-navigation flat/angular presentation;
-3. `B2` message-state coverage audit;
-4. derive only evidenced `B3`/`B4` message fixes;
-5. `B5` service/date ownership audit;
-6. `B6` plain service/date plate if B5 proves a narrow seam;
-7. optional `B7` chat-canvas HUD;
-8. `B8` secondary-screen inventory and bounded passes;
-9. release track separately.
-
-This order is not permission for unattended execution. It exists so a weaker future planning session or a local coding agent does not need to rediscover project structure before each task.
+Historical arm64 Samsung evidence remains valid only for the revisions recorded in `docs/WORK_STATE.md`. The new x86_64 AVD is the default remote development/runtime baseline, not proof of physical-device behaviour.
