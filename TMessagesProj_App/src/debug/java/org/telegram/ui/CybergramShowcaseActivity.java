@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -14,12 +15,14 @@ import android.util.SparseIntArray;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
 import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
+import org.telegram.ui.Components.glass.GlassTabView;
 
 /**
  * DEBUG-ONLY visual polygon for Cybergram UI iteration.
@@ -54,7 +57,8 @@ public class CybergramShowcaseActivity extends Activity {
         super.onCreate(savedInstanceState);
         // No Theme.applyTheme(), no preference writes, no pm clear. The showcase palette
         // comes entirely from the Cybergram .attheme asset via the DEBUG provider below.
-        setContentView(new ShowcaseView(this, new Palette()));
+        final Palette palette = new Palette();
+        setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette)));
     }
 
     /**
@@ -101,18 +105,119 @@ public class CybergramShowcaseActivity extends Activity {
         }
     }
 
+    /**
+     * B1 DEBUG-ONLY main-tabs fixture.
+     *
+     * Renders the real production {@link GlassTabView} selected-plate path twice against the
+     * same deterministic Cybergram palette provider ({@link Palette} implements
+     * {@link CybergramTheme.GeometryProvider}, so the central Cybergram gate is active for
+     * both rows):
+     *
+     *   row A — the main-navigation path: instances explicitly opted in with
+     *           {@code setCybergramMainTabsPresentation(true)}, exactly as MainTabsActivity does;
+     *   row B — the attach-tab control path ({@code createAttachTab}), which is never opted in.
+     *
+     * Expected: the angular selected plate (PANEL_RAISED fill + 1dp restrained cyan outline)
+     * appears only in row A. Row B must stay on the upstream rounded translucent path even
+     * though Cybergram presentation is active.
+     *
+     * This is drawing/compilation evidence for the opt-in rule only. It is not A validation:
+     * it does not exercise the authenticated MainTabsActivity state machine, ViewPager
+     * movement, badges, insets or the outer panel created in MainTabsActivity.createView.
+     */
+    private static final class B1TabsFixture {
+
+        private static final int TABS = 4;
+        private static final int TAB_W_DP = 84;
+        private static final int TAB_H_DP = 54;
+        private static final int GAP_DP = 6;
+        private static final int PAD_DP = 8;
+        private static final int SELECTED_INDEX = 1;
+
+        private static final GlassTabView.TabAnimation[] ANIMATIONS = {
+                GlassTabView.TabAnimation.CHATS,
+                GlassTabView.TabAnimation.CONTACTS,
+                GlassTabView.TabAnimation.CALLS,
+                GlassTabView.TabAnimation.SETTINGS
+        };
+        private static final int[] LABEL_RES = {
+                R.string.MainTabsChats,
+                R.string.MainTabsContacts,
+                R.string.MainTabsCalls,
+                R.string.Settings
+        };
+
+        static Bitmap render(Activity activity, Palette palette) {
+            final int tabW = dp(TAB_W_DP);
+            final int tabH = dp(TAB_H_DP);
+            final int gap = dp(GAP_DP);
+            final int pad = dp(PAD_DP);
+
+            final int width = pad * 2 + TABS * tabW + (TABS - 1) * gap;
+            final int height = pad * 2 + tabH * 2 + gap;
+
+            final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            final Canvas canvas = new Canvas(bitmap);
+            canvas.drawColor(CybergramTheme.PANEL);
+
+            drawRow(canvas, activity, palette, pad, pad, tabW, tabH, gap, true);
+            drawRow(canvas, activity, palette, pad, pad + tabH + gap, tabW, tabH, gap, false);
+            return bitmap;
+        }
+
+        private static void drawRow(Canvas canvas, Activity activity, Palette palette, int left, int top,
+                                    int tabW, int tabH, int gap, boolean optedIn) {
+            int x = left;
+            for (int i = 0; i < TABS; i++) {
+                final GlassTabView view = optedIn
+                        ? GlassTabView.createMainTab(activity, palette, ANIMATIONS[i], LABEL_RES[i])
+                        : createControlTab(activity, palette, i);
+                if (optedIn) {
+                    view.setCybergramMainTabsPresentation(true);
+                }
+                view.measure(
+                        View.MeasureSpec.makeMeasureSpec(tabW, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(tabH, View.MeasureSpec.EXACTLY));
+                view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+                // Draw the selected plate over the tab's own measured box, exactly as the
+                // production layout does through setVisualWidth().
+                view.setVisualWidth(view.getMeasuredWidth());
+                view.setSelected(i == SELECTED_INDEX, false);
+
+                final int save = canvas.save();
+                canvas.translate(x, top);
+                view.draw(canvas);
+                canvas.restoreToCount(save);
+                x += view.getMeasuredWidth() + gap;
+            }
+        }
+
+        /** Control row: attach-tab factory, i.e. the path that must never be opted in. */
+        private static GlassTabView createControlTab(Activity activity, Palette palette, int index) {
+            final GlassTabView view = GlassTabView.createAttachTab(activity, palette);
+            view.setText(activity.getString(LABEL_RES[index]));
+            return view;
+        }
+
+        private static int dp(float value) {
+            return (int) (value * AndroidUtilities.density + 0.5f);
+        }
+    }
+
     private static final class ShowcaseView extends View {
 
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final Palette palette;
+        private final Bitmap b1TabsFixture;
         private final Path path = new Path();
         private final RectF rect = new RectF();
         private final float d;
 
-        ShowcaseView(Activity activity, Palette palette) {
+        ShowcaseView(Activity activity, Palette palette, Bitmap b1TabsFixture) {
             super(activity);
             this.palette = palette;
+            this.b1TabsFixture = b1TabsFixture;
             d = AndroidUtilities.density;
         }
 
@@ -127,7 +232,31 @@ public class CybergramShowcaseActivity extends Activity {
             drawHeader(canvas, w);
             drawDebugBanner(canvas, w);
             drawDialogs(canvas, w);
+            drawB1TabsFixture(canvas, w);
             drawComposer(canvas, w, h);
+        }
+
+        /**
+         * B1 fixture row placement is deliberately fixed and documented so the rendered plate
+         * can be located deterministically in an emulator screenshot:
+         *   row A (opt-in main tabs) top edge = fixtureTop + dp(8)
+         *   row B (attach control)   top edge = fixtureTop + dp(8) + dp(54) + dp(6)
+         */
+        private void drawB1TabsFixture(Canvas canvas, int w) {
+            if (b1TabsFixture == null) {
+                return;
+            }
+            final int fx = dp(8);
+            final int fy = dp(400);
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(12));
+            paint.setTextAlign(Paint.Align.LEFT);
+            paint.setColor(0xff00e5ff);
+            canvas.drawText("B1 fixture \u2014 row A: main tabs (opted in) / row B: attach tabs (control)",
+                    fx, fy - dp(6), paint);
+
+            canvas.drawBitmap(b1TabsFixture, fx, fy, null);
         }
 
         private void drawHeader(Canvas canvas, int w) {
