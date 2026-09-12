@@ -1,16 +1,20 @@
-# Cybergram remaining UI architecture — 2026-09-11
+# Cybergram remaining UI architecture
+
+Last reconciled: 2026-09-12
 
 Status: static reconnaissance supporting `docs/EXECUTION_BACKLOG.md`.
 
-This document records source ownership and narrow presentation seams for the highest-value remaining Cybergram surfaces. It is evidence for planning, not runtime validation and not design authority.
+This document records source ownership and safe presentation seams for the highest-value remaining Cybergram surfaces. It is planning evidence, not runtime validation and not design authority.
 
-Source/product basis: Cybergram product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e`, with later repository-only documentation commits on `dev`.
+Product basis: Cybergram product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e`; later `dev` commits through the 2026-09-12 reconciliation are documentation/validation planning unless explicitly stated otherwise.
 
 Read `AGENTS.md`, `docs/CURRENT_STATE.md`, `docs/CYBERGRAM_UI_SPEC.md` and `docs/EXECUTION_BACKLOG.md` before acting on this material.
 
 ## 1. Bottom navigation ownership
 
-The remaining bottom navigation is not owned by `DialogsActivity`. It is split across three behavioural/rendering layers plus one glass-colour provider.
+The main bottom navigation is active root UI for authenticated clients. `LaunchActivity` creates `MainTabsActivity` when the current account is activated.
+
+The surface is split across three rendering/behaviour layers. `MainTabsLayout` and `GlassTabView` were still byte-identical to upstream `master` at the preserved product cut, so B1 is their first Cybergram-specific presentation seam.
 
 ### `MainTabsActivity`
 
@@ -21,20 +25,18 @@ File:
 Observed ownership:
 
 - creates `MainTabsLayout`;
-- creates five `GlassTabView` instances for Chats, Contacts, Settings, Calls and Profile;
-- maps the five concrete views onto four tab positions because Calls and Settings share the same position;
-- owns click and long-click routing;
-- coordinates tab selection/reselection with the ViewPager;
+- creates five concrete `GlassTabView` instances for Chats, Contacts, Settings, Calls and Profile;
+- maps five views onto four logical tab positions because Calls and Settings share a position;
+- owns click/long-click routing and ViewPager selection/reselection;
 - owns Calls/Settings visibility switching;
 - owns `tabsViewWrapper`, bottom fade and window/navigation-bar inset placement;
-- creates and stores the `BlurredBackgroundDrawable` used as the visible main-tabs glass background;
-- owns the render-node/color blur source lifecycle;
-- updates tab/glass colours on theme changes;
-- drives badge/counter updates and profile avatar state.
+- creates/stores the `BlurredBackgroundDrawable` used as the visible main-tabs glass background;
+- owns render-node/color blur-source lifecycle;
+- updates badges/counters/profile state.
 
-Presentation conclusion:
+Presentation seam:
 
-The Cybergram seam belongs at the point where the visible `tabsView` background is chosen. The existing blur drawable/source may continue to exist for non-Cybergram themes and theme switching. Do not globally disable the blur system or remove its lifecycle simply because Cybergram should not display a glass capsule.
+Choose the visible `tabsView` background here. Cybergram can display a `CybergramHudDrawable` dark/angular panel while the existing upstream blur drawable remains constructed/stored for non-Cybergram themes and theme switching. Do not globally disable blur3.
 
 ### `MainTabsLayout`
 
@@ -44,20 +46,20 @@ File:
 
 Observed ownership:
 
-- responsive tab measurement and width allocation;
+- responsive text measurement and tab-width allocation;
 - animated child visibility;
 - visual-width interpolation;
-- selected-tab propagation to `GlassTabView`;
-- long-press gesture capture and drag-across-tabs selection;
-- hit testing and click suppression;
+- selected-tab propagation;
+- long-press capture and drag-across-tabs selection;
+- hit testing / click suppression;
 - spring/scale state;
-- custom long-press selector.
+- special selector used while long-press dragging.
 
-The custom long-press selector is drawn in `dispatchDraw(...)` as a rounded rectangle using bounds already computed from the active tab/drag position.
+The long-press selector is currently a rounded rectangle drawn from already-computed animated bounds.
 
-Presentation conclusion:
+Presentation seam:
 
-Do not touch measurement or gesture code. A Cybergram branch may reuse the existing computed selector bounds and substitute only the selector shape with the shared chamfered path/HUD primitive. The original `drawRoundRect` remains the non-Cybergram path.
+Do not touch measurement or gesture/state code. Under Cybergram only, render a chamfered selector using the same computed bounds. Preserve the existing rounded branch otherwise.
 
 ### `GlassTabView`
 
@@ -67,18 +69,29 @@ File:
 
 Observed ownership:
 
-- normal per-tab selected state;
-- selected-state animation factor;
+- normal selected-state plate and selection factor;
 - icon/Lottie state;
-- labels/typeface transition;
+- label/typeface transition;
 - counters/badges;
 - profile avatar presentation.
 
-The normal selected plate is independently drawn by each `GlassTabView` as a scaled rounded plate.
+The normal selected plate is drawn per tab as a scaled rounded rectangle.
 
-Presentation conclusion:
+Important sharing boundary:
 
-The Cybergram pass should substitute only this plate shape/surface while keeping the existing selected factor, scale animation, icons, counters and avatar state. Counters and the profile avatar need not be angularized in the first pass.
+`GlassTabView` is **not main-tabs-only**. The same class also constructs attachment and attachment-bot tabs through `createAttachTab(...)` / `createAttachBotTab(...)`.
+
+Therefore a branch based only on `CybergramTheme.isCybergramPresentation(resourcesProvider)` would incorrectly change unrelated attach/bot-tab geometry whenever Cybergram is active.
+
+Required presentation model for B1:
+
+- add a presentation-only explicit main-tabs opt-in, default false;
+- set it only on the five instances created by `MainTabsActivity`;
+- draw the angular selected plate only when explicit opt-in **and** central Cybergram presentation are both true;
+- leave attach/bot tabs on the upstream rounded path;
+- keep counters/badges and profile avatar rounded in B1.
+
+This is a general rule for future Cybergram work: the global theme gate says whether Cybergram is active; an explicit local opt-in is additionally required when the shared component serves unrelated surfaces.
 
 ### `BlurredBackgroundProviderImpl.mainTabs(...)`
 
@@ -86,32 +99,37 @@ File:
 
 `TMessagesProj/src/main/java/org/telegram/ui/Components/blur3/drawable/color/impl/BlurredBackgroundProviderImpl.java`
 
-Observed ownership:
+This supplies glass colours/strokes/shadow parameters. It is not the navigation state machine and not the right place for Cybergram geometry.
 
-`mainTabs(...)` supplies glass background colour, top/bottom stroke colours, shadow parameters and stroke width. It is a colour/effect provider, not the navigation state machine and not the correct location for Cybergram geometry.
+Do not modify it in B1. Keep upstream glass configuration intact for normal themes.
 
-Presentation conclusion:
+### Existing palette bridge
 
-Do not modify this shared provider for the first Cybergram bottom-navigation pass. Keep upstream glass configuration intact for normal themes. Select a Cybergram-visible background at the `MainTabsActivity` presentation seam instead.
+`cybergram.attheme` already defines dark/cyan values for:
 
-## 2. Filter/folder tabs as precedent
+- `glass_targetMainTabs`;
+- `glass_tabSelected`;
+- `glass_tabSelectedText`;
+- `glass_tabUnselected`.
+
+Those keys deliberately darken the inherited glass system while geometry remains upstream. B1 therefore primarily replaces shape/effect ownership; it should not invent a second bottom-navigation palette.
+
+## 2. Filter/folder tabs precedent
 
 File:
 
 `TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java`
 
-The final landed Cybergram implementation establishes a useful pattern for shared Telegram components:
+The landed Cybergram implementation is the reference pattern for shared Telegram presentation seams:
 
-- gate on `CybergramTheme.isCybergramPresentation(resourcesProvider)`;
-- retain the upstream rounded selector and blurred background object;
-- create Cybergram-specific `CybergramHudDrawable` panel/selector instances;
-- draw the Cybergram panel only in the Cybergram branch;
-- suppress the visible blurred background only in that branch;
-- use `CybergramBubbleDrawable.buildPath(...)` for angular clipping;
-- leave scrolling, reorder/edit state, delegates and animation logic intact;
-- retain the exact upstream rounded/blurred path when Cybergram presentation is inactive.
+- central Cybergram gate;
+- upstream rounded selector/blur objects remain present;
+- Cybergram-specific HUD panel/selected plate/angular clip;
+- blurred background is visually suppressed only in Cybergram;
+- scrolling/reorder/edit/delegate machinery remains untouched;
+- exact upstream presentation remains available when Cybergram is inactive.
 
-This pattern should be copied conceptually, not mechanically, into bottom navigation.
+The 2026-09-11 x86_64 emulator run proves the current product tree still builds/installs/starts, but it did not reach authenticated `FilterTabsView`. B0 remains a surface-specific authenticated validation task, not a generic build task.
 
 ## 3. Message-body ownership
 
@@ -123,17 +141,15 @@ File:
 
 Observed ownership:
 
-- base body path/drawable;
-- incoming/outgoing and selected body colours;
-- grouped top/bottom-near geometry state;
+- base message-body path/drawable;
+- incoming/outgoing/selected body colours;
+- grouped top/bottom-near geometry;
 - shadows/gradients/nine-patch caching;
-- three drawable types: `TYPE_TEXT`, `TYPE_MEDIA`, `TYPE_PREVIEW`.
+- drawable types `TYPE_TEXT`, `TYPE_MEDIA`, `TYPE_PREVIEW`.
 
-Current Cybergram implementation/history establishes angular geometry for text/media paths and deliberately leaves `TYPE_PREVIEW` outside that initial geometry pass.
+Current Cybergram geometry intentionally covers `TYPE_TEXT` and `TYPE_MEDIA`. Both the angular path branch and Cybergram border branch exclude `TYPE_PREVIEW`.
 
-Important distinction:
-
-`TYPE_PREVIEW` also has special theme and density/scaling behaviour. Its colour access bypasses the instance `ResourcesProvider` in favour of global Theme values, and its `dp(...)` path uses preview-specific scaling. Therefore it must not be angularized solely for conceptual symmetry. First identify its actual product surfaces.
+`TYPE_PREVIEW` also has special theme/density behaviour: its colour path uses global Theme access and its `dp(...)` scaling is preview-specific. Do not angularize it merely for symmetry. B2 must identify its actual callers/product surface first.
 
 ### `ReplyMessageLine`
 
@@ -141,11 +157,7 @@ File:
 
 `TMessagesProj/src/main/java/org/telegram/ui/Components/ReplyMessageLine.java`
 
-This class owns reply-line/background paths, paints, animated colours, peer-colour resolution, loading state and emoji/sticker decoration. Reply visuals are not simply part of the main `MessageDrawable` polygon.
-
-Conclusion:
-
-Any reply mismatch must be assigned here (or to a proven caller/layout owner) before a production fix is written.
+Owns reply-line/background paths, paints, peer-colour resolution, animation/loading state and related decoration. Reply visuals are not simply part of the `MessageDrawable` polygon.
 
 ### `ReactionsLayoutInBubble`
 
@@ -153,11 +165,11 @@ File:
 
 `TMessagesProj/src/main/java/org/telegram/ui/Components/Reactions/ReactionsLayoutInBubble.java`
 
-This class owns reaction-button layout, drawing, counters, selected state, animations and touch handling.
+Owns reaction-button layout/drawing, counters, selected state, animations and touch behaviour.
 
 Conclusion:
 
-Reaction geometry/state work requires its own bounded pass. Do not bury it inside a generic `ChatMessageCell` restyle.
+Do not create a broad “fix ChatMessageCell” pass. B2 first assigns each mismatch to its real owner. B3/B4 are generated only from observed defects.
 
 ## 4. Service/date ownership
 
@@ -165,68 +177,61 @@ Primary file:
 
 `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatActionCell.java`
 
-Static reconnaissance confirms that ordinary service/date presentation has a narrower seam than the overall size of `ChatActionCell` suggests.
+`ChatActionCell` is a large mixed-purpose class. It contains ordinary service/date labels and many rich/special actions, gifts, buttons, images, reactions and cards.
 
-### Date path
+### Plain date/service path
 
-`setCustomDate(...)` formats the date/scheduled-date label, stores it as `customText` and routes it through `updateTextInternal(...)`. The date therefore participates in the same text-layout/background pipeline as ordinary simple service text rather than requiring a separate date-only renderer.
+`setCustomDate(...)` formats the date/scheduled-date text and routes it through the same text/background pipeline used by ordinary service text.
 
-### Ordinary background path
+The ordinary background is rebuilt from text line widths/heights into `backgroundPath`. The upstream outline is line-following and uses rounded outer/inner `arcTo(...)` segments (including the familiar `corner=11dp` / inner-corner calculations), then the same path is drawn with service background, optional darken/gradient and dim paints.
 
-`drawBackground(Canvas, boolean)` selects:
+This is the narrow owner for ordinary service/date silhouette geometry.
 
-- `Theme.key_paint_chatActionBackground`;
-- `Theme.key_paint_chatActionBackgroundDarken`;
-- `Theme.key_paint_chatActionText`.
+### Rich/special states
 
-When `invalidatePath` is set, the cell rebuilds `backgroundPath` from the current text layout. The upstream path follows line widths and line heights and uses rounded outer/inner arc segments. It is then drawn through `canvas.drawPath(backgroundPath, backgroundPaint)` with the optional service-gradient darkening/dim layers drawn through the same path.
+Several special layouts construct their own secondary paths/rounded cards/buttons/ribbons. They are not safe collateral for a simple service/date restyle.
 
-This is the concrete owner for the ordinary multi-line service/date bubble silhouette.
+Required B5/B6 boundary:
 
-### Rich/special states are separate
+- audit and identify ordinary versus rich states first;
+- preserve existing text measurement and bounds;
+- choose an explicit angular strategy for ordinary single-line and multi-line service/date backgrounds;
+- change only the ordinary background-path construction/drawing in B6;
+- preserve the existing background/darken/dim paint pipeline;
+- leave rich/special card/button/ribbon geometry upstream unless separately authorized.
 
-`ChatActionCell` also contains many unrelated rich states: premium/star gifts, offers, wallpaper actions, community changes, buttons, stickers/images, reactions, ribbons and other special cards.
+A single enclosing angular rectangle would simplify the upstream line-following silhouette and must be an explicit visual decision, not an accidental implementation shortcut.
 
-Several of those paths explicitly construct their own `backgroundPath2`, round-rect button/card paths, ribbons or other geometry after/beside the ordinary background path.
+## 5. Debug/emulator validation architecture
 
-Conclusion:
+`docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md` establishes API 36 `x86_64` AVD validation as the default remote machine baseline.
 
-A Cybergram plain service/date pass can target only the ordinary `backgroundPath` generation/drawing branch. It must not globally clip the `ChatActionCell` canvas and must not replace rich-card/button paths.
+The existing DEBUG `CybergramShowcaseActivity` can be extended for deterministic rendering cases that do not require an account. This is especially useful for B1/B2/B5 visual primitives.
 
-### Candidate narrow implementation seam
+However, a debug fixture validates drawing/compilation only. It must not be confused with an authenticated production-surface test of `MainTabsActivity`, `FilterTabsView` or real message/state data.
 
-A later production pass should:
+Validation tiers and their current meaning are maintained in `docs/EXECUTION_BACKLOG.md`.
 
-- add the central Cybergram presentation gate to `ChatActionCell`;
-- preserve the existing text measurement, line-width calculations and background bounds;
-- replace only the ordinary rounded path construction with a Cybergram-specific chamfered path strategy;
-- preserve the same background/darken/dim paint pipeline;
-- leave rich/special card/button/ribbon paths upstream;
-- verify single-line date, multi-line ordinary service text and representative rich actions separately.
+## 6. Derived architectural rules
 
-The exact multi-line angular strategy still needs implementation design. A single enclosing rectangle would change the current line-hugging silhouette and should not be introduced accidentally. Either reproduce the line-following outline with chamfered transitions or explicitly decide that Cybergram service plates use one compact enclosing plate after visual evidence.
+1. Presentation detection stays central in `CybergramTheme`.
+2. Shared Telegram state machines remain upstream-owned.
+3. Cybergram geometry reuses project-owned primitives.
+4. Non-Cybergram presentation remains present and testable.
+5. A globally shared component needs local opt-in when only one of its surfaces is being restyled.
+6. Complex visual work is split by actual renderer/owner before implementation.
+7. Emulator evidence, authenticated-surface evidence and physical-device/OEM evidence are separate claims.
+8. A large upstream class is a reason to narrow scope, not permission to refactor it.
 
-## 5. Architectural rules derived from the remaining surfaces
+## 7. Backlog relationship
 
-The current Cybergram codebase now has a consistent safe pattern:
+- B0: authenticated final FilterTabs validation; generic E/build baseline already exists.
+- B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances.
+- B2: message-state evidence/ownership matrix.
+- B3/B4: conditional message-owner fixes derived only from B2.
+- B5: service/date audit and geometry decision.
+- B6: conditional ordinary `ChatActionCell.backgroundPath` implementation derived only from B5.
+- B7: optional later chat-canvas HUD.
+- B8: secondary screens/onboarding after primary flow is coherent.
 
-1. presentation detection stays central in `CybergramTheme`;
-2. shared Telegram state machines remain upstream-owned;
-3. Cybergram geometry uses shared project primitives;
-4. non-Cybergram presentation remains present and testable;
-5. complex surfaces are split by actual visual owner before implementation;
-6. validation evidence belongs to the exact tested revision and is never inherited automatically from older builds.
-
-The high-risk failure mode to avoid is an omnibus restyle of `MainTabsActivity`, `ChatMessageCell` or `ChatActionCell`. Their size is evidence that scope should become narrower, not permission to refactor more of them.
-
-## 6. Relationship to execution backlog
-
-`docs/EXECUTION_BACKLOG.md` contains the executable passes. This architecture note supports those pass boundaries:
-
-- `B0`: final FilterTabs validation;
-- `B1`: bottom-navigation presentation through `MainTabsActivity` + `MainTabsLayout` + `GlassTabView`, with `BlurredBackgroundProviderImpl` intentionally left upstream;
-- `B2`: message-state evidence/ownership matrix before production corrections;
-- `B3/B4`: conditional owner-specific message fixes;
-- `B5/B6`: service/date work, now statically narrowed to the ordinary `ChatActionCell.backgroundPath` pipeline while rich action geometry remains out of scope.
-
-This reconnaissance is static repository evidence only. It does not claim any new Android build or runtime validation.
+This document is static source evidence. Exact execution status belongs in `docs/EXECUTION_BACKLOG.md`.
