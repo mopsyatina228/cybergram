@@ -58,7 +58,8 @@ public class CybergramShowcaseActivity extends Activity {
         // No Theme.applyTheme(), no preference writes, no pm clear. The showcase palette
         // comes entirely from the Cybergram .attheme asset via the DEBUG provider below.
         final Palette palette = new Palette();
-        setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette)));
+        setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette),
+                CybergramB2MessageStatesFixture.render(this, palette)));
     }
 
     /**
@@ -210,14 +211,16 @@ public class CybergramShowcaseActivity extends Activity {
         private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final Palette palette;
         private final Bitmap b1TabsFixture;
+        private final Bitmap b2MessageStatesFixture;
         private final Path path = new Path();
         private final RectF rect = new RectF();
         private final float d;
 
-        ShowcaseView(Activity activity, Palette palette, Bitmap b1TabsFixture) {
+        ShowcaseView(Activity activity, Palette palette, Bitmap b1TabsFixture, Bitmap b2MessageStatesFixture) {
             super(activity);
             this.palette = palette;
             this.b1TabsFixture = b1TabsFixture;
+            this.b2MessageStatesFixture = b2MessageStatesFixture;
             d = AndroidUtilities.density;
         }
 
@@ -233,7 +236,31 @@ public class CybergramShowcaseActivity extends Activity {
             drawDebugBanner(canvas, w);
             drawDialogs(canvas, w);
             drawB1TabsFixture(canvas, w);
+            drawB2MessageStatesFixture(canvas, w);
             drawComposer(canvas, w, h);
+        }
+
+        /**
+         * B2 message-state probe. Placement is fixed and documented so the rendered rows can be
+         * located deterministically in an emulator screenshot: the bitmap is blitted at
+         * {@code (dp(8), dp(536))} and is {@code 396 x 268} dp. Row order is repeated in its legend:
+         * 1 plain, 2 selected, 3 grouped, 4 media/preview, 5 reply, 6 reactions.
+         */
+        private void drawB2MessageStatesFixture(Canvas canvas, int w) {
+            if (b2MessageStatesFixture == null) {
+                return;
+            }
+            final int fx = dp(8);
+            final int fy = dp(536);
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(12));
+            paint.setTextAlign(Paint.Align.LEFT);
+            paint.setColor(0xff00e5ff);
+            canvas.drawText("B2 message-state probe \u2014 real MessageDrawable / ReplyMessageLine / ReactionsLayoutInBubble",
+                    fx, fy - dp(6), paint);
+
+            canvas.drawBitmap(b2MessageStatesFixture, fx, fy, null);
         }
 
         /**
