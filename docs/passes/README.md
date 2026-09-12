@@ -7,7 +7,7 @@ Give a local executor one pass file plus the authority documents named inside it
 Current pass set:
 
 - `B0_FILTER_TABS_VALIDATION.md` — `PARTIAL`: generic API 36 x86_64 emulator build/install/start baseline passed; authenticated production `FilterTabsView` interaction/visual matrix remains pending. Validation only, no opportunistic production fixes.
-- `B1_MAIN_TABS_FLAT.md` — `DESIGN-READY`: bounded main bottom-navigation presentation pass. Important constraint: `GlassTabView` is shared with attach/bot tabs, so main-tabs Cybergram rendering requires explicit per-instance opt-in in addition to the central Cybergram gate.
+- `B1_MAIN_TABS_FLAT.md` — `INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`: bounded main bottom-navigation presentation pass, landed on `dev` as `ab314d882b193ec5df9dd188b7e945ea7ef35c98` plus DEBUG fixture `6802e001012f2cad8eddcc89d137c17534e8f1ba`. Important constraint: `GlassTabView` (shared with attach/bot tabs and other `createMainTab` callers) and `MainTabsLayout` (also hosted by `StatisticActivity`) both require explicit per-instance main-tabs opt-in in addition to the central Cybergram gate.
 - `B2_MESSAGE_STATE_AUDIT.md` — `READY`: production-fix-free evidence matrix for message body, replies, reactions, forwards, selected/pressed states and `TYPE_PREVIEW` ownership.
 - `B5_SERVICE_DATE_AUDIT.md` — `READY`: ordinary-vs-rich `ChatActionCell` ownership/runtime audit and geometry decision before any production service/date restyle.
 
