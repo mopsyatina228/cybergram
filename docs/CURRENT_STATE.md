@@ -52,7 +52,8 @@ Durably landed on `dev`:
 - dialogs search presentation;
 - Cybergram primary-chrome `sans-serif-condensed` typography;
 - original launcher icon treatment;
-- Cybergram flat/angular dialog filter/folder tabs in `FilterTabsView`.
+- Cybergram flat/angular dialog filter/folder tabs in `FilterTabsView`;
+- Cybergram flat/angular main bottom navigation (B1): dark chamfered outer panel, angular selected plate and angular long-press selector, replacing the rounded/glass capsule for main tabs only.
 
 No intentional Cybergram protocol, encryption, account/session, storage/database or networking redesign belongs to this state.
 
@@ -83,24 +84,29 @@ In particular, the final `FilterTabsView` patch is no longer accurately describe
 
 B0 in `docs/passes/B0_FILTER_TABS_VALIDATION.md` now contains only the remaining authenticated-surface validation work.
 
+B1 (main bottom navigation) is integrated on `dev` at
+`ab314d882b193ec5df9dd188b7e945ea7ef35c98` (production) plus `6802e001012f2cad8eddcc89d137c17534e8f1ba` (DEBUG-only fixture). Its state is:
+
+`INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`
+
+Its E evidence (build, install, launch, no FATAL/ANR, DEBUG opt-in fixture, APK size/SHA-256) is recorded in `docs/WORK_STATE.md` and `docs/passes/B1_MAIN_TABS_FLAT.md`. The authenticated main-tabs interaction matrix and physical-device confidence remain open, and the outer-panel footprint has no authenticated visual confirmation yet.
+
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
 ## Remaining architecture / next work
 
-The highest-value production pass is B1: flat/angular main bottom navigation.
-
-Fresh static reconciliation established:
+B1 (flat/angular main bottom navigation) is implemented and integrated; see the validation boundary above for its open A/P tiers. What fresh static reconciliation established remains true and is now a corrected architecture fact:
 
 - authenticated root navigation is `MainTabsActivity`;
 - outer panel/glass ownership is in `MainTabsActivity`;
 - long-press/drag selector ownership is in `MainTabsLayout`;
 - normal selected plate/icon/label/counter/avatar ownership is in `Components/glass/GlassTabView`;
 - `MainTabsLayout` and `GlassTabView` were still upstream-identical at the preserved product cut;
-- `GlassTabView` is also used by attach/bot tabs, so B1 **must not** use a Cybergram-wide selector branch there. Main-tab instances require explicit local opt-in in addition to `CybergramTheme.isCybergramPresentation(...)`.
+- **neither `GlassTabView` nor `MainTabsLayout` is main-tabs-only.** `GlassTabView` is also used by attach/bot tabs and by `StatisticActivity`/`StarGiftPreviewSheet`, and `MainTabsLayout` is also hosted by `StatisticActivity`. B1 therefore must not use a gate-only branch in either class: main-tab instances require explicit local opt-in (`setCybergramMainTabsPresentation`) in addition to `CybergramTheme.isCybergramPresentation(...)`. This is the landed implementation.
 
-The hardened executor spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
+The B1 spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-After/alongside B1, B2 audits message-state ownership without production fixes, and B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits.
+B2 audits message-state ownership without production fixes, and B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits.
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 

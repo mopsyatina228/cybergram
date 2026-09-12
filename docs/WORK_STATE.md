@@ -1,6 +1,6 @@
 # Cybergram work state
 
-Last updated: 2026-09-10
+Last updated: 2026-09-12
 
 ## Repository authority
 
@@ -590,6 +590,64 @@ Message body/captions/replies/reactions/pinned-message text, composer input, ser
 2. Tune the `.attheme` palette from device screenshots.
 3. Integrate angular geometry into `MessageDrawable` behind a narrow Cybergram-specific seam. (DONE — geometry-only pass; then border + grouped near-corners pass. Remaining follow-ups: `TYPE_PREVIEW` support, and validating replies/reactions/forwards/pressed states.)
 4. Validate plain text, grouped messages, replies, reactions, forwards, media, selection and pressed states before extending the design to the composer and dialog list. (Stage D pass 1 started: header + composer structural decoration added via gated seams; composer/dialog-list full runtime validation pending an authenticated beta session; angular send control = Stage D pass 2.)
+
+## B1 — flat/angular main bottom navigation (integrated 2026-09-12)
+
+Status: **INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING**.
+
+Base: `dev` at `a076d3d460223c1a3c4ba9057f8564c72ca306e9` (unchanged at integration time; no rebase was needed).
+
+Commits (kept separate, integrated by fast-forward, not squashed):
+
+- production: `ab314d882b193ec5df9dd188b7e945ea7ef35c98` — `MainTabsActivity.java`, `MainTabsLayout.java`, `Components/glass/GlassTabView.java` (+155/−8);
+- DEBUG fixture: `6802e001012f2cad8eddcc89d137c17534e8f1ba` — `TMessagesProj_App/src/debug/java/org/telegram/ui/CybergramShowcaseActivity.java` (+131/−2), debug source set only, no release effect.
+
+### Architecture correction (the reason the seam is shaped this way)
+
+The B1 spec originally stated that the central Cybergram gate alone was sufficient for `MainTabsLayout` because it "owns the main-tabs surface". That is false in this tree:
+
+- `StatisticActivity.java:627` also hosts `MainTabsLayout`;
+- `GlassTabView.createMainTab(...)` is additionally called by `StatisticActivity` and `StarGiftPreviewSheet`, and `createAttachTab`/`createAttachBotTab` are used by `ChatAttachAlert`.
+
+So **both** shared classes need central gate **+** explicit per-instance main-tabs opt-in. `setCybergramMainTabsPresentation(boolean)` (default `false`, presentation-only) was added to `MainTabsLayout` and `GlassTabView`; the only production call sites are `MainTabsActivity.java:320` (the single main layout) and `:337` (the five main tabs). Attach/bot tabs and the secondary hosts keep the upstream rounded path.
+
+### Implementation
+
+- `MainTabsActivity`: `applyTabsPresentationBackground()` picks the visible outer panel — upstream `tabsViewBackground` blurred glass for non-Cybergram, dark chamfered `CybergramHudDrawable` panel (`CybergramTheme.PANEL`, 1dp `CYAN @0.24` outline, `BUBBLE_CORNER_CUT_DP` = 6dp chamfer) under the gate. The blurred drawable is still created/stored and `BlurredBackgroundProviderImpl.mainTabs(...)` is untouched; the choice is re-evaluated from `blur3_updateColors()`, so a switch back to a normal theme restores upstream glass without rebuilding navigation state. Both drawables report no background padding, so the layout padding and therefore measurement are provably unchanged. No behaviour, ViewPager, Calls/Settings swap, badge, counter, avatar, inset or update-layout change.
+- `MainTabsLayout`: the custom long-press selector keeps its exact computed animated bounds/animation and, under gate + opt-in, draws a chamfered `PANEL_RAISED`/cyan plate; the upstream `drawRoundRect` branch is otherwise preserved verbatim. Measurement, hit testing, ClickHelper, drag-selection, springs, `performClick()` routing and layer-type logic untouched.
+- `GlassTabView`: the angular selected plate uses the existing `selectedFactor`, scale transform and rectangle; drawable alpha carries the selection fade. Icons/Lottie, animator timing, click behaviour, measurement, counters, avatar state and semantic selected/unselected colours untouched; counters/badges and the profile avatar stay round.
+
+### Static acceptance
+
+`git diff --check` clean on both commits; only the three allowed production files changed plus the debug-only fixture; all Cybergram detection goes through `CybergramTheme.isCybergramPresentation(...)` (3 call sites, no theme-name/colour heuristics); non-Cybergram `drawRoundRect` paths and the upstream blur background path remain present; no unrelated cleanup or refactor in the diff.
+
+### E evidence (AVD `Cybergram_API36`, Android 16 / API 36, `x86_64`, 1080x2400, density 2.625)
+
+- Build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` -> **BUILD SUCCESSFUL** (5m 46s production; 3s incremental for the fixture). Host toolchain: JDK `17.0.20.1+1`, Gradle 8.11.1 from the cached wrapper distribution (this checkout has no `gradlew.bat`, so the wrapper main class was invoked directly with `java -classpath gradle/wrapper/gradle-wrapper.jar`).
+- APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, **74,277,072 bytes**, SHA-256 **`2ad08aacac8c634dd34c2910acbfa9f32b5c9f6dc998288c883b10d9b1691159`** (the fixture build; the production-only build was `7e9ce03ea3150af8140e82134e4fdfb644ef6ef46fee4660e0694a975408c604`).
+- Install: `adb install -r` -> `Success`; package `org.telegram.messenger.beta` (12.10.1 / versionCode 70389). Official `org.telegram.messenger` untouched; no `pm clear`, uninstall or session action.
+- Launch: normal `LaunchActivity` resumed and stable; DEBUG `CybergramShowcaseActivity` resumed and stable.
+- **FATAL/ANR: none** in any window (whole-buffer logcat grep). Only pre-existing environment noise (dummy Firebase config returning HTTP 403, ashmem/HWUI warnings, the hidden-API `Bitmap.mNativePtr` notice from upstream RLottie).
+- Screenshots (local only, git-excluded `.local-artifacts/b1/`): `01_normal_launch.png`, `02_showcase.png`, `03_normal_launch_final.png`, `04_showcase_b1_fixture.png`; pixel-analysis helpers `b1check.js`, `pngscan.js`.
+
+### DEBUG fixture proof — main-tabs opt-in vs attach control
+
+`CybergramShowcaseActivity` renders the real production `GlassTabView` selected-plate path twice against one deterministic Cybergram palette provider (`CybergramTheme.GeometryProvider`, so the central gate is active for **both** rows): row A = `createMainTab` + `setCybergramMainTabsPresentation(true)` (as `MainTabsActivity` does), row B = `createAttachTab`, never opted in.
+
+Decoded pixel evidence from `04_showcase_b1_fixture.png`:
+
+| region | row A (opted in) | row B (attach control) |
+|---|---|---|
+| plate body (below the label) | `#111820` = `PANEL_RAISED`, opaque, 2655/2655 px | `#0b0d12` panel + `#0a1f26` (upstream 9% `glass_tabSelected` tint) |
+| plate top-edge outline band | 88 cyan-ish px, sampled `#066c7a` / `#08444e` (= `#00E5FF` @ ~44% over `PANEL`) | **0 cyan px** |
+
+This demonstrates at runtime, with the Cybergram gate active in both rows, that the angular plate (raised fill + 1dp cyan outline) renders only for explicitly opted-in main-tab instances and that the attach path keeps the upstream rounded translucent surface. It is drawing/compilation evidence for the opt-in rule only — not A validation.
+
+### Open tiers and unresolved visual uncertainty
+
+- **A PENDING** (explicit): an unauthenticated emulator cannot reach production `MainTabsActivity`. Not exercised: Chats -> Contacts -> Settings -> Profile; Calls enabled/disabled and the Settings/Calls position swap; current-tab reselect and scroll-to-top; long press and long-drag selection on the real surface; badge/counter cases; profile avatar; tabs hide/show animation; navigation-bar/inset placement; configuration/orientation change; non-Cybergram theme comparison; attach/bot tabs in situ.
+- **P PENDING**: no physical device was used in this pass; no OEM-sensitive change was made.
+- Outer-panel/fadeView uncertainty: the Cybergram panel is drawn flush to `MainTabsLayout` bounds, while the upstream glass capsule was inset by `dp(MAIN_TABS_MARGIN - 0.334)` (~7.7dp per side). Padding and measurement are provably unchanged, but the flat-bar footprint is larger than the old capsule and has **no authenticated visual confirmation**. The bottom `fadeView` was deliberately left unchanged; revisit only if A-tier evidence shows it conflicts with the flat panel.
 
 ## Explicitly deferred
 

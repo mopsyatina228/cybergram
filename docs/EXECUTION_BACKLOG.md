@@ -24,7 +24,7 @@ Use `CybergramTheme.isCybergramPresentation(Theme.ResourcesProvider provider)` a
 
 Use `CybergramBubbleDrawable.buildPath(...)` / `CybergramHudDrawable` for angular geometry instead of introducing another chamfer implementation.
 
-Any shared component that serves both the main Cybergram surface and unrelated Telegram surfaces requires an explicit local opt-in in addition to the central theme gate. The important current example is `GlassTabView`: it is used by main bottom navigation and by attach/bot tabs, so a Cybergram-wide branch inside `GlassTabView` would leak main-navigation styling into unrelated surfaces.
+Any shared component that serves both the main Cybergram surface and unrelated Telegram surfaces requires an explicit local opt-in in addition to the central theme gate. The important current examples are `GlassTabView` (main bottom navigation vs attach/bot tabs and other `createMainTab` callers) and `MainTabsLayout` (main bottom navigation vs `StatisticActivity`); a gate-only branch inside either class would leak main-navigation styling into unrelated surfaces.
 
 For high-risk upstream files, do not combine presentation changes with cleanup/refactoring.
 
@@ -75,11 +75,16 @@ B0 no longer blocks static design of B1. It blocks only claims that final filter
 
 ### B1 — flat/angular main bottom navigation
 
-Status: `DESIGN-READY — EXECUTION NOT STARTED`.
+Status: `INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`.
 
-Priority: highest-value remaining production presentation pass.
+Priority: was the highest-value remaining production presentation pass.
 
-Spec: `docs/passes/B1_MAIN_TABS_FLAT.md`.
+Spec: `docs/passes/B1_MAIN_TABS_FLAT.md`. Machine evidence: `docs/WORK_STATE.md`.
+
+Integrated on `dev` by fast-forward from `feature/cybergram-main-tabs-flat`, commits kept separate:
+
+- production `ab314d882b193ec5df9dd188b7e945ea7ef35c98`;
+- DEBUG-only fixture `6802e001012f2cad8eddcc89d137c17534e8f1ba`.
 
 Primary owners:
 
@@ -87,11 +92,11 @@ Primary owners:
 - `TMessagesProj/src/main/java/org/telegram/ui/MainTabsLayout.java`
 - `TMessagesProj/src/main/java/org/telegram/ui/Components/glass/GlassTabView.java`
 
-Critical architecture rule discovered during fresh reconciliation: `GlassTabView` is shared with attach/bot tabs. B1 must add an explicit main-tabs presentation opt-in, default false, and combine that opt-in with the central Cybergram presentation gate. Do not angularize every `GlassTabView` merely because Cybergram is active.
+Architecture rule (corrected during execution): `GlassTabView` is shared with attach/bot tabs and is also reached from `StatisticActivity`/`StarGiftPreviewSheet`, and `MainTabsLayout` is **also** hosted by `StatisticActivity`. B1 therefore uses an explicit main-tabs presentation opt-in, default false, in **both** `MainTabsLayout` and `GlassTabView`, combined with the central Cybergram presentation gate. A gate-only branch in either class would leak main-navigation geometry into unrelated surfaces.
 
-B1 preserves all ViewPager, long-press, drag-selection, visibility, badge, counter, avatar, inset and update-layout behaviour. Only the visible outer panel and selected-plate shapes/surfaces are in scope.
+B1 preserved all ViewPager, long-press, drag-selection, visibility, badge, counter, avatar, inset and update-layout behaviour; only the visible outer panel and the selected-plate/selector shapes/surfaces changed.
 
-E validation is required after implementation. A validation is required before the actual main-tabs interaction matrix can be called complete. P is desirable before release but does not need to block repository-side design/integration if E + A are otherwise clean and the remaining limitation is recorded.
+E validation passed. A validation is still required before the actual main-tabs interaction matrix can be called complete, and P remains desirable before release confidence. The outer-panel/fadeView visual result is not yet confirmed on an authenticated surface.
 
 ### B2 — message-state coverage audit
 
@@ -169,7 +174,7 @@ Do not mix with UI cleanup. Real credentials remain local/secret; package/applic
 
 B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-Recommended production order is B1 first, then B2 and B5 audits (which may run independently because they are evidence-oriented), followed only by the B3/B4/B6 tasks actually justified by those audits. B7 and B8 remain later.
+Recommended production order is B1 first (now integrated, with A/P tiers open), then B2 and B5 audits (which may run independently because they are evidence-oriented), followed only by the B3/B4/B6 tasks actually justified by those audits. B7 and B8 remain later.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 

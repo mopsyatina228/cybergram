@@ -14,7 +14,7 @@ Read `AGENTS.md`, `docs/CURRENT_STATE.md`, `docs/CYBERGRAM_UI_SPEC.md` and `docs
 
 The main bottom navigation is active root UI for authenticated clients. `LaunchActivity` creates `MainTabsActivity` when the current account is activated.
 
-The surface is split across three rendering/behaviour layers. `MainTabsLayout` and `GlassTabView` were still byte-identical to upstream `master` at the preserved product cut, so B1 is their first Cybergram-specific presentation seam.
+The surface is split across three rendering/behaviour layers. `MainTabsLayout` and `GlassTabView` were still byte-identical to upstream `master` at the preserved product cut, so B1 was their first Cybergram-specific presentation seam. B1 has since been implemented and integrated on `dev` (production commit `ab314d882b193ec5df9dd188b7e945ea7ef35c98`); the ownership description below remains the static map.
 
 ### `MainTabsActivity`
 
@@ -57,9 +57,15 @@ Observed ownership:
 
 The long-press selector is currently a rounded rectangle drawn from already-computed animated bounds.
 
+Important sharing boundary:
+
+`MainTabsLayout` is **not main-tabs-only**. `StatisticActivity` also hosts it (`StatisticActivity.java:627`).
+
+Therefore a branch based only on `CybergramTheme.isCybergramPresentation(resourcesProvider)` would incorrectly change the statistics selector geometry whenever Cybergram is active.
+
 Presentation seam:
 
-Do not touch measurement or gesture/state code. Under Cybergram only, render a chamfered selector using the same computed bounds. Preserve the existing rounded branch otherwise.
+Do not touch measurement or gesture/state code. Render a chamfered selector using the same computed bounds only when the central Cybergram gate **and** an explicit per-instance main-tabs opt-in are both true; preserve the existing rounded branch otherwise.
 
 ### `GlassTabView`
 
@@ -79,19 +85,19 @@ The normal selected plate is drawn per tab as a scaled rounded rectangle.
 
 Important sharing boundary:
 
-`GlassTabView` is **not main-tabs-only**. The same class also constructs attachment and attachment-bot tabs through `createAttachTab(...)` / `createAttachBotTab(...)`.
+`GlassTabView` is **not main-tabs-only**. The same class also constructs attachment and attachment-bot tabs through `createAttachTab(...)` / `createAttachBotTab(...)`, and `createMainTab(...)` is additionally used by `StatisticActivity` and `StarGiftPreviewSheet`.
 
 Therefore a branch based only on `CybergramTheme.isCybergramPresentation(resourcesProvider)` would incorrectly change unrelated attach/bot-tab geometry whenever Cybergram is active.
 
 Required presentation model for B1:
 
-- add a presentation-only explicit main-tabs opt-in, default false;
-- set it only on the five instances created by `MainTabsActivity`;
+- add a presentation-only explicit main-tabs opt-in, default false, to `GlassTabView` **and** to `MainTabsLayout` (which is likewise shared, see above);
+- set it only on the instances created by `MainTabsActivity` (one layout, five tabs);
 - draw the angular selected plate only when explicit opt-in **and** central Cybergram presentation are both true;
-- leave attach/bot tabs on the upstream rounded path;
+- leave attach/bot tabs and other hosts of the shared classes on the upstream rounded path;
 - keep counters/badges and profile avatar rounded in B1.
 
-This is a general rule for future Cybergram work: the global theme gate says whether Cybergram is active; an explicit local opt-in is additionally required when the shared component serves unrelated surfaces.
+This is a general rule for future Cybergram work: the global theme gate says whether Cybergram is active; an explicit local opt-in is additionally required when the shared component serves unrelated surfaces. Verified instances of this rule in the current tree: `GlassTabView` (main tabs vs attach/bot tabs and other `createMainTab` callers) and `MainTabsLayout` (main tabs vs `StatisticActivity`).
 
 ### `BlurredBackgroundProviderImpl.mainTabs(...)`
 
@@ -218,7 +224,7 @@ Validation tiers and their current meaning are maintained in `docs/EXECUTION_BAC
 2. Shared Telegram state machines remain upstream-owned.
 3. Cybergram geometry reuses project-owned primitives.
 4. Non-Cybergram presentation remains present and testable.
-5. A globally shared component needs local opt-in when only one of its surfaces is being restyled.
+5. A globally shared component needs local opt-in when only one of its surfaces is being restyled (`GlassTabView`, `MainTabsLayout`).
 6. Complex visual work is split by actual renderer/owner before implementation.
 7. Emulator evidence, authenticated-surface evidence and physical-device/OEM evidence are separate claims.
 8. A large upstream class is a reason to narrow scope, not permission to refactor it.
@@ -226,7 +232,7 @@ Validation tiers and their current meaning are maintained in `docs/EXECUTION_BAC
 ## 7. Backlog relationship
 
 - B0: authenticated final FilterTabs validation; generic E/build baseline already exists.
-- B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances.
+- B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances — INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING.
 - B2: message-state evidence/ownership matrix.
 - B3/B4: conditional message-owner fixes derived only from B2.
 - B5: service/date audit and geometry decision.
