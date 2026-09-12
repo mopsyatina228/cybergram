@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
@@ -11,6 +12,7 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -56,6 +58,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -117,6 +121,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private FrameLayout tabsViewWrapper;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
+    /**
+     * B1 Cybergram presentation objects. Only the visible background is swapped; the
+     * upstream {@link #tabsViewBackground} blurred drawable stays created/stored so a
+     * theme switch back to a normal theme restores upstream glass without rebuilding
+     * the navigation state.
+     */
+    private CybergramHudDrawable cybergramTabsViewBackground;
     private View fadeView;
 
     public MainTabsActivity() {
@@ -306,6 +317,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabletLayout = false;
 
         tabsView = new MainTabsLayout(context, resourceProvider);
+        tabsView.setCybergramMainTabsPresentation(true);
         tabsView.setClipChildren(false);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
         tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
@@ -316,6 +328,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabs[INDEX_SETTINGS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.SETTINGS, R.string.Settings);
         tabs[INDEX_CALLS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CALLS, R.string.MainTabsCalls);
         tabs[INDEX_PROFILE] = GlassTabView.createAvatar(context, resourceProvider, currentAccount, R.string.MainTabsProfile);
+
+        // B1: main-tabs-only Cybergram presentation opt-in. GlassTabView is shared with
+        // attach/bot tabs, which must keep the upstream rounded selector, so the central
+        // Cybergram gate alone is not enough inside that class. Only these five instances
+        // (the ones created here) are opted in; the createAttach* factories stay untouched.
+        for (int index = 0; index < tabs.length; index++) {
+            tabs[index].setCybergramMainTabsPresentation(true);
+        }
+
         tabs[INDEX_CHATS].setOnLongClickListener(this::openFoldersSelector);
         tabs[INDEX_CONTACTS].setOnLongClickListener(this::openContactsSelector);
         tabs[INDEX_CALLS].setOnLongClickListener(this::openCallsSelector);
@@ -365,7 +386,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewBackground = iBlur3FactoryGlass.create(tabsView, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
         tabsViewBackground.setRadius(dp(DialogsActivity.MAIN_TABS_HEIGHT / 2f));
         tabsViewBackground.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN - 0.334f));
-        tabsView.setBackground(tabsViewBackground);
+        applyTabsPresentationBackground();
 
         BlurredBackgroundDrawableViewFactory iBlur3FactoryFade = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
         iBlur3FactoryFade.setSourceRootView(viewPositionWatcher, contentView);
@@ -394,6 +415,41 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         updateLayout();
         checkUnreadCount(false);
         return contentView;
+    }
+
+    /**
+     * B1 presentation seam: selects the visible outer main-tabs panel.
+     *
+     * Non-Cybergram keeps the exact upstream blurred glass background. Cybergram uses a
+     * dark angular HUD panel built from the shared Cybergram primitives. The upstream
+     * blurred drawable is never deleted and is re-assigned when the presentation gate
+     * turns false again, so switching back to a normal theme restores upstream glass
+     * without recreating navigation state.
+     *
+     * Both drawables report no background padding, so the layout's explicit padding and
+     * therefore all measurement is unaffected by this swap.
+     */
+    private void applyTabsPresentationBackground() {
+        if (tabsView == null) {
+            return;
+        }
+
+        final Drawable background;
+        if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+            if (cybergramTabsViewBackground == null) {
+                cybergramTabsViewBackground = new CybergramHudDrawable()
+                        .setFillColor(CybergramTheme.PANEL)
+                        .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.24f), dpf2(1f), true)
+                        .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            }
+            background = cybergramTabsViewBackground;
+        } else {
+            background = tabsViewBackground;
+        }
+
+        if (tabsView.getBackground() != background) {
+            tabsView.setBackground(background);
+        }
     }
 
     private void checkUnreadCount(boolean animated) {
@@ -1222,6 +1278,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabsViewBackground != null) {
             tabsViewBackground.updateColors();
         }
+        applyTabsPresentationBackground();
         blur3_invalidateBlur();
         if (fadeView != null) {
             fadeView.invalidate();

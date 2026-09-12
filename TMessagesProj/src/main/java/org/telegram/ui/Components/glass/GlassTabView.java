@@ -36,6 +36,8 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -147,6 +149,34 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
     }
 
+    /**
+     * B1 explicit main-tabs presentation opt-in, default {@code false}.
+     *
+     * This class is shared between the main bottom navigation and attach/bot tabs, so the
+     * central Cybergram presentation gate alone must not change its geometry. Only the
+     * instances created by {@code MainTabsActivity} are opted in; the
+     * {@code createAttachTab}/{@code createAttachBotTab} factories never call this.
+     *
+     * Presentation only: measurement, hit targets and selected/counter state are untouched.
+     */
+    private boolean cybergramMainTabsPresentation;
+    private CybergramHudDrawable cybergramSelectedPlate;
+
+    public void setCybergramMainTabsPresentation(boolean enabled) {
+        if (cybergramMainTabsPresentation != enabled) {
+            cybergramMainTabsPresentation = enabled;
+            invalidate();
+        }
+    }
+
+    /**
+     * Angular selected plate requires BOTH the central Cybergram gate and this instance's
+     * explicit main-tabs opt-in.
+     */
+    private boolean useCybergramMainTabsPlate() {
+        return cybergramMainTabsPresentation && CybergramTheme.isCybergramPresentation(resourcesProvider);
+    }
+
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         final float viewWidth = hasVisualWidth ? visualWidth : getWidth();
@@ -154,13 +184,29 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
-            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
             tmpRectF.set(0, 0, viewWidth, getHeight());
-            final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
             final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
             canvas.save();
             canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
-            canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+            if (useCybergramMainTabsPlate()) {
+                // B1: same selected factor/scale/rectangle as upstream, angular plate instead of
+                // the rounded translucent capsule. Drawable alpha carries the selection fade.
+                if (cybergramSelectedPlate == null) {
+                    cybergramSelectedPlate = new CybergramHudDrawable()
+                            .setFillColor(CybergramTheme.PANEL_RAISED)
+                            .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
+                            .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                }
+                cybergramSelectedPlate.setAlpha((int) (255 * alpha));
+                cybergramSelectedPlate.setBounds(
+                        (int) tmpRectF.left, (int) tmpRectF.top,
+                        (int) tmpRectF.right, (int) tmpRectF.bottom);
+                cybergramSelectedPlate.draw(canvas);
+            } else {
+                paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
+                final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
+                canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+            }
             canvas.restore();
         }
 

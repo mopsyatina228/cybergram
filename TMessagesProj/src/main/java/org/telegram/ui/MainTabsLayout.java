@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.annotation.SuppressLint;
@@ -21,6 +22,8 @@ import androidx.dynamicanimation.animation.SpringForce;
 import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedLinearLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -41,6 +44,29 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     public MainTabsLayout(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+    }
+
+    /**
+     * B1 explicit main-tabs presentation opt-in, default {@code false}.
+     *
+     * Although this layout was created for the Cybergram main bottom navigation, it is also
+     * hosted by unrelated surfaces (for example {@code StatisticActivity}), so the central
+     * Cybergram gate alone would leak main-tabs selector geometry into them. Only the
+     * instance created by {@code MainTabsActivity} is opted in.
+     *
+     * Presentation only: measurement, hit testing, springs and visibility are untouched.
+     */
+    private boolean cybergramMainTabsPresentation;
+
+    public void setCybergramMainTabsPresentation(boolean enabled) {
+        if (cybergramMainTabsPresentation != enabled) {
+            cybergramMainTabsPresentation = enabled;
+            invalidate();
+        }
+    }
+
+    private boolean useCybergramMainTabsPresentation() {
+        return cybergramMainTabsPresentation && CybergramTheme.isCybergramPresentation(resourcesProvider);
     }
 
     private static final float[] PASS_TEXT_SIZES_DP = {12f, 12f, 10f};
@@ -314,10 +340,26 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             final float sWidth = getInterpolatedWidthByX(x, this);
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
-            canvas.drawRoundRect(
-                    x - sWidth / 2f, (getHeight() - sHeight) / 2f,
-                    x + sWidth / 2f, (getHeight() + sHeight) / 2f,
-                    sHeight / 2f, sHeight / 2f, selectorPaint);
+            if (useCybergramMainTabsPresentation()) {
+                // B1: same computed bounds/animation as the upstream rounded selector; only
+                // the silhouette and surface change, and only for the opted-in main-tabs
+                // instance (this class is also hosted by unrelated secondary screens).
+                if (cybergramSelectorDrawable == null) {
+                    cybergramSelectorDrawable = new CybergramHudDrawable()
+                            .setFillColor(CybergramTheme.PANEL_RAISED)
+                            .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
+                            .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                }
+                cybergramSelectorDrawable.setBounds(
+                        (int) (x - sWidth / 2f), (int) ((getHeight() - sHeight) / 2f),
+                        (int) (x + sWidth / 2f), (int) ((getHeight() + sHeight) / 2f));
+                cybergramSelectorDrawable.draw(canvas);
+            } else {
+                canvas.drawRoundRect(
+                        x - sWidth / 2f, (getHeight() - sHeight) / 2f,
+                        x + sWidth / 2f, (getHeight() + sHeight) / 2f,
+                        sHeight / 2f, sHeight / 2f, selectorPaint);
+            }
         }
 
         super.dispatchDraw(canvas);
@@ -325,6 +367,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
 
     final Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** B1 Cybergram-only long-press selector plate; created lazily, never used upstream. */
+    private CybergramHudDrawable cybergramSelectorDrawable;
     final SpringAnimation scaleX = new SpringAnimation(this, DynamicAnimation.SCALE_X, 1f);
     final SpringAnimation scaleY = new SpringAnimation(this, DynamicAnimation.SCALE_Y, 1f);
 
