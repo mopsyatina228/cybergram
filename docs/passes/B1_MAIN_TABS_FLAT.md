@@ -1,6 +1,6 @@
 # B1 — Cybergram flat/angular main tabs
 
-Status: DESIGN-READY, EXECUTE AFTER B0 OR EXPLICIT PRIORITY OVERRIDE
+Status: DESIGN-READY / EXECUTION NOT STARTED
 
 Type: production presentation change
 
@@ -10,22 +10,38 @@ Risk: HIGH
 
 Design authority: `docs/CYBERGRAM_UI_SPEC.md`
 
-Planning authority: `docs/EXECUTION_BACKLOG.md`
+Planning/status authority: `docs/EXECUTION_BACKLOG.md`
 
 Static ownership evidence: `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`
 
+Validation runbook: `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`
+
 ## Mission
 
-Remove the remaining large rounded/glass bottom-navigation panel and selected pills in Cybergram while preserving Telegram's complete tab/ViewPager/gesture/layout behaviour and preserving the exact upstream presentation for non-Cybergram themes.
+Remove the remaining large rounded/glass bottom-navigation panel and selected pills in Cybergram while preserving Telegram's complete tab/ViewPager/gesture/layout behaviour and preserving upstream presentation for non-Cybergram themes.
 
 This is a presentation seam, not a bottom-navigation rewrite.
+
+## Fresh architecture facts
+
+The production bottom navigation is active root UI: an activated client enters `MainTabsActivity` from `LaunchActivity`.
+
+Ownership is split across:
+
+- `MainTabsActivity`: tab instances, ViewPager coordination, visible outer glass background, fade/insets/wrappers, badges and Calls/Settings switching;
+- `MainTabsLayout`: measurement, animated visibility, long-press/drag selection and its custom selector;
+- `GlassTabView`: normal selected plate, icon/Lottie state, labels, counters and profile avatar.
+
+At the preserved product cut, `MainTabsLayout` and `GlassTabView` are still upstream-identical. B1 therefore adds the first Cybergram seam there and must keep it narrow.
+
+Critical shared-component fact: `GlassTabView` is also used by attach/bot tabs (`createAttachTab`, `createAttachBotTab`). Therefore **the central Cybergram theme gate alone is not sufficient inside `GlassTabView`**. A global Cybergram branch would leak main-navigation geometry into unrelated Telegram surfaces.
 
 ## Startup
 
 1. Fetch `dev` and `master`.
-2. Read `AGENTS.md`, `docs/CURRENT_STATE.md`, `docs/EXECUTION_BACKLOG.md`, `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` and the dialog-list section of `docs/CYBERGRAM_UI_SPEC.md`.
+2. Read `AGENTS.md`, `docs/CURRENT_STATE.md`, `docs/EXECUTION_BACKLOG.md`, `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`, this file and the dialog-list/bottom-navigation language in `docs/CYBERGRAM_UI_SPEC.md`.
 3. Record current `dev` SHA and local `git status`.
-4. Branch from fresh current `dev` as `feature/cybergram-main-tabs-flat` unless an explicit human instruction says otherwise.
+4. Branch from fresh current `dev` as `feature/cybergram-main-tabs-flat` unless explicit human instruction says otherwise.
 5. Do not reset/discard unknown local work.
 
 ## Allowed production scope
@@ -38,21 +54,40 @@ Primary files only:
 
 `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramTheme.java` may be changed only if a genuinely shared semantic constant is required and no existing constant fits.
 
-Do NOT modify `BlurredBackgroundProviderImpl.mainTabs(...)` in this first pass. It is upstream glass/effect configuration and should remain available to non-Cybergram presentation.
+Do **not** modify `BlurredBackgroundProviderImpl.mainTabs(...)` in this pass. It is shared upstream glass/effect configuration and must remain available to normal themes.
 
-Any other production file requires stopping and reporting why it is necessary before broadening scope.
+Debug-only showcase/harness code may be changed for E validation, but it must remain in the debug source set and must not alter release behaviour.
 
-Debug showcase/docs may be changed only when needed for validation/evidence and must not become a substitute for real-device testing of the actual main tabs.
+Any other production file requires stopping and reporting why it is necessary before scope expands.
 
-## Mandatory activation seam
+## Activation model
 
-Use only:
+Use the central presentation gate:
 
 `CybergramTheme.isCybergramPresentation(resourcesProvider)`
 
-Do not add direct `Theme.getCurrentTheme().getName()` checks and do not infer Cybergram from colours.
+For `MainTabsActivity` and `MainTabsLayout`, that gate is sufficient because those classes own the main-tabs surface.
 
-Reuse `CybergramHudDrawable` or `CybergramBubbleDrawable.buildPath(...)`. Do not create a third independent angular geometry implementation.
+For `GlassTabView`, require **both**:
+
+1. central Cybergram presentation is active; and
+2. the individual `GlassTabView` instance has been explicitly opted into main-tabs Cybergram presentation.
+
+Implement the opt-in as a small presentation-only field/setter with an upstream-safe default, for example conceptually:
+
+`setCybergramMainTabsPresentation(boolean enabled)`
+
+The exact name may differ, but these semantics are mandatory:
+
+- default `false`;
+- no inference from text/icon/tab animation;
+- only the five instances created by `MainTabsActivity` are opted in;
+- attach/bot tabs remain on their upstream selector path even while Cybergram is active;
+- opt-in changes drawing only, not measurement/hit targets/state.
+
+Do not add direct theme-name checks and do not infer Cybergram from colours.
+
+Reuse `CybergramHudDrawable` and/or `CybergramBubbleDrawable.buildPath(...)`. Do not create another independent angular geometry implementation.
 
 ## `MainTabsActivity` change boundary
 
@@ -67,20 +102,22 @@ Preserve without semantic changes:
 - notification/badge/profile update logic;
 - blur source lifecycle and source rendering;
 - `tabsViewWrapper` layout;
-- update layout offsets;
+- update-layout offsets;
 - system/navigation-bar insets;
 - tabs visible/hidden animation.
 
-Introduce the smallest presentation seam that chooses the visible `tabsView` background:
+Required presentation seam:
 
-- non-Cybergram: existing `tabsViewBackground` blurred drawable;
-- Cybergram: dark angular HUD panel using existing Cybergram panel/cyan/corner-cut language.
+- retain creation/storage of the upstream `tabsViewBackground` blurred drawable;
+- non-Cybergram: assign the existing upstream blurred background exactly as today;
+- Cybergram: assign a dark angular `CybergramHudDrawable` panel instead;
+- re-evaluate/assign the visible presentation when theme colours/presentation update, so switching away from Cybergram restores upstream glass without recreating navigation state.
 
-A helper such as `applyTabsPresentationBackground()` is acceptable if it simply selects between those two existing presentation objects and is called at creation/theme-colour update.
+A small `applyTabsPresentationBackground()`-style helper is preferred over scattered branches.
 
-The upstream blurred drawable may still be created/stored when Cybergram is active so that normal themes/theme switching remain intact. Do not delete the blur subsystem.
+Opt the five main-tab `GlassTabView` instances into their main-tabs-only Cybergram presentation immediately after creation or in one obvious local block. Do not modify the `GlassTabView.createAttach*` factories.
 
-Leave the separate bottom `fadeView` unchanged on the first implementation. Only change it if device evidence proves it remains visibly incompatible after the tabs panel is flattened. Such a change must stay Cybergram-only and preserve fade layout/visibility semantics.
+Leave the separate bottom `fadeView` unchanged on the first implementation. Only alter it if runtime visual evidence proves it remains visibly incompatible after the main panel is flattened. Any such follow-up must remain Cybergram-only and preserve its layout/visibility role.
 
 ## `MainTabsLayout` change boundary
 
@@ -98,23 +135,26 @@ Do not alter:
 
 Only the custom long-press selector is in scope.
 
-Today it uses existing computed bounds and draws a full rounded rectangle. Under Cybergram, draw a chamfered Cybergram selected plate using the same bounds/animation state. Under non-Cybergram, preserve the exact existing `drawRoundRect` path.
+Today it uses the already-computed selector bounds and draws a full rounded rectangle. Under Cybergram, use those exact bounds/animation values and draw a chamfered selected plate. Under non-Cybergram, preserve the existing `drawRoundRect` branch.
+
+Do not change selector bounds to make the new shape fit. Geometry adapts to the established bounds, not vice versa.
 
 ## `GlassTabView` change boundary
 
 Do not alter:
 
-- icon/Lottie setup;
+- icon/Lottie setup or animation resources;
 - selected animator timing/factor;
 - click behaviour;
 - tab measurement/visual width;
 - counter contents/logic;
 - avatar loading/state;
-- semantic selected/unselected colours.
+- semantic selected/unselected colours;
+- attach/bot tab presentation.
 
-Only the normal selected plate is in scope.
+Only the normal selected plate of explicitly opted-in main-tab instances is in scope.
 
-Use the existing selected factor, scale and rectangle, but render an angular Cybergram plate when the central gate is active. Keep upstream rounded rendering otherwise.
+Use the existing `selectedFactor`, scale transform and rectangle. When explicit main-tab opt-in **and** Cybergram presentation are both true, draw a chamfered dark/cyan plate. Otherwise execute the existing rounded path.
 
 Keep counters/badges rounded in B1. Keep profile avatar round. No typography redesign in B1.
 
@@ -122,32 +162,32 @@ Keep counters/badges rounded in B1. Keep profile avatar round. No typography red
 
 Outer tabs panel:
 
-- fill: existing Cybergram `PANEL` family;
-- restrained cyan outline using existing 1dp-ish project language;
-- chamfer compatible with `BUBBLE_CORNER_CUT_DP`;
+- dark `CybergramTheme.PANEL` family fill;
+- restrained cyan outline in the existing ~1dp project language;
+- 6dp-family chamfer compatible with existing Cybergram geometry;
 - no large translucent/glass capsule.
 
 Selected tab plate:
 
-- `PANEL_RAISED`-family dark fill;
+- dark `PANEL_RAISED`-family fill;
 - restrained cyan outline/accent;
-- same animation/bounds as upstream selection;
+- same animation factor/scale/bounds as upstream selection;
 - no opaque cyan block.
 
-No decorative microtext and no fake security labels. Red/amber embellishment is out of scope unless needed for an existing semantic state.
+Existing theme keys continue to control icon/text selected/unselected colour state. The `.attheme` already supplies dark/cyan `glass_*` keys; B1 is principally a geometry/effect seam, not a palette rewrite.
 
 ## Explicit non-goals
 
-Do NOT:
+Do not:
 
-- rewrite tab navigation;
-- replace `ViewPagerActivity` behaviour;
+- rewrite tab navigation or `ViewPagerActivity` behaviour;
 - remove blur3 globally;
 - change tab count/order;
 - redesign counters;
-- angularize profile avatar;
+- angularize the profile avatar;
+- restyle attach/bot tabs;
 - restyle secondary bottom sheets/menus;
-- alter app update or inset logic;
+- alter app-update or inset logic;
 - combine this with FilterTabs, message, typography or release work.
 
 ## Stop conditions
@@ -156,41 +196,64 @@ Stop and report before continuing if:
 
 - desired presentation requires changing hit targets or measurements;
 - ViewPager or Calls/Settings state would need behavioural changes;
-- the non-Cybergram branch cannot remain functionally/presentationally upstream;
+- non-Cybergram rendering cannot remain on the upstream path;
+- the `GlassTabView` change cannot be contained by explicit opt-in;
 - more shared production files appear necessary;
-- a supposed visual change begins requiring counter/avatar/state-machine rewrites.
+- a visual change begins requiring counter/avatar/state-machine rewrites.
 
-## Static acceptance before build
+## Static acceptance
 
 Require:
 
 - `git diff --check` passes;
-- changed production files stay within allowed scope;
-- Cybergram checks are central-gate calls, not theme-name/color heuristics;
-- non-Cybergram `drawRoundRect`/blur background paths remain present;
+- changed production files remain inside allowed scope;
+- all Cybergram detection uses the central gate;
+- `GlassTabView` main-tabs styling additionally requires explicit instance opt-in;
+- attach/bot factories are not opted in;
+- non-Cybergram `drawRoundRect` and upstream blur-background paths remain present;
 - no unrelated cleanup/refactor appears in diff.
 
-## Build/device acceptance
+## Validation tiers
 
-Build the established afat arm64 debug variant when the machine supports it and record exact evidence.
+### E — emulator, required before handoff
 
-Exercise on the real app:
+Use `Cybergram_API36` / API 36 `x86_64` when available and the emulator runbook.
+
+Build at least:
+
+`:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64`
+
+Install/update `org.telegram.messenger.beta`, launch normally, check logcat for FATAL/ANR and record exact APK evidence.
+
+Because an unauthenticated emulator cannot reach production `MainTabsActivity`, E validation may also extend the existing DEBUG showcase or add a DEBUG-only fixture that exercises the opted-in `GlassTabView` selected geometry and `MainTabsLayout` long-selector geometry. Such a fixture is evidence for drawing/compilation only; it is not A validation of the actual root navigation state machine.
+
+### A — authenticated UI, required before B1 is called functionally complete
+
+On an authenticated emulator or physical device exercise the actual `MainTabsActivity`:
 
 - Chats -> Contacts -> Settings -> Profile;
-- Calls tab enabled and disabled, including Settings/Calls position swap;
+- Calls tab enabled/disabled and Settings/Calls position swap;
 - current-tab reselect and scroll-to-top;
-- long press on tabs;
-- long-drag selection across tabs;
-- badge/counter cases available on device;
+- long press and long-drag selection across tabs;
+- badge/counter cases available;
 - profile avatar;
-- tabs hide/show animation;
+- tabs show/hide animation;
 - navigation-bar/inset placement;
 - configuration/orientation change where practical;
-- Cybergram shows angular dark panel/selected plate and no large glass capsule;
-- non-Cybergram theme still shows upstream glass/rounded tabs;
+- Cybergram: angular dark panel/selected plate, no large glass capsule;
+- non-Cybergram theme: upstream glass/rounded tabs remain intact;
+- attach/bot tabs: retain upstream selector geometry;
 - no FATAL/ANR.
 
-Static-only review is not sufficient for integration.
+### P — physical-device confidence
+
+Repeat a representative main-tabs smoke on Samsung/other physical hardware before release confidence is claimed. P may remain explicitly pending after repository integration if E + A are clean and no OEM-sensitive change was made.
+
+## Integration rule
+
+Do not call B1 fully validated from static review or unauthenticated E evidence alone.
+
+A branch may be technically ready for repository integration after clean static review + E and an explicit recorded A-validation limitation, but the handoff must state that limitation plainly. Do not silently convert “builds on emulator” into “main tabs validated”.
 
 ## Required handoff report
 
@@ -199,13 +262,13 @@ Return:
 - base SHA and branch name;
 - final commit SHA;
 - exact changed files;
-- concise diff rationale per file;
+- diff rationale per file;
+- proof that `GlassTabView` opt-in is main-tabs-only;
 - `git diff --check` result;
-- build command/result;
-- APK evidence if built;
-- device/OS/package;
-- interaction matrix result;
-- screenshot/artifact paths;
-- FATAL/ANR result;
+- E build/APK/install/start/logcat evidence;
+- DEBUG fixture evidence if used;
+- A matrix result or explicit `A PENDING`;
+- P result or explicit `P PENDING`;
+- screenshots/artifact paths;
 - unresolved visual defects;
-- explicit statement whether B1 is ready to integrate into `dev`.
+- explicit statement whether the branch is ready to integrate and which validation tiers remain open.
