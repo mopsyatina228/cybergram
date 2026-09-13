@@ -58,8 +58,47 @@ public class CybergramShowcaseActivity extends Activity {
         // No Theme.applyTheme(), no preference writes, no pm clear. The showcase palette
         // comes entirely from the Cybergram .attheme asset via the DEBUG provider below.
         final Palette palette = new Palette();
-        setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette),
-                CybergramB2MessageStatesFixture.render(this, palette)));
+        // Debug-only B5 mode: render only the service/date probe full-screen so it can be
+        // captured on an unauthenticated emulator without competing with the B1/B2 fixtures.
+        //   adb shell am start -n org.telegram.messenger.beta/org.telegram.ui.CybergramShowcaseActivity --ez cybergram_b5 true
+        final boolean b5Only = getIntent() != null && getIntent().getBooleanExtra("cybergram_b5", false);
+        if (b5Only) {
+            setContentView(new B5OnlyView(this, palette, CybergramB5ServiceDateFixture.render(this, palette)));
+        } else {
+            setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette),
+                    CybergramB2MessageStatesFixture.render(this, palette)));
+        }
+    }
+
+    /**
+     * B5 DEBUG-ONLY full-screen host. Blits the {@link CybergramB5ServiceDateFixture} bitmap,
+     * which already contains the real production ChatActionCell draws, at a fixed offset.
+     */
+    private static final class B5OnlyView extends View {
+
+        private final Palette palette;
+        private final Bitmap b5Fixture;
+
+        B5OnlyView(Activity activity, Palette palette, Bitmap b5Fixture) {
+            super(activity);
+            this.palette = palette;
+            this.b5Fixture = b5Fixture;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (getWidth() == 0) {
+                return;
+            }
+            canvas.drawColor(palette.color(Theme.key_windowBackgroundWhite));
+            if (b5Fixture != null) {
+                canvas.drawBitmap(b5Fixture, dp(8), dp(8), null);
+            }
+        }
+
+        private int dp(float value) {
+            return (int) (value * AndroidUtilities.density + 0.5f);
+        }
     }
 
     /**
