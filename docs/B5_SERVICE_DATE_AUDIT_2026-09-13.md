@@ -1,6 +1,6 @@
 # B5 — service/date plate ownership and implementation audit
 
-Status: `AUDIT COMPLETE / ORDINARY-vs-RICH MAPPED / STRATEGY B RECOMMENDED (VISUAL-DENSITY GATE OPEN) / NO PRODUCTION CHANGE`
+Status: `AUDIT COMPLETE / E VISUAL GATE PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT REQUIRED / NO PRODUCTION CHANGE`
 
 Type: evidence + implementation-design audit (`docs/passes/B5_SERVICE_DATE_AUDIT.md`).
 
@@ -149,9 +149,9 @@ special plates replace/supplement it; `overlay` = ordinary plate plus a non-plat
 
 | # | required case | branch taken | classification | evidence | tier |
 |---|---|---|---|---|---|
-| 1 | plain date separator via `setCustomDate(...)` | `currentMessageObject == null` → `backgroundPath` only | **ordinary** | source `550-571`, `1699-1803`, `3327-3475`; fixture row 1 | E-blocked / A pending |
-| 2 | ordinary one-line service action | `messageObject != null`, not button/new-style → `backgroundPath` only | **ordinary** | source `4016-4018`, `1993-2005`; fixture rows 2-3 | E-blocked / A pending |
-| 3 | ordinary multi-line service action | same, `textLayout` line count > 1 | **ordinary** | source `3370-3462`; fixture rows 4-6 | E-blocked / A pending |
+| 1 | plain date separator via `setCustomDate(...)` | `currentMessageObject == null` → `backgroundPath` only | **ordinary** | source `550-571`, `1699-1803`, `3327-3475`; fixture row 1 | **E pass** (§8.3, `b5_corrected.png`) / A pending |
+| 2 | ordinary one-line service action | `messageObject != null`, not button/new-style → `backgroundPath` only | **ordinary** | source `4016-4018`, `1993-2005`; fixture rows 2-3 | **E pass** (§8.3, `b5_corrected.png`) / A pending |
+| 3 | ordinary multi-line service action | same, `textLayout` line count > 1 | **ordinary** | source `3370-3462`; fixture rows 4-6 | **E pass** (§8.3, `b5_corrected.png`) / A pending |
 | 4 | pinned-message / comparable ordinary action | `TL_messageActionPinMessage` is not a button type → `backgroundPath` | **ordinary** | type routing `isButtonLayout`/`isNewStyleButtonLayout` exclude it | A pending |
 | 5 | action with reply / navigation interaction | `ChatActionCell` has no reply plate; `hasReplyMessage` is cache-only | **N/A for this owner** (reply plates are `ChatMessageCell`/`ReplyMessageLine`, B2/B4) | `359/609/630` | source-proven |
 | 6 | premium / star gift action | `isButtonLayout` → text plate (`backgroundPath`) **plus** card/button (`backgroundRect`, `backgroundPath2`, `giftButtonRect`) | **rich (ordinary plate + special plates)** | `3542-3582`, `3143-3151` | A pending |
@@ -165,7 +165,10 @@ special plates replace/supplement it; `overlay` = ordinary plate plus a non-plat
 | 14 | story mention (`TYPE_STORY_MENTION` 24) | `isNewStyleButtonLayout` → round avatar/story overlay | **rich** | `1993-2005`, `2836-2840` | A pending |
 
 Untested rows are account/cell-dependent (real message data) and are explicitly `A pending`, per the
-pass's instruction not to fake rich states with a parallel renderer.
+pass's instruction not to fake rich states with a parallel renderer. Rows 1-3 are additionally
+covered by the corrected E-tier ordinary-path run (§8.3): the real `ChatActionCell` produced all
+five ordinary cases on the API 36 emulator, so the ordinary ownership claim is now runtime-confirmed
+as well as source-proven. Rich/special rows remain `A pending` and were not faked.
 
 ---
 
@@ -194,7 +197,7 @@ Ordinary service/date text is **centre-aligned** and wrapped to `width - dp(30)`
 
 ### 4.3 Decision
 
-**Strategy B is recommended** as the B6 working geometry, subject to one explicit gate:
+**Strategy B is selected** as the B6 geometry (the E visual-density gate passed — see §4.4 and §8.3):
 
 - it reuses the project-owned primitive required by the operating contract
   (`docs/EXECUTION_BACKLOG.md`: "Use `CybergramBubbleDrawable.buildPath(...)` ... instead of
@@ -208,14 +211,21 @@ Strategy A is **not** selected. It is the correct fallback only if visual eviden
 wasteful; it would require a new, separately-justified concave/convex path helper rather than ad-hoc
 math inside `ChatActionCell`, and it carries more regression risk in a high-risk shared file.
 
-### 4.4 Evidence limitation (recorded honestly)
+### 4.4 Visual-density gate — PASS
 
-The pass requires multi-line **visual** evidence to accept/reject B. That evidence could not be
-captured in this environment: the API 36 x86_64 emulator is blocked by the execution sandbox (see
-§7). B5 therefore records Strategy B as the **recommended working decision with an open
-visual-density gate**, not as visually confirmed. B6 must close that gate before it can be called
-validated (see §5, `E-density` row). If the gate rejects B, B6 stops and Strategy A is designed
-separately.
+The pass requires multi-line **visual** evidence to accept/reject B. That evidence was captured in
+the corrected E-tier run (§8.3, screenshot `b5_corrected.png`) and reviewed by the supervisor.
+
+Supervisor visual review of the corrected screenshot: the Strategy-B single enclosing chamfer is
+compact on the date and one-line cases; on the two-line uneven and three-line cases it adds only
+moderate symmetric side whitespace around the shorter centred lines and does not become a broad or
+wasteful banner; it reads as visually cleaner and more consistent with Cybergram's angular plates
+than preserving the upstream line-following rounded silhouette. The long case remains proportional
+to its content.
+
+**Outcome: the B5 visual-density gate PASSES and Strategy B is SELECTED** (no longer provisional).
+Strategy A is **not** selected and does not need to be designed. B6 is cleared to implement
+Strategy B as specified in §5.
 
 ---
 
@@ -297,18 +307,19 @@ stays in the non-Cybergram branch and is untouched.
 |---|---|
 | `E-build` | `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` → BUILD SUCCESSFUL; record APK size/SHA-256 |
 | `E-geometry` | debug fixture rows show a 45° chamfer (slope-1 ramp) on ordinary one-line/multi-line/date plates; pixel-measure corner slope and plate envelope |
-| `E-density` | **the open B5 gate**: confirm the enclosing plate is not visibly wasteful on uneven multi-line rows; if rejected, stop B6 and design Strategy A separately |
+| `E-density` | **PASSED in B5** (§8.3): the corrected fixture screenshot showed the enclosing plate is compact on date/one-line cases and only moderately wider on uneven multi-line rows; no broad/wasteful banner. B6 re-confirms on its own APK |
 | `E-control` | the same fixture rendered through a non-Cybergram provider still shows the upstream rounded ordinary path |
 | `E-rich` | rich fixture rows (gift/offer/wallpaper/birthday/community) remain upstream rounded |
 | `A` | authenticated chat: date separators, pin/unpin, join/leave, title/photo/TTL changes, group-call and screenshot actions ordinary; gifts/offers/wallpapers/birthday/community unchanged; service-message reactions still render (pill geometry owned by B4) |
-| `P` | Samsung/OEM spot check |
+| `P` | not required for this audit; optional Samsung/OEM spot check only if an actual device/OEM defect appears |
 
 ---
 
 ## 6. Unresolved issues / open items
 
-1. **Visual-density gate (blocking B6 validation).** Emulator E blocked here (§7); must be captured
-   before B6 is called validated.
+1. ~~**Visual-density gate (blocking B6 validation).**~~ **RESOLVED in B5**: the corrected E-tier run
+   and supervisor visual review closed the gate; Strategy B is selected (§4.4, §8.3). No open
+   density item remains for B6.
 2. **`ThemePreviewActivity` leak risk.** `ThemePreviewActivity.java:5370` constructs a real
    `ChatActionCell` with the *preview* provider. `isCybergramPresentation(provider)` is false for a
    plain preview provider, but falls back to `Theme.getCurrentTheme()`; if the active app theme is
@@ -326,37 +337,43 @@ stays in the non-Cybergram branch and is untouched.
 
 ---
 
-## 7. Environment blocker (E tier)
+## 7. Executor-sandbox emulator limitation (troubleshooting history — NOT current status)
 
-The API 36 x86_64 emulator could not be launched under the execution sandbox. Five configurations
-were attempted (original AVD `Cybergram_API36` and a workspace-local AVD `Cybergram_B5`, host and
-swiftshader GPU, windowed and `-no-window`, with `Wifi`/`WiFiPacketStream`/`Uwb`/
-`NetsimWebUi`/`NetsimCliUi`/`ModemSimulator`/`VirtioWifi` disabled). Every run aborts at the same
-point:
+> **Current B5 runtime status:** E was completed successfully on the real host, outside the DSH
+> sandbox, via Remote Desktop Commander (§8.3). The DSH-local failure below is retained only as
+> troubleshooting history and is **not** an open B5 blocker or a product/AVD defect.
+
+An earlier attempt to launch the API 36 x86_64 emulator **inside the DSH execution sandbox** failed.
+Five configurations were attempted (original AVD `Cybergram_API36` and a workspace-local AVD
+`Cybergram_B5`, host and swiftshader GPU, windowed and `-no-window`, with
+`Wifi`/`WiFiPacketStream`/`Uwb`/`NetsimWebUi`/`NetsimCliUi`/`ModemSimulator`/`VirtioWifi` disabled).
+Every run aborted at the same point:
 
 - the emulator reaches `netsimd I ... rust_main.rs:93` and then exits with code `-36863`
   (`0xFFFF7001`) before the guest boots;
 - `adb devices` never lists the emulator (only the unrelated physical device
   `4H8L598LAME6CEX4 unauthorized` is present);
-- the sandbox denies writes to `~/.android`; relocating `ANDROID_EMULATOR_HOME`/`ANDROID_AVD_HOME`/
-  `ANDROID_USER_HOME` into the workspace removed the `~/.android` lock errors but not the abort.
+- the sandbox denied writes to `~/.android`; relocating
+  `ANDROID_EMULATOR_HOME`/`ANDROID_AVD_HOME`/`ANDROID_USER_HOME` into the workspace removed the
+  `~/.android` lock errors but not the abort.
 
 The failure point (immediately after the emulator spawns the `netsimd` child) is consistent with the
-documented sandbox restriction on pipe/named-pipe stdio for child processes. Sandbox escalation to
-`danger-full-access` was requested for the build and rejected because **no approval channel is
-available**, so no wider-mode retry is possible.
+documented sandbox restriction on child-process pipe/named-pipe stdio. This was an **executor
+sandbox/environment limitation, not an AVD or product failure**: the same existing AVD
+`Cybergram_API36` later booted normally on the real host without any AVD change (§8.3).
 
-The Gradle build itself was made to work inside the sandbox by pointing `GRADLE_USER_HOME` at a
-workspace-local copy of the Gradle cache (see §8), producing a successful build and a verifiable APK.
-
-To reproduce the (currently blocked) E run once a sandbox with process/pipe access is available:
+Historical DSH-local reproduction attempt (this failed; do not treat as B5 status):
 
 ```text
-emulator -avd <API36_x86_64_AVD> -no-snapshot
+emulator -avd <API36_x86_64_AVD> -no-snapshot          # DSH-local: aborts at netsimd, exit -36863
 adb install -r TMessagesProj_App/build/outputs/apk/afat/debug/app.apk
 adb shell am start -n org.telegram.messenger.beta/org.telegram.ui.CybergramShowcaseActivity --ez cybergram_b5 true
-adb exec-out screencap -p > b5_showcase.png
+adb exec-out screencap -p > b5_corrected.png
 ```
+
+The Gradle build was likewise made to work inside the sandbox by pointing `GRADLE_USER_HOME` at a
+workspace-local copy of the Gradle cache (see §8.2), but the authoritative build/install/run for
+B5 was performed directly on the real host (§8.2-§8.3).
 
 ---
 
@@ -373,13 +390,37 @@ via `setCustomDate`, one-line short/long, two-line uneven, three-line, long wrap
 production public entry points (`setCustomText`/`setCustomDate`, `setVisiblePart`, `measure`,
 `layout`, `draw`), with `currentMessageObject == null`, so exactly `backgroundPath` is exercised. A
 magenta 1dp Strategy-B candidate outline derived from the cell's own measured envelope is overlaid as
-a clearly-labelled debug annotation — it is not a production render. It also computes each row's
-plate width from `getBoundsLeft()/getBoundsRight()` for measurement.
+a clearly-labelled debug annotation — it is not a production render.
+
+Plate-width measurement was **corrected** in debug commit
+`4ae5a973ae953700cc209d520136fde461eef6a0` ("debug: use raw ChatActionCell background bounds in B5
+fixture"): the fixture now reads the cell's private `backgroundLeft`/`backgroundRight` fields
+directly, after the real draw, instead of deriving bounds from the public accessors. The earlier
+public-bounds derivation was buggy and produced **invalid** plate-width evidence; the previous
+full-row candidate screenshot rendered from it is invalid evidence and is **superseded by
+`b5_corrected.png`**. No production file was touched by this correction (debug source set only).
 
 Wiring: `CybergramShowcaseActivity` gained a debug-only `--ez cybergram_b5 true` mode and a
 `B5OnlyView` host. No release source or manifest was touched; no preference is written.
 
 ### 8.2 Build
+
+**Authoritative build (real host, after the corrected debug fixture commit
+`4ae5a973ae953700cc209d520136fde461eef6a0`):**
+
+```text
+:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64
+```
+
+- Result: **BUILD SUCCESSFUL in 57s** — 82 tasks, 7 executed / 75 up-to-date.
+- APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`.
+- Final APK SHA-256:
+  `e4411dd071f8600a58bfa6b9ff08044d0d3b0dc24fad8db99bb10f906dd556ad`.
+- Install to `org.telegram.messenger.beta` on `emulator-5554`: **succeeded**.
+- Artifact proof: `CybergramB5ServiceDateFixture` and the `cybergram_b5` extra are present in the
+  packaged APK.
+
+**Historical DSH-local build** (pre-correction fixture, retained for provenance):
 
 ```text
 java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain \
@@ -389,17 +430,45 @@ java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain 
 with `JAVA_HOME=<JDK 17>` and `GRADLE_USER_HOME=<workspace-local cache copy>`.
 
 - Result: **BUILD SUCCESSFUL** (1m 13s, 82 tasks).
-- APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`.
-- Size: `74,277,072` bytes.
-- SHA-256: `d3a861d4b929f3c7f9e06b61a2f202e31224c3194b4e80da7eef802081760c35`.
-- Artifact proof: `CybergramB5ServiceDateFixture` and the `cybergram_b5` extra are present in
-  `classes5.dex` of the packaged APK.
+- APK size: `74,277,072` bytes.
+- SHA-256 (superseded by the authoritative build above):
+  `d3a861d4b929f3c7f9e06b61a2f202e31224c3194b4e80da7eef802081760c35`.
 
-### 8.3 Runtime
+### 8.3 Runtime (E) — completed on the real host
 
-Not executed — emulator blocked (§7). The fixture is committed so the run above (`§7`) produces the
-B5 visual evidence and closes the §4.4 / §5.6 `E-density` gate as soon as an E environment is
-available.
+Executed outside the DSH sandbox on the real host via Remote Desktop Commander, using the
+**existing** AVD `Cybergram_API36` (no AVD recreation):
+
+- AVD booted successfully and appeared as `emulator-5554`; `sys.boot_completed=1`.
+- The corrected debug fixture commit `4ae5a973ae953700cc209d520136fde461eef6a0` was present; it reads
+  `ChatActionCell`'s private `backgroundLeft`/`backgroundRight` after the real draw. No production
+  files changed.
+- The final APK from §8.2 (`e4411dd0...56ad`) was installed to `org.telegram.messenger.beta`.
+- Validation sequence: **normal app launch first**, then `CybergramShowcaseActivity` with
+  `--ez cybergram_b5 true`. Session stable; FATAL/ANR/process-crash scan = **0**.
+- Final screenshot: `.local-artifacts/b5/b5_corrected.png` (git-excluded).
+
+Corrected real ordinary-path plate widths printed by the fixture:
+
+| case | plate width |
+|---|---|
+| date | 98 px |
+| one-line short | 158 px |
+| one-line long | 288 px |
+| two-line uneven | 230 px |
+| three-line | 310 px |
+| long (wrapped) | 640 px |
+
+The long case remains proportional to its content (it is the widest wrapped line), and the
+two-line/three-line cases are only moderately wider than their longest line, confirming the §4.4
+density conclusion. The earlier full-row candidate screenshot produced from the buggy public-bounds
+measurement is **invalid evidence and is superseded by `b5_corrected.png`**.
+
+**E visual-density gate: PASS — Strategy B SELECTED.** B6 is cleared to implement §5.
+
+A rich/authenticated cases (gifts, offers, wallpapers, birthday, community, story, reactions,
+`TYPE_ACTION_PHOTO`) remain `A pending` as already noted in §3 and §6, because they require real
+authenticated message data and were deliberately not faked. P was not required for this audit.
 
 ---
 
@@ -412,4 +481,13 @@ git diff 2db3b48e7f3425518278a909ff65594a5410962a..HEAD -- TMessagesProj/src/mai
 ```
 
 B5 made **no production rendering change**. Only `TMessagesProj_App/src/debug/...` (debug source
-set) and `docs/` were modified.
+set) and `docs/` were modified. Verified at the final B5 evidence-correction commit: the command
+above is empty and `git diff --check` is clean.
+
+**B6 remains NOT IMPLEMENTED.** The B6 proposal in §5 is unchanged: Strategy B — one compact
+enclosing `CybergramBubbleDrawable.buildPath(...)` plate for ordinary service/date geometry only,
+with the already-documented rich/special exclusions (`isButtonLayout`, new-style cards, birthday,
+star gift, offer/community/wallpaper/story, bot buttons/ribbon and the suggested-post-approval
+override) left on their upstream paths. `docs/CYBERGRAM_UI_SPEC.md` was not modified, and
+`CURRENT_STATE.md` / `EXECUTION_BACKLOG.md` / the pass index are intentionally not updated by this
+evidence correction — that happens only after integration review.

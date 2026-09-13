@@ -1,6 +1,6 @@
 # Cybergram work state
 
-Last updated: 2026-09-12
+Last updated: 2026-09-13
 
 ## Repository authority
 
@@ -803,13 +803,14 @@ Evidence/implementation-design audit only; **no production rendering change**. F
   replaces the ordinary path with `addRoundRect(dp(15))`. Proposed B6 gate:
   `CybergramTheme.useAngularMessageGeometry(themeDelegate) && !isButtonLayout(currentMessageObject)
   && !isMessageActionSuggestedPostApproval()`.
-- Geometry verdict: **Strategy B recommended** (single enclosing
+- Geometry verdict: **Strategy B SELECTED** (single enclosing
   `CybergramBubbleDrawable.buildPath` plate) over Strategy A (new line-following chamfer math),
   because ordinary service/date text is centre-aligned and wrapped, the upstream smoothing pass
   already merges small line steps, B reuses the project-owned primitive required by the operating
   contract, and A would add new concave/convex path math inside a 4,214-line shared upstream file.
-  The multi-line **visual-density gate remains open** because E was blocked (§ below); B6 must close
-  it before it can be called validated.
+  The multi-line **visual-density gate PASSED** in the corrected E run (below): the single enclosing
+  chamfer is compact on date/one-line cases and adds only moderate symmetric side whitespace on
+  uneven two-line/three-line cases, not a broad banner. Strategy B is no longer provisional.
 - B6 proposal (not implemented): `ChatActionCell.java` only, plus imports of the existing
   `CybergramBubbleDrawable`/`CybergramTheme` helpers; gate at the `if (invalidatePath)` block
   (`3327`) using `themeDelegate`; geometry `top = dp(4)`, `bottom = dp(4) + textHeight + dp(6)`,
@@ -817,20 +818,43 @@ Evidence/implementation-design audit only; **no production rendering change**. F
   background/darken/dim paints, measurement, `applyServiceShaderMatrix`, rich branches and the
   non-Cybergram path unchanged. Open design issue: `ThemePreviewActivity.java:5370` may render
   angular in a preview of a different theme through the `Theme.getCurrentTheme()` fallback.
-- E build evidence (debug-only fixture `TMessagesProj_App/src/debug/java/org/telegram/ui/
+- Debug-only fixture (`TMessagesProj_App/src/debug/java/org/telegram/ui/
   CybergramB5ServiceDateFixture.java` + `--ez cybergram_b5 true` mode in `CybergramShowcaseActivity`;
-  release sources/manifests untouched): `:TMessagesProj_App:assembleAfatDebug
-  -PCYBERGRAM_ABI=x86_64` → **BUILD SUCCESSFUL** (1m 13s); APK `74,277,072` bytes, SHA-256
-  `d3a861d4b929f3c7f9e06b61a2f202e31224c3194b4e80da7eef802081760c35`; fixture + intent extra present
-  in `classes5.dex`. The build required `GRADLE_USER_HOME` to point at a workspace-local copy of the
-  Gradle cache because the sandbox denies writes to `~/.gradle` (escalation request rejected: no
-  approval channel).
-- E runtime **blocked**: the API 36 x86_64 emulator aborts immediately after spawning `netsimd`
-  (`exit -36863 / 0xFFFF7001`) across five configurations (original and workspace-local AVD, host and
-  swiftshader GPU, windowed and `-no-window`, netsim/modem features disabled); `adb` never sees it.
-  Consistent with the sandbox restriction on child-process pipe/named-pipe stdio. A-tier visual
-  confirmation of ordinary and rich service actions also remains pending (needs an authenticated
-  session).
+  release sources/manifests untouched). Debug commit `4ae5a973ae953700cc209d520136fde461eef6a0`
+  ("debug: use raw ChatActionCell background bounds in B5 fixture") **fixed a public-bounds
+  measurement bug**: the fixture now reads `ChatActionCell` private `backgroundLeft`/`backgroundRight`
+  after the real draw. The previous full-row candidate screenshot produced from the buggy public
+  bounds is **invalid evidence and is superseded by `b5_corrected.png`**. No production file changed.
+- E build evidence — **authoritative direct-host build** after `4ae5a973...`:
+  `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` → **BUILD SUCCESSFUL in 57s**
+  (82 tasks, 7 executed / 75 up-to-date); final APK SHA-256
+  `e4411dd071f8600a58bfa6b9ff08044d0d3b0dc24fad8db99bb10f906dd556ad`; install to
+  `org.telegram.messenger.beta` succeeded. Historical DSH-local sandbox build (pre-correction
+  fixture, superseded): BUILD SUCCESSFUL 1m 13s, APK `74,277,072` bytes, SHA-256
+  `d3a861d4b929f3c7f9e06b61a2f202e31224c3194b4e80da7eef802081760c35`; it required
+  `GRADLE_USER_HOME` to point at a workspace-local Gradle cache because the sandbox denies writes to
+  `~/.gradle`.
+- E runtime — **PASS (completed on the real host outside the DSH sandbox via Remote Desktop
+  Commander)**: existing AVD `Cybergram_API36` booted and appeared as `emulator-5554`
+  (`sys.boot_completed=1`); normal app launch first, then `CybergramShowcaseActivity --ez
+  cybergram_b5 true`; stable, FATAL/ANR/process-crash scan = 0; final screenshot
+  `.local-artifacts/b5/b5_corrected.png` (git-excluded). Corrected real ordinary-path widths: date
+  `98px`, one-line short `158px`, one-line long `288px`, two-line uneven `230px`, three-line `310px`,
+  long `640px`. Supervisor visual review: compact on date/one-line, only moderate symmetric side
+  whitespace on uneven multi-line, visually cleaner/more consistent with Cybergram angular plates
+  than upstream's line-following rounded silhouette → **visual-density gate PASSES, Strategy B
+  SELECTED**.
+- The earlier DSH-local emulator failure (`-36863` after `netsimd`, across five configurations) was
+  an executor sandbox/environment limitation, **not** an AVD/product failure — the same AVD booted
+  normally on the real host. It is retained only as troubleshooting history in the audit doc and is
+  not current B5 runtime status.
+- A-tier visual confirmation is still pending **only** for rich/authenticated cases (gifts, offers,
+  wallpapers, birthday, community, story, reactions, `TYPE_ACTION_PHOTO`), as already noted, because
+  they need real authenticated message data and were not faked. P is not required for this audit.
+- B6 remains **NOT IMPLEMENTED**; the proposal is unchanged (Strategy B, one compact enclosing
+  `CybergramBubbleDrawable.buildPath` plate for ordinary service/date only, rich/special exclusions
+  left upstream). `docs/CYBERGRAM_UI_SPEC.md` was not modified, and `CURRENT_STATE.md` /
+  `EXECUTION_BACKLOG.md` / the pass index are deliberately not updated until integration review.
 - No production rendering fix was made in B5, and none is authorized by it.
 
 ## Explicitly deferred
