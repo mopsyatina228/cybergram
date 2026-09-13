@@ -102,6 +102,8 @@ import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.ChannelAdminLogActivity;
@@ -1694,6 +1696,18 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return currentMessageObject != null
             && currentMessageObject.messageOwner != null
             && currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionSuggestedPostApproval;
+    }
+
+    /**
+     * Cybergram B6: true only for the ordinary (non-rich) service/date plate under Cybergram
+     * presentation. Rich gift/offer/community/wallpaper/birthday/story cards, bot buttons/ribbons
+     * and the suggested-post-approval override keep their upstream geometry, so they are excluded
+     * here and never reach the Cybergram plate branch in {@link #drawBackground(Canvas, boolean)}.
+     */
+    private boolean useCybergramOrdinaryServicePlate() {
+        return CybergramTheme.useAngularMessageGeometry(themeDelegate)
+            && !isButtonLayout(currentMessageObject)
+            && !isMessageActionSuggestedPostApproval();
     }
 
     private void createLayout(CharSequence text, int width) {
@@ -3355,122 +3369,144 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 prevLineWidth = lineWidth;
             }
 
-            int y = dp(4);
-            int x = getMeasuredWidth() / 2;
-            int previousLineBottom = 0;
-
-            final int cornerOffset = dp(3);
-            final int cornerInSmall = dp(6);
-            final int cornerRest = corner - cornerOffset;
-
-            lineHeights.clear();
-            backgroundPath.reset();
-            backgroundPath.moveTo(x, y);
-
-            for (int a = 0; a < count; a++) {
-                int lineWidth = lineWidths.get(a);
-                int lineBottom = textLayout.getLineBottom(a);
-                int nextLineWidth = a < count - 1 ? lineWidths.get(a + 1) : 0;
-
-                int height = lineBottom - previousLineBottom;
-                if (a == 0 || lineWidth > prevLineWidth) {
-                    height += dp(3);
-                }
-                if (a == count - 1 || lineWidth > nextLineWidth) {
-                    height += dp(3);
-                }
-
-                previousLineBottom = lineBottom;
-
-                float startX = x + lineWidth / 2.0f;
-
-                int innerCornerRad;
-                if (a != count - 1 && lineWidth < nextLineWidth && a != 0 && lineWidth < prevLineWidth) {
-                    innerCornerRad = cornerInSmall;
-                } else {
-                    innerCornerRad = cornerIn;
-                }
-
-                if (a == 0 || lineWidth > prevLineWidth) {
-                    rect.set(startX - cornerOffset - corner, y, startX + cornerRest, y + corner * 2);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, -90, 90);
-                } else if (lineWidth < prevLineWidth) {
-                    rect.set(startX + cornerRest, y, startX + cornerRest + innerCornerRad * 2, y + innerCornerRad * 2);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, -90, -90);
-                }
-                y += height;
-                int yOffset = y;
-                if (a != count - 1 && lineWidth < nextLineWidth) {
-                    y -= dp(3);
-                    height -= dp(3);
-                }
-                if (a != 0 && lineWidth < prevLineWidth) {
-                    y -= dp(3);
-                    height -= dp(3);
-                }
-                lineHeights.add(height);
-
-                if (a == count - 1 || lineWidth > nextLineWidth) {
-                    rect.set(startX - cornerOffset - corner, y - corner * 2, startX + cornerRest, y);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 0, 90);
-                } else if (lineWidth < nextLineWidth) {
-                    rect.set(startX + cornerRest, y - innerCornerRad * 2, startX + cornerRest + innerCornerRad * 2, y);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 180, -90);
-                }
-
-                prevLineWidth = lineWidth;
-            }
-            for (int a = count - 1; a >= 0; a--) {
-                prevLineWidth = a != 0 ? lineWidths.get(a - 1) : 0;
-                int lineWidth = lineWidths.get(a);
-                int nextLineWidth = a != count - 1 ? lineWidths.get(a + 1) : 0;
-                int lineBottom = textLayout.getLineBottom(a);
-                float startX = x - lineWidth / 2;
-
-                int innerCornerRad;
-                if (a != count - 1 && lineWidth < nextLineWidth && a != 0 && lineWidth < prevLineWidth) {
-                    innerCornerRad = cornerInSmall;
-                } else {
-                    innerCornerRad = cornerIn;
-                }
-
-                if (a == count - 1 || lineWidth > nextLineWidth) {
-                    rect.set(startX - cornerRest, y - corner * 2, startX + cornerOffset + corner, y);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 90, 90);
-                } else if (lineWidth < nextLineWidth) {
-                    rect.set(startX - cornerRest - innerCornerRad * 2, y - innerCornerRad * 2, startX - cornerRest, y);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 90, -90);
-                }
-
-                y -= lineHeights.get(a);
-
-                if (a == 0 || lineWidth > prevLineWidth) {
-                    rect.set(startX - cornerRest, y, startX + cornerOffset + corner, y + corner * 2);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 180, 90);
-                } else if (lineWidth < prevLineWidth) {
-                    rect.set(startX - cornerRest - innerCornerRad * 2, y, startX - cornerRest, y + innerCornerRad * 2);
-                    checkLeftRightBounds();
-                    backgroundPath.arcTo(rect, 0, -90);
-                }
-            }
-            backgroundPath.close();
-
-            if (isMessageActionSuggestedPostApproval() && !isNewStyleButtonLayout()) {
-                rect.left = x - textWidth / 2f - dp(17);
-                rect.top = y;
-                rect.right = x + textWidth / 2f + dp(17);
-                rect.bottom = y + textHeight + titleHeight + dp(28);
-
+            if (useCybergramOrdinaryServicePlate()) {
+                // Cybergram B6: one compact enclosing chamfer plate for the ordinary
+                // service/date path, reusing the shared clipped-corner primitive instead of
+                // the upstream line-following arc outline. Rich cards/buttons and the
+                // suggested-post-approval override never reach this branch.
                 backgroundPath.reset();
-                backgroundPath.addRoundRect(rect, dp(15), dp(15), Path.Direction.CW);
+                if (!lineWidths.isEmpty()) {
+                    int maxLineWidth = 0;
+                    for (int a = 0; a < lineWidths.size(); a++) {
+                        maxLineWidth = Math.max(maxLineWidth, lineWidths.get(a));
+                    }
+                    final int x = getMeasuredWidth() / 2;
+                    final float top = dp(4);
+                    final float bottom = top + textHeight + dp(6);
+                    final float left = x - maxLineWidth / 2f - dp(8);
+                    final float right = x + maxLineWidth / 2f + dp(8);
+                    CybergramBubbleDrawable.buildPath(backgroundPath, left, top, right, bottom, dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                    backgroundLeft = (int) Math.floor(left);
+                    backgroundRight = (int) Math.ceil(right);
+                }
+            } else {
+                int y = dp(4);
+                int x = getMeasuredWidth() / 2;
+                int previousLineBottom = 0;
+
+                final int cornerOffset = dp(3);
+                final int cornerInSmall = dp(6);
+                final int cornerRest = corner - cornerOffset;
+
+                lineHeights.clear();
+                backgroundPath.reset();
+                backgroundPath.moveTo(x, y);
+
+                for (int a = 0; a < count; a++) {
+                    int lineWidth = lineWidths.get(a);
+                    int lineBottom = textLayout.getLineBottom(a);
+                    int nextLineWidth = a < count - 1 ? lineWidths.get(a + 1) : 0;
+
+                    int height = lineBottom - previousLineBottom;
+                    if (a == 0 || lineWidth > prevLineWidth) {
+                        height += dp(3);
+                    }
+                    if (a == count - 1 || lineWidth > nextLineWidth) {
+                        height += dp(3);
+                    }
+
+                    previousLineBottom = lineBottom;
+
+                    float startX = x + lineWidth / 2.0f;
+
+                    int innerCornerRad;
+                    if (a != count - 1 && lineWidth < nextLineWidth && a != 0 && lineWidth < prevLineWidth) {
+                        innerCornerRad = cornerInSmall;
+                    } else {
+                        innerCornerRad = cornerIn;
+                    }
+
+                    if (a == 0 || lineWidth > prevLineWidth) {
+                        rect.set(startX - cornerOffset - corner, y, startX + cornerRest, y + corner * 2);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, -90, 90);
+                    } else if (lineWidth < prevLineWidth) {
+                        rect.set(startX + cornerRest, y, startX + cornerRest + innerCornerRad * 2, y + innerCornerRad * 2);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, -90, -90);
+                    }
+                    y += height;
+                    int yOffset = y;
+                    if (a != count - 1 && lineWidth < nextLineWidth) {
+                        y -= dp(3);
+                        height -= dp(3);
+                    }
+                    if (a != 0 && lineWidth < prevLineWidth) {
+                        y -= dp(3);
+                        height -= dp(3);
+                    }
+                    lineHeights.add(height);
+
+                    if (a == count - 1 || lineWidth > nextLineWidth) {
+                        rect.set(startX - cornerOffset - corner, y - corner * 2, startX + cornerRest, y);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 0, 90);
+                    } else if (lineWidth < nextLineWidth) {
+                        rect.set(startX + cornerRest, y - innerCornerRad * 2, startX + cornerRest + innerCornerRad * 2, y);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 180, -90);
+                    }
+
+                    prevLineWidth = lineWidth;
+                }
+                for (int a = count - 1; a >= 0; a--) {
+                    prevLineWidth = a != 0 ? lineWidths.get(a - 1) : 0;
+                    int lineWidth = lineWidths.get(a);
+                    int nextLineWidth = a != count - 1 ? lineWidths.get(a + 1) : 0;
+                    int lineBottom = textLayout.getLineBottom(a);
+                    float startX = x - lineWidth / 2;
+
+                    int innerCornerRad;
+                    if (a != count - 1 && lineWidth < nextLineWidth && a != 0 && lineWidth < prevLineWidth) {
+                        innerCornerRad = cornerInSmall;
+                    } else {
+                        innerCornerRad = cornerIn;
+                    }
+
+                    if (a == count - 1 || lineWidth > nextLineWidth) {
+                        rect.set(startX - cornerRest, y - corner * 2, startX + cornerOffset + corner, y);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 90, 90);
+                    } else if (lineWidth < nextLineWidth) {
+                        rect.set(startX - cornerRest - innerCornerRad * 2, y - innerCornerRad * 2, startX - cornerRest, y);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 90, -90);
+                    }
+
+                    y -= lineHeights.get(a);
+
+                    if (a == 0 || lineWidth > prevLineWidth) {
+                        rect.set(startX - cornerRest, y, startX + cornerOffset + corner, y + corner * 2);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 180, 90);
+                    } else if (lineWidth < prevLineWidth) {
+                        rect.set(startX - cornerRest - innerCornerRad * 2, y, startX - cornerRest, y + innerCornerRad * 2);
+                        checkLeftRightBounds();
+                        backgroundPath.arcTo(rect, 0, -90);
+                    }
+                }
                 backgroundPath.close();
+
+                if (isMessageActionSuggestedPostApproval() && !isNewStyleButtonLayout()) {
+                    rect.left = x - textWidth / 2f - dp(17);
+                    rect.top = y;
+                    rect.right = x + textWidth / 2f + dp(17);
+                    rect.bottom = y + textHeight + titleHeight + dp(28);
+
+                    backgroundPath.reset();
+                    backgroundPath.addRoundRect(rect, dp(15), dp(15), Path.Direction.CW);
+                    backgroundPath.close();
+                }
             }
         }
         if (!visiblePartSet) {
