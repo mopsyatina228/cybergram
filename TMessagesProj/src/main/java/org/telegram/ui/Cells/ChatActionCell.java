@@ -102,6 +102,8 @@ import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.ChannelAdminLogActivity;
@@ -1694,6 +1696,12 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return currentMessageObject != null
             && currentMessageObject.messageOwner != null
             && currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionSuggestedPostApproval;
+    }
+
+    private boolean useCybergramOrdinaryServicePlate() {
+        return CybergramTheme.useAngularMessageGeometry(themeDelegate)
+            && !isButtonLayout(currentMessageObject)
+            && !isMessageActionSuggestedPostApproval();
     }
 
     private void createLayout(CharSequence text, int width) {
@@ -3462,7 +3470,20 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             backgroundPath.close();
 
-            if (isMessageActionSuggestedPostApproval() && !isNewStyleButtonLayout()) {
+            if (useCybergramOrdinaryServicePlate()) {
+                int maxLineWidth = 0;
+                for (int a = 0; a < lineWidths.size(); a++) {
+                    maxLineWidth = Math.max(maxLineWidth, lineWidths.get(a));
+                }
+                final int centerX = getMeasuredWidth() / 2;
+                final float top = dp(4);
+                final float bottom = top + textHeight + dp(6);
+                final float left = centerX - maxLineWidth / 2f - dp(8);
+                final float right = centerX + maxLineWidth / 2f + dp(8);
+                CybergramBubbleDrawable.buildPath(backgroundPath, left, top, right, bottom, dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                backgroundLeft = (int) Math.floor(left);
+                backgroundRight = (int) Math.ceil(right);
+            } else if (isMessageActionSuggestedPostApproval() && !isNewStyleButtonLayout()) {
                 rect.left = x - textWidth / 2f - dp(17);
                 rect.top = y;
                 rect.right = x + textWidth / 2f + dp(17);
