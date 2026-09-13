@@ -1,6 +1,11 @@
 # B2 — message-state coverage and ownership audit
 
-Status: `AUDIT COMPLETE / REVISED (DESIGN-OPEN) / NO PRODUCTION FIX MADE / INTEGRATION PENDING`
+Status: `INTEGRATED / AUDIT COMPLETE`
+
+Integrated revision: `2e9a6a1d066975727cbb4b3888c490a8acbf798a` on `dev` (fast-forward from
+`audit/cybergram-message-states`; commits kept separate: DEBUG-only fixture `b2bfdd418`, audit/docs
+`6c682e153`, semantic correction `2e9a6a1d0`). The production diff from base over `TMessagesProj/src/main`
+is empty.
 
 Type: evidence/audit (`docs/passes/B2_MESSAGE_STATE_AUDIT.md`)
 

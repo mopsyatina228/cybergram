@@ -1,6 +1,9 @@
 # B2 — message-state coverage and ownership audit
 
-Status: `AUDIT COMPLETE / REVISED (DESIGN-OPEN) / NO PRODUCTION FIX MADE / INTEGRATION PENDING`
+Status: `INTEGRATED / AUDIT COMPLETE`
+
+Integrated revision: `2e9a6a1d066975727cbb4b3888c490a8acbf798a` on `dev` (fast-forward, commits kept separate:
+DEBUG-only fixture `b2bfdd418`, audit/docs `6c682e153`, semantic correction `2e9a6a1d0`).
 
 Type: evidence/audit
 
@@ -195,7 +198,7 @@ With zero confirmed defects, no B3/B4 implementation spec is produced.
 
 ## Execution record (2026-09-12)
 
-Status: AUDIT COMPLETE / REVISED (DESIGN-OPEN) / NO PRODUCTION FIX MADE / INTEGRATION PENDING.
+Status: INTEGRATED / AUDIT COMPLETE.
 
 - Tested revision `e000ef8286a406fc27fc55889c286ebbffef2890`; worktree clean; audit branch
   `audit/cybergram-message-states`.

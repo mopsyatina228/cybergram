@@ -91,7 +91,7 @@ B1 (main bottom navigation) is integrated on `dev` at
 
 Its E evidence (build, install, launch, no FATAL/ANR, DEBUG opt-in fixture, APK size/SHA-256) is recorded in `docs/WORK_STATE.md` and `docs/passes/B1_MAIN_TABS_FLAT.md`. The authenticated main-tabs interaction matrix and physical-device confidence remain open, and the outer-panel footprint has no authenticated visual confirmation yet.
 
-B2 (message-state coverage and ownership audit) is complete on `audit/cybergram-message-states` against
+B2 (message-state coverage and ownership audit) is complete and integrated on `dev` against
 `e000ef8286a406fc27fc55889c286ebbffef2890`: **14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED**
 across 35 cases, no production rendering fix. Matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
 `TYPE_PREVIEW` is closed as theme-preview-only, so **B3 = `CLOSED / NOT REQUIRED`**. The six remaining rows
@@ -102,7 +102,13 @@ anti-target — it does not require compact internal semantic controls to become
 styling is therefore **B4 = `DESIGN-OPEN / NOT AUTHORIZED`**: no production implementation spec is written
 and `ReplyMessageLine` / `ReactionsLayoutInBubble` stay untouched. Its state is:
 
-`AUDIT COMPLETE / NO PRODUCTION FIX MADE / INTEGRATION PENDING`
+`INTEGRATED / AUDIT COMPLETE`
+
+Integration (2026-09-12, fast-forward from `audit/cybergram-message-states`, commits kept separate):
+DEBUG-only fixture `b2bfdd4180377563ff1cc53a8deb3abaf8fa7dea`, audit/docs
+`6c682e15385c07dd4cf28cf1bd69567e0e2692c1`, semantic correction docs-only
+`2e9a6a1d066975727cbb4b3888c490a8acbf798a`. The production diff from base over `TMessagesProj/src/main`
+is empty. A/P tiers remain open.
 
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 

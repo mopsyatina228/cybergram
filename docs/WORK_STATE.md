@@ -768,6 +768,19 @@ this section are the original run's evidence and are unchanged.)
 - Still true after the correction: no production rendering fix was made in B2, and none is authorized by
   it.
 
+### Integration record (2026-09-12)
+
+- `origin/dev` was verified at the expected base `e000ef8286a406fc27fc55889c286ebbffef2890` before
+  integration (no divergence).
+- `audit/cybergram-message-states` was pushed to `origin` as a safety copy, then fast-forward merged into
+  `dev`; the three commits were preserved separately: DEBUG-only fixture
+  `b2bfdd4180377563ff1cc53a8deb3abaf8fa7dea`, audit/docs `6c682e15385c07dd4cf28cf1bd69567e0e2692c1`,
+  semantic correction docs-only `2e9a6a1d066975727cbb4b3888c490a8acbf798a`. No squash, no rebase.
+- Preservation proof: `git diff e000ef8286a406fc27fc55889c286ebbffef2890..HEAD -- TMessagesProj/src/main`
+  is **empty**; `git diff --check` clean; worktree clean.
+- Final state: B2 = `INTEGRATED / AUDIT COMPLETE`, B3 = `CLOSED / NOT REQUIRED`,
+  B4 = `DESIGN-OPEN / NOT AUTHORIZED`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
