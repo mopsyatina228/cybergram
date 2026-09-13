@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.View;
 
+import java.lang.reflect.Field;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
@@ -30,14 +32,44 @@ import org.telegram.ui.Cells.ChatActionCell;
  *    one-line / multi-line service action or a date separator uses;
  *  - after the real draw, the fixture overlays a 1dp Strategy-B candidate outline
  *    (single enclosing chamfer, {@link CybergramBubbleDrawable#buildPath}) derived from
- *    the cell's own measured ordinary envelope. The outline is a debug annotation only;
- *    it is NOT a production render and NOT a preview of committed geometry.
+ *    the cell's own ordinary {@code backgroundPath} extent, read through debug-only
+ *    reflection (see {@link #rawBackgroundBounds}). The outline is a debug annotation
+ *    only; it is NOT a production render and NOT a preview of committed geometry.
  *
  * What this fixture is NOT: it does not synthesize rich/special MessageObject states
  * (gifts, offers, wallpapers, community cards, suggested post approval). Those need real
  * message data and stay source-classified + UNTESTED/A in the B5 matrix.
  */
 public final class CybergramB5ServiceDateFixture {
+
+    /**
+     * Debug-only reflection handles onto {@link ChatActionCell}'s private
+     * {@code backgroundLeft}/{@code backgroundRight}.
+     *
+     * Those fields are the raw horizontal extent of the ordinary {@code backgroundPath} that
+     * {@code drawBackground()} has just built. The public {@code getBoundsLeft()} /
+     * {@code getBoundsRight()} are the wrong source for this probe: they widen the result by
+     * {@code imageReceiver} visibility, and for ordinary {@code customText} rows the receiver can
+     * still be marked visible, so the public bounds report a near-full-row plate that was never
+     * drawn. The private fields do not include that widening (nor the {@code sideMenuWidth / 2}
+     * offset), so they describe the compact plate actually rendered.
+     *
+     * The lookup is done once and is deliberately defensive: this class only ever compiles into the
+     * debug source set, so a reflection failure (renamed field, stripped build, stricter runtime)
+     * must degrade the probe, never crash it.
+     */
+    private static final Field BACKGROUND_LEFT_FIELD = findBackgroundField("backgroundLeft");
+    private static final Field BACKGROUND_RIGHT_FIELD = findBackgroundField("backgroundRight");
+
+    private static Field findBackgroundField(String name) {
+        try {
+            final Field field = ChatActionCell.class.getDeclaredField(name);
+            field.setAccessible(true);
+            return field;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
 
     /** Probe bitmap width in dp. */
     private static final int WIDTH_DP = 396;
@@ -131,7 +163,7 @@ public final class CybergramB5ServiceDateFixture {
 
     /**
      * Creates, measures, lays out and draws one real {@link ChatActionCell}, then overlays the
-     * Strategy-B candidate outline using the cell's own measured ordinary envelope.
+     * Strategy-B candidate outline using the cell's own ordinary {@code backgroundPath} extent.
      */
     private void cell(int index, String label, String text, int customDate) {
         final ChatActionCell cell = new ChatActionCell(activity, false, provider);
@@ -151,24 +183,55 @@ public final class CybergramB5ServiceDateFixture {
         canvas.translate(0, dp(top));
         cell.draw(canvas);
 
-        // Real measured ordinary envelope, taken from the production cell after draw.
-        final int left = cell.getBoundsLeft();
-        final int right = cell.getBoundsRight();
+        // Raw ordinary backgroundPath extent, read AFTER the real draw populated it. The public
+        // getBounds*() must not be used here: they include imageReceiver visibility and would
+        // outline a near-full-row plate that was never drawn for ordinary customText rows.
+        final int[] bounds = rawBackgroundBounds(cell);
+        final int left = bounds[0];
+        final int right = bounds[1];
+        final boolean reflected = bounds[2] == 1;
         final int plateTop = dp(4);
         final int plateBottom = cell.getMeasuredHeight() - dp(4);
-        if (right > left && plateBottom > plateTop) {
+        final boolean hasPlate = right > left && plateBottom > plateTop;
+        if (hasPlate) {
             CybergramBubbleDrawable.buildPath(candidatePath, left, plateTop, right, plateBottom,
                     dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
             canvas.drawPath(candidatePath, candidatePaint);
         }
 
-        // Row label + measured widths, drawn to the right of the plate.
+        // Row label + measured width, drawn to the right of the plate.
         text(index + " " + label, dp(6), dp(11), dp(8), 0xff7c8a91);
-        text("plate " + (right - left) + "px / Bcand " + (right - left) + "px",
+        text(hasPlate
+                        ? "plate " + (right - left) + "px" + (reflected ? "" : " (public-bounds fallback)")
+                        : "plate none" + (reflected ? "" : " (public-bounds fallback)"),
                 dp(6), dp(21), dp(8), 0xff7c8a91);
         canvas.restoreToCount(save);
 
         y += (cell.getMeasuredHeight() / AndroidUtilities.density) + 6f;
+    }
+
+    /**
+     * Reads the real ordinary {@code backgroundPath} horizontal extent from the cell's private
+     * {@code backgroundLeft}/{@code backgroundRight} fields after {@code drawBackground()} has run.
+     *
+     * Returns {@code {left, right, source}} where {@code source} is {@code 1} when the private
+     * fields were read and {@code 0} when the safety fallback was used. The fallback is the public
+     * {@code getBoundsLeft()}/{@code getBoundsRight()} pair: it can be too wide, but it keeps the
+     * probe rendering instead of dying if reflection is unavailable. An inverted/extent-less pair
+     * (no lines laid out) is returned as-is and is filtered by the caller via {@code right > left}.
+     */
+    private static int[] rawBackgroundBounds(ChatActionCell cell) {
+        if (BACKGROUND_LEFT_FIELD != null && BACKGROUND_RIGHT_FIELD != null) {
+            try {
+                return new int[] {
+                        BACKGROUND_LEFT_FIELD.getInt(cell),
+                        BACKGROUND_RIGHT_FIELD.getInt(cell),
+                        1};
+            } catch (Throwable ignored) {
+                // Degrade to the public fallback below rather than failing the debug probe.
+            }
+        }
+        return new int[] {cell.getBoundsLeft(), cell.getBoundsRight(), 0};
     }
 
     /* --- fixture-side plumbing (not under audit) --- */
