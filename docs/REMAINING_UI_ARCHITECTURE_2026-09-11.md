@@ -1,12 +1,12 @@
 # Cybergram remaining UI architecture
 
-Last reconciled: 2026-09-12
+Last reconciled: 2026-09-13
 
 Status: static reconnaissance supporting `docs/EXECUTION_BACKLOG.md`.
 
 This document records source ownership and safe presentation seams for the highest-value remaining Cybergram surfaces. It is planning evidence, not runtime validation and not design authority.
 
-Product basis: Cybergram product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e`; later `dev` commits through the 2026-09-12 reconciliation are documentation/validation planning unless explicitly stated otherwise.
+Product basis: Cybergram product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e`; later `dev` commits through the 2026-09-13 reconciliation are documentation/validation planning unless explicitly stated otherwise.
 
 Read `AGENTS.md`, `docs/CURRENT_STATE.md`, `docs/CYBERGRAM_UI_SPEC.md` and `docs/EXECUTION_BACKLOG.md` before acting on this material.
 
@@ -206,7 +206,7 @@ Required B5/B6 boundary:
 - preserve the existing background/darken/dim paint pipeline;
 - leave rich/special card/button/ribbon geometry upstream unless separately authorized.
 
-A single enclosing angular rectangle would simplify the upstream line-following silhouette and must be an explicit visual decision, not an accidental implementation shortcut.
+A single enclosing angular rectangle would simplify the upstream line-following silhouette and must be an explicit visual decision, not an accidental implementation shortcut. **B5 made that decision explicitly**: the E visual-density gate passed and Strategy B (one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate) is selected for the ordinary path; see `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
 
 ## 5. Debug/emulator validation architecture
 
@@ -235,8 +235,8 @@ Validation tiers and their current meaning are maintained in `docs/EXECUTION_BAC
 - B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances — INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING.
 - B2: message-state evidence/ownership matrix.
 - B3/B4: conditional message-owner fixes derived only from B2.
-- B5: service/date audit and geometry decision.
-- B6: conditional ordinary `ChatActionCell.backgroundPath` implementation derived only from B5.
+- B5: service/date audit and geometry decision — `INTEGRATED / AUDIT COMPLETE`; Strategy B selected.
+- B6: ordinary `ChatActionCell.backgroundPath` implementation derived only from B5 — `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION`, currently `NOT IMPLEMENTED`.
 - B7: optional later chat-canvas HUD.
 - B8: secondary screens/onboarding after primary flow is coherent.
 

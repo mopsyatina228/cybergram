@@ -1,6 +1,6 @@
 # B5 — service/date plate ownership and implementation audit
 
-Status: SOURCE OWNER IDENTIFIED / RUNTIME CASE AUDIT READY
+Status: `INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT REQUIRED FOR AUDIT`
 
 Type: evidence + implementation-design audit
 
@@ -13,6 +13,15 @@ Planning authority: `docs/EXECUTION_BACKLOG.md`
 Static ownership evidence: `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`
 
 Validation runbook: `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`
+
+> **Outcome (2026-09-13): COMPLETE and INTEGRATED on `dev`; Strategy B selected; B6 authorized.**
+> This pass has been executed. Full result, case inventory, E evidence and the B6 proposal:
+> `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`. Integration point
+> `a5ab7c0de81738e89282dd441ca5f845294c5708` (fast-forward from `audit/cybergram-service-date`, the
+> underlying B5 commits preserved separately, no squash). No production rendering change was made.
+> B6 is now `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` per §5 of the evidence doc, but remains
+> **NOT IMPLEMENTED**; its scope stays narrow (ordinary `ChatActionCell.backgroundPath` only, with
+> rich/special states excluded). The contract below is the original handoff retained for provenance.
 
 ## Mission
 

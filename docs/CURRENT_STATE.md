@@ -1,6 +1,6 @@
 # Cybergram current state
 
-Last reconciled: 2026-09-12
+Last reconciled: 2026-09-13
 
 This is the concise recovery entrypoint for `mopsyatina228/cybergram`.
 
@@ -110,6 +110,40 @@ DEBUG-only fixture `b2bfdd4180377563ff1cc53a8deb3abaf8fa7dea`, audit/docs
 `2e9a6a1d066975727cbb4b3888c490a8acbf798a`. The production diff from base over `TMessagesProj/src/main`
 is empty. A/P tiers remain open.
 
+B5 (service/date ownership and geometry audit) is integrated on `dev` against
+`2db3b48e7f3425518278a909ff65594a5410962a` by fast-forward from `audit/cybergram-service-date`
+(2026-09-13, commits kept separate, no squash), integration final SHA
+`a5ab7c0de81738e89282dd441ca5f845294c5708`. Its state is:
+
+`INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT REQUIRED FOR AUDIT`
+
+The ordinary service/date plate owner is `ChatActionCell.backgroundPath`; rich gift/offer/community/
+wallpaper/birthday/story states, bot buttons/ribbons and the suggested-post-approval override use
+separate paths and stay upstream. The E visual-density gate passed, so **Strategy B is selected**: one
+compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate for the ordinary path only. B5 made
+**no production rendering change** — the only non-doc change is a DEBUG-source-set fixture — and the
+production diff from base over `TMessagesProj/src/main` is empty. Supporting B5 commits preserved:
+`34aba0884` (debug fixture), `9b3793230` (audit docs), `4ae5a973ae953700cc209d520136fde461eef6a0`
+(debug-only measurement correction) and `a5ab7c0de` (evidence-correction docs).
+
+**B5 E runtime was completed on the real host via Remote Desktop Commander, not the DSH sandbox**:
+the existing AVD `Cybergram_API36` booted as `emulator-5554`, the app was normal-launched first and the
+B5 fixture second, FATAL/ANR scan = 0, final APK SHA-256
+`e4411dd071f8600a58bfa6b9ff08044d0d3b0dc24fad8db99bb10f906dd556ad`, corrected screenshot
+`.local-artifacts/b5/b5_corrected.png` (git-excluded). Commit `4ae5a973ae953700cc209d520136fde461eef6a0`
+is a **debug-only measurement fix** in the fixture, not a production change. Full evidence and the B6
+proposal: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
+
+**B6 = `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION`**, because B5 has selected Strategy B and
+`docs/CYBERGRAM_UI_SPEC.md` (line 63) explicitly requires compact dark service/date plates. B6 remains
+**NOT IMPLEMENTED** in this docs pass. Production scope stays narrow: ideally only `ChatActionCell.java`
+plus imports of the existing `CybergramBubbleDrawable`/`CybergramTheme` helpers, and only the ordinary
+service/date `backgroundPath`. Explicitly excluded: `isButtonLayout`/rich gift/offer/community/wallpaper/
+birthday/story states, the suggested-post-approval special geometry, reactions, and non-Cybergram
+presentation. Paints/shaders/dim, measurement, interaction and the rich `backgroundPath2`/card/ribbon
+paths are preserved. The `ThemePreviewActivity` provider-leak concern remains a **B6 verification item**,
+not a reason to broaden scope in advance.
+
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
 ## Remaining architecture / next work
@@ -125,7 +159,7 @@ B1 (flat/angular main bottom navigation) is implemented and integrated; see the 
 
 The B1 spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 audits ordinary service/date geometry before any `ChatActionCell` implementation. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence and B4 is blocked on a design ruling.
+B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 has now audited ordinary service/date geometry and is integrated: the ordinary plate owner is `ChatActionCell.backgroundPath`, the E visual-density gate passed, and Strategy B is selected. That authorizes B6 for a bounded implementation, which remains `NOT IMPLEMENTED` in this docs pass. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence, B4 is blocked on a design ruling, and B6 is ready but not started.
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 

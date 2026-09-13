@@ -2,7 +2,7 @@
 
 Status: active planning / execution handoff
 
-Last reconciled: 2026-09-12
+Last reconciled: 2026-09-13
 
 Repository: `mopsyatina228/cybergram`
 
@@ -10,7 +10,7 @@ Upstream baseline: Telegram Android 12.10.1 (7038), `master` at `62b56a07ca7e30e
 
 Preserved product-code cut: `52b8e219729d0a90dd3335165cf4ef44acf46e5e`.
 
-Current documentation/validation HEAD at the start of this reconciliation: `5663bf329d9d78bad5a991350740fe51912f88fb`.
+Current documentation/validation HEAD at the start of this reconciliation: `a5ab7c0de81738e89282dd441ca5f845294c5708`.
 
 This file is the status/dependency index for remaining Cybergram work. Detailed implementation instructions live in `docs/passes/`; source-ownership evidence lives in `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`; design authority remains `docs/CYBERGRAM_UI_SPEC.md`; chronological machine evidence remains `docs/WORK_STATE.md`.
 
@@ -136,21 +136,28 @@ No production implementation spec is written. `ReplyMessageLine.java` and `React
 
 ### B5 — service/date ownership and geometry audit
 
-Status: `READY — AUDIT/DEBUG FIRST`.
+Status: `INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT REQUIRED FOR AUDIT`.
 
-Spec: `docs/passes/B5_SERVICE_DATE_AUDIT.md`.
+Spec: `docs/passes/B5_SERVICE_DATE_AUDIT.md`. Evidence and B6 proposal: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
 
-Static ownership is already narrowed to the ordinary `ChatActionCell.backgroundPath` pipeline. `ChatActionCell` also owns many rich cards/actions, so B5 must decide the plain service/date angular strategy and prove which states are ordinary versus special before production code changes.
+Integrated on `dev` against base `2db3b48e7f3425518278a909ff65594a5410962a` by fast-forward from `audit/cybergram-service-date`, commits kept separate (no squash), integration final SHA `a5ab7c0de81738e89282dd441ca5f845294c5708`:
 
-Use single-line date, multi-line ordinary service text and representative rich/special actions in the evidence matrix.
+- DEBUG-only fixture `34aba0884` and debug-only measurement correction `4ae5a973ae953700cc209d520136fde461eef6a0` (debug source set only; the correction fixed a fixture plate-width measurement bug by reading raw `ChatActionCell` background bounds);
+- audit/docs `9b3793230` and evidence-correction docs-only `a5ab7c0de`.
 
-### B6 — conditional angular plain service/date plate
+Static ownership is narrowed to the ordinary `ChatActionCell.backgroundPath` pipeline. `ChatActionCell` also owns many rich cards/actions, so rich gift/offer/community/wallpaper/birthday/story states, bot buttons/ribbons and the suggested-post-approval override remain on their separate upstream paths.
 
-Status: `NOT AUTHORIZED — DERIVE FROM B5`.
+E validation passed on the real host via Remote Desktop Commander (not the DSH sandbox): the existing AVD `Cybergram_API36` booted as `emulator-5554`, normal app launch followed by the B5 fixture, FATAL/ANR = 0, final APK SHA-256 `e4411dd071f8600a58bfa6b9ff08044d0d3b0dc24fad8db99bb10f906dd556ad`, corrected screenshot `.local-artifacts/b5/b5_corrected.png` (git-excluded). The E visual-density gate passed, so **Strategy B** (one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate) is selected. No production rendering change was made: the production diff from base over `TMessagesProj/src/main` is empty. A-tier rich/authenticated cases remain pending; P was not required for this audit.
 
-Expected owner: `ChatActionCell.java`, limited to the ordinary text/date background path. Rich gifts/cards/buttons/ribbons remain upstream unless B5 explicitly proves a separate need.
+### B6 — ordinary angular plain service/date plate
 
-Preserve text measurement, line-width calculations, paints, darken/dim layers, touch behaviour and special-state geometry.
+Status: `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` — derived from the integrated B5 audit; **NOT IMPLEMENTED** in this docs pass.
+
+Spec source: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md` §5 (Strategy B, one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate).
+
+Production scope stays narrow: ideally only `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatActionCell.java` plus imports of the existing `CybergramBubbleDrawable`/`CybergramTheme` helpers, and only the ordinary service/date `backgroundPath`. The central gate is `CybergramTheme.useAngularMessageGeometry(themeDelegate)` combined with `!isButtonLayout(currentMessageObject)` and `!isMessageActionSuggestedPostApproval()`.
+
+Explicitly excluded: `isButtonLayout`/rich gift/offer/community/wallpaper/birthday/story states, the suggested-post-approval special geometry, reactions, and non-Cybergram presentation. Preserve paints/shaders/dim, measurement, interaction and the rich `backgroundPath2`/card/ribbon paths. The `ThemePreviewActivity` provider-leak concern is a **B6 verification item**, not a reason to broaden scope in advance. `docs/CYBERGRAM_UI_SPEC.md` must not be modified.
 
 ### B7 — optional chat-canvas HUD/background layer
 
@@ -178,7 +185,7 @@ Do not mix with UI cleanup. Real credentials remain local/secret; package/applic
 
 B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed, B4 is `DESIGN-OPEN / NOT AUTHORIZED`, and B5 remains the next evidence-oriented pass. B7 and B8 remain later.
+Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and has selected Strategy B, which authorizes B6 for a bounded implementation; B6 remains `NOT IMPLEMENTED` in this docs pass. B7 and B8 remain later.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 

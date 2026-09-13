@@ -857,6 +857,19 @@ Evidence/implementation-design audit only; **no production rendering change**. F
   `EXECUTION_BACKLOG.md` / the pass index are deliberately not updated until integration review.
 - No production rendering fix was made in B5, and none is authorized by it.
 
+### Integration record (2026-09-13)
+
+- `audit/cybergram-service-date` was fast-forward integrated into `dev`; no squash and no rebase, so the
+  B5 commits remain separate in history: debug fixture `34aba0884`, audit/docs `9b3793230`, debug-only
+  measurement correction `4ae5a973ae953700cc209d520136fde461eef6a0` (raw `ChatActionCell` background
+  bounds; debug source set only) and evidence-correction docs-only
+  `a5ab7c0de81738e89282dd441ca5f845294c5708` (integration final SHA).
+- Status after integration: B5 = `INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E
+  BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT
+  REQUIRED FOR AUDIT`; B6 = `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION`, still `NOT IMPLEMENTED`.
+- Preservation proof: `git diff 2db3b48e7f3425518278a909ff65594a5410962a..HEAD -- TMessagesProj/src/main`
+  is empty; `git diff --check` clean. This status reconciliation is docs-only.
+
 ## Explicitly deferred
 
 - package/application ID rename;
