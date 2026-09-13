@@ -781,6 +781,58 @@ this section are the original run's evidence and are unchanged.)
 - Final state: B2 = `INTEGRATED / AUDIT COMPLETE`, B3 = `CLOSED / NOT REQUIRED`,
   B4 = `DESIGN-OPEN / NOT AUTHORIZED`.
 
+## B5 — service/date ordinary-path audit (2026-09-13)
+
+Branch `audit/cybergram-service-date`, base `dev` at `2db3b48e7f3425518278a909ff65594a5410962a`.
+Evidence/implementation-design audit only; **no production rendering change**. Full record:
+`docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
+
+- Preflight: worktree clean; `dev == origin/dev == 2db3b48e...`. `git fetch origin` failed with
+  `SEC_E_NO_CREDENTIALS` (no usable Git credential in this environment), so the already-resolved
+  local `origin/dev` ref was used and the failure recorded.
+- Source reconnaissance (paths in the audit doc): ordinary owner is
+  `ChatActionCell.backgroundPath` (`ChatActionCell.java:3327-3475`, drawn `3499-3512`); the
+  line-following rounded silhouette uses `corner = dp(11)`, `cornerIn = dp(8)` and `arcTo(...)` at
+  `3397-3460`. The same `backgroundPath` is drawn for **all** non-repost states; rich states add
+  `backgroundRect`/`backgroundPath2`/`giftButtonRect`/ribbon/bot-button plates on top
+  (`3515-3582`, `3143-3151`, `3234-3275`, `3596-3660`). `setCustomDate` (`550-571`) feeds the same
+  ordinary pipeline.
+- Ordinary-vs-rich boundary: `isButtonLayout` (`4016-4018`) and `isNewStyleButtonLayout`
+  (`1993-2005`) separate ordinary service/date plates from gift/star/offer/wallpaper/community/
+  birthday/story/suggest-photo cards; `isMessageActionSuggestedPostApproval()` (`3465-3474`)
+  replaces the ordinary path with `addRoundRect(dp(15))`. Proposed B6 gate:
+  `CybergramTheme.useAngularMessageGeometry(themeDelegate) && !isButtonLayout(currentMessageObject)
+  && !isMessageActionSuggestedPostApproval()`.
+- Geometry verdict: **Strategy B recommended** (single enclosing
+  `CybergramBubbleDrawable.buildPath` plate) over Strategy A (new line-following chamfer math),
+  because ordinary service/date text is centre-aligned and wrapped, the upstream smoothing pass
+  already merges small line steps, B reuses the project-owned primitive required by the operating
+  contract, and A would add new concave/convex path math inside a 4,214-line shared upstream file.
+  The multi-line **visual-density gate remains open** because E was blocked (§ below); B6 must close
+  it before it can be called validated.
+- B6 proposal (not implemented): `ChatActionCell.java` only, plus imports of the existing
+  `CybergramBubbleDrawable`/`CybergramTheme` helpers; gate at the `if (invalidatePath)` block
+  (`3327`) using `themeDelegate`; geometry `top = dp(4)`, `bottom = dp(4) + textHeight + dp(6)`,
+  `left/right = x ∓ maxLineWidth/2 ∓ dp(8)`, `cut = dp(CybergramTheme.BUBBLE_CORNER_CUT_DP)`;
+  background/darken/dim paints, measurement, `applyServiceShaderMatrix`, rich branches and the
+  non-Cybergram path unchanged. Open design issue: `ThemePreviewActivity.java:5370` may render
+  angular in a preview of a different theme through the `Theme.getCurrentTheme()` fallback.
+- E build evidence (debug-only fixture `TMessagesProj_App/src/debug/java/org/telegram/ui/
+  CybergramB5ServiceDateFixture.java` + `--ez cybergram_b5 true` mode in `CybergramShowcaseActivity`;
+  release sources/manifests untouched): `:TMessagesProj_App:assembleAfatDebug
+  -PCYBERGRAM_ABI=x86_64` → **BUILD SUCCESSFUL** (1m 13s); APK `74,277,072` bytes, SHA-256
+  `d3a861d4b929f3c7f9e06b61a2f202e31224c3194b4e80da7eef802081760c35`; fixture + intent extra present
+  in `classes5.dex`. The build required `GRADLE_USER_HOME` to point at a workspace-local copy of the
+  Gradle cache because the sandbox denies writes to `~/.gradle` (escalation request rejected: no
+  approval channel).
+- E runtime **blocked**: the API 36 x86_64 emulator aborts immediately after spawning `netsimd`
+  (`exit -36863 / 0xFFFF7001`) across five configurations (original and workspace-local AVD, host and
+  swiftshader GPU, windowed and `-no-window`, netsim/modem features disabled); `adb` never sees it.
+  Consistent with the sandbox restriction on child-process pipe/named-pipe stdio. A-tier visual
+  confirmation of ordinary and rich service actions also remains pending (needs an authenticated
+  session).
+- No production rendering fix was made in B5, and none is authorized by it.
+
 ## Explicitly deferred
 
 - package/application ID rename;
