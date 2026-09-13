@@ -1,6 +1,6 @@
 # B2 — message-state coverage and ownership audit
 
-Status: `AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING`
+Status: `AUDIT COMPLETE / REVISED (DESIGN-OPEN) / NO PRODUCTION FIX MADE / INTEGRATION PENDING`
 
 Type: evidence/audit (`docs/passes/B2_MESSAGE_STATE_AUDIT.md`)
 
@@ -11,6 +11,37 @@ Audit branch: `audit/cybergram-message-states`
 Evidence class: local source reconnaissance (authoritative for this tree) + E emulator fixture rendered
 from real production renderers. No authenticated (A) surface was available, so account-dependent states
 are marked `UNTESTED` rather than guessed.
+
+## 0. Semantic correction applied after consultant review
+
+Revised result: **14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED** across 35 cases.
+
+The original run classified six reply/reaction rows as `DEFECT (polish)`. Consultant review reclassified
+those six rows as `DESIGN-OPEN`. **No source, runtime or pixel evidence changed** — every measurement in
+sections 1-4 is the evidence gathered by the original run and was not re-measured. Only the verdict/design
+classification differs.
+
+Reasoning against the actual design authority, `docs/CYBERGRAM_UI_SPEC.md`:
+
+- the spec requires **angular outer message silhouettes** — line 69, “Cybergram replaces rounded Telegram
+  message silhouettes with an angular drawable”;
+- the spec requires replies and reactions to **survive** that geometry — line 25, “Message length,
+  localization, large fonts, media, reactions and reply blocks must survive the new geometry”;
+- the anti-target is stated at line 21 as **“large rounded/glass Material capsules”**. It does **not**
+  require compact internal semantic controls — the `ReplyMessageLine` plate/bar or the
+  `ReactionsLayoutInBubble` pill — to become angular themselves. Reading the anti-target as “any small
+  rounded semantic button” over-extends the spec.
+
+The measured fact therefore stands (the plate/pill are circular while the outer body is chamfered), but
+“confirmed production defect” is not supported by the design authority. The supported classification is an
+open design question.
+
+Consequences, effective immediately:
+
+- **B4 = `DESIGN-OPEN / NOT AUTHORIZED`.** No production implementation spec is written for reply/reaction
+  styling, and `ReplyMessageLine.java` / `ReactionsLayoutInBubble.java` must not be modified on this basis.
+- **B3 = `CLOSED / NOT REQUIRED`** (unchanged): `MessageDrawable.TYPE_PREVIEW`’s only production callers are
+  theme-preview surfaces, so no implementation task is created for it (section 5.1).
 
 ## 1. Environment and artifacts
 
@@ -167,6 +198,14 @@ Legend: tier `E` = debug fixture on the emulator, `S` = local source evidence (a
 ownership), `A`/`P` = authenticated/physical (not available). "non-CG" = is upstream (non-Cybergram)
 presentation affected.
 
+Status values used in the matrix:
+
+- `PASS` — behaviour/geometry matches the design authority;
+- `CONFIRMED DEFECT` — the design authority requires something different and the mismatch is measured;
+- `DESIGN-OPEN` — measured and owner-proven, but the design authority neither requires nor forbids the
+  current shape, so it is an open design question rather than a production defect;
+- `UNTESTED` — not exercised in this audit.
+
 ### 4.1 Message body (`MessageDrawable`)
 
 | # | case | tier | expected under `CYBERGRAM_UI_SPEC.md` | actual | status | owner | category | non-CG | future scope | severity |
@@ -191,8 +230,8 @@ presentation affected.
 
 | # | case | tier | expected | actual | status | owner | category | non-CG | future scope | severity |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 16 | incoming reply block plate/bar | E+S | product principle: "large rounded/glass Material capsules are an anti-target inside Cybergram-specific presentation" | measured **rounded** plate (arc) inside an **angular** bubble; amber bar `#e8d93a` | **DEFECT** | `ReplyMessageLine.drawBackground` (614-664) | geometry | unaffected | `ReplyMessageLine.java` only | polish |
-| 17 | outgoing reply block plate/bar | E+S | as above | same rounded plate inside an angular outgoing bubble | **DEFECT** | `ReplyMessageLine.drawBackground` | geometry | unaffected | `ReplyMessageLine.java` only | polish |
+| 16 | incoming reply block plate/bar | E+S | angular **outer** body (line 69) and reply content that survives the geometry (line 25); the anti-target is *large* rounded/glass capsules (line 21), not a compact internal reply plate/bar | measured **rounded** plate (arc) inside an **angular** bubble; amber bar `#e8d93a` | **DESIGN-OPEN** | `ReplyMessageLine.drawBackground` (614-664) | geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
+| 17 | outgoing reply block plate/bar | E+S | as row 16 | same rounded plate inside an angular outgoing bubble | **DESIGN-OPEN** | `ReplyMessageLine.drawBackground` | geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
 | 18 | reply name/text layout, ripple, selector | A | reply content stays readable and hit-testable | requires `ChatMessageCell` | **UNTESTED** | `ChatMessageCell:19562-19584`, `22648-22865` | layout | unaffected | — | — |
 | 19 | quote / code / link / contact / fact-check lines | S | upstream-consistent unless ruled otherwise | owners proven (`ReplyMessageLine.TYPE_*` at 231-235); not rendered | **UNTESTED** | `ReplyMessageLine` + `ChatMessageCell` | geometry | unaffected | — | — |
 
@@ -201,10 +240,10 @@ presentation affected.
 | # | case | tier | expected | actual | status | owner | category | non-CG | future scope | severity |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 20 | reactions absent | E+S | no reaction chrome drawn | production `isEmpty` early-return confirmed in measure/draw | **PASS** | `ReactionsLayoutInBubble` | state | unaffected | — | — |
-| 21 | one reaction (pill geometry + counter) | E+S | shape must be consistent with the message surface language | measured stadium pill (radius = height/2), width grows with the counter | **DEFECT** (see 24) | `ReactionButton.draw` / `drawRoundRect` 969-1138 | geometry | unaffected | `ReactionsLayoutInBubble.java` only | polish |
-| 22 | multiple reactions | E+S | pills must lay out without overlapping the bubble | three pills measured at distinct x positions, counters 12/1234 widen the pill | **DEFECT** (see 24) | `ReactionButton` + `measure` (339-431) | layout/geometry | unaffected | `ReactionsLayoutInBubble.java` only | polish |
-| 23 | chosen reaction | E+S | chosen state visible without an opaque cyan block | chosen pill colour path resolved (`key_...ReactionButton*`); same pill geometry | **DEFECT** (see 24) | `ReactionButton.draw` (1031-1061) | state/geometry | unaffected | `ReactionsLayoutInBubble.java` only | polish |
-| 24 | reaction **surface geometry** vs message language | E+S | returned as one defect for the group | rounded stadium pills inside/next to angular bubbles | **DEFECT** | `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` (969-979) | geometry | unaffected | `ReactionsLayoutInBubble.java` only | polish |
+| 21 | one reaction (pill geometry + counter) | E+S | reactions must survive the new geometry (line 25); the spec does not require the compact reaction pill itself to be angular | measured stadium pill (radius = height/2), width grows with the counter | **DESIGN-OPEN** (grouped with 24) | `ReactionButton.draw` / `drawRoundRect` 969-1138 | geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
+| 22 | multiple reactions | E+S | pills must lay out without overlapping the bubble; spec does not mandate pill angularity | three pills measured at distinct x positions, counters 12/1234 widen the pill | **DESIGN-OPEN** (grouped with 24) | `ReactionButton` + `measure` (339-431) | layout/geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
+| 23 | chosen reaction | E+S | chosen state visible without an opaque cyan block; spec does not mandate pill angularity | chosen pill colour path resolved (`key_...ReactionButton*`); same pill geometry | **DESIGN-OPEN** (grouped with 24) | `ReactionButton.draw` (1031-1061) | state/geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
+| 24 | reaction **surface geometry** vs message language | E+S | open design question, not a spec violation | rounded stadium pills inside/next to angular bubbles | **DESIGN-OPEN** | `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` (969-979) | geometry | unaffected | NOT AUTHORIZED — no implementation until a design ruling | design question |
 | 25 | reaction emoji glyph rendering | E | emoji must render | no glyph pixels observed: pre-auth `MediaDataController.getReactionsMap()` is empty, so no image is set | **UNTESTED** | `ReactionsLayoutInBubble` (930-938) | colour/media | unaffected | — | — |
 | 26 | reaction touch, bounce, scrim, particle animation | A | interactions unchanged | requires a real message/cell | **UNTESTED** | `ReactionsLayoutInBubble` + `ChatMessageCell` | interaction/animation | unaffected | — | — |
 
@@ -229,7 +268,7 @@ presentation affected.
 
 ## 5. Verdicts and proposed conditional passes
 
-### 5.1 `TYPE_PREVIEW` — no B3
+### 5.1 `TYPE_PREVIEW` — B3 closed, not required
 
 `TYPE_PREVIEW` has exactly two production call sites, both theme-preview surfaces
 (`Theme.createThemePreviewImage`, used only by `MessagesController:9119`, and `ThemePreviewDrawable`,
@@ -237,51 +276,56 @@ used by `ImageLoader:882` for `.attheme` thumbnails). No normal messaging surfac
 Its distinct behaviour (global-theme colour lookup, motion-background slot 1, no parent invalidation,
 always-full-bubble path, 6 dp radius) exists to rasterize a standalone preview bitmap.
 
-**Conclusion: `TYPE_PREVIEW` staying rounded is correct for its actual surfaces. B3 is NOT justified by
-evidence and must not be created.** The static exclusion in `MessageDrawable` (676, 892) is the desired
-state, not a gap.
+**Conclusion: `TYPE_PREVIEW` staying rounded is correct for its actual surfaces. B3 is `CLOSED / NOT
+REQUIRED`; no implementation task is created for it.** The static exclusion in `MessageDrawable`
+(676, 892) is the desired state, not a gap. Do not reopen this merely for symmetry with text/media.
 
-### 5.2 Reply and reaction geometry — one proposed conditional pass (B4), owner-proven
+### 5.2 Reply and reaction geometry — `DESIGN-OPEN`, not a confirmed defect
 
-Measured in the same fixture: `MessageDrawable` bodies are 45-degree chamfered while
-`ReplyMessageLine` plates and `ReactionsLayoutInBubble` pills are circular (rounded). The UI spec's
-product principles treat large rounded Material capsules as an anti-target inside Cybergram-specific
-presentation, and Stage C lists replies and reactions among the surfaces to bring into the system — but
-the spec does **not** state a hard angular requirement for either, and B2's own rule ("remaining
-upstream-rounded is not automatically a defect") applies to them as it does to `TYPE_PREVIEW`.
+Measured in the same fixture: `MessageDrawable` bodies are 45-degree chamfered while `ReplyMessageLine`
+plates and `ReactionsLayoutInBubble` pills are circular (rounded).
 
-They are recorded as **DEFECT / polish (design-ruling required)** because the mismatch is measured and
-visible, and because the owners are proven — not because a regression was introduced.
+The measurement is unchanged and remains the evidence. What changed after consultant review is the
+classification. `docs/CYBERGRAM_UI_SPEC.md`:
 
-Proposed pass (PROPOSED — NOT AUTHORIZED, do not execute without an explicit design ruling and user
-priority):
+- requires angular **outer** message silhouettes (line 69);
+- requires replies, reactions and media to **survive** the new geometry (line 25) — a survival/legibility
+  requirement, not an angularity requirement for each inner control;
+- names the anti-target as **“large rounded/glass Material capsules”** (line 21).
 
-- **B4 — Cybergram angular reply/reaction plates (conditional)**
-  - owner/scope: `ReplyMessageLine.java` (plate/bar geometry in `drawBackground`/`drawLine`) and
-    `ReactionsLayoutInBubble.java` (`ReactionButton.drawRoundRect`); the tag branch already demonstrates
-    the in-class path pattern, and any angular variant must reuse `CybergramBubbleDrawable.buildPath`;
-  - must not touch: reply/quote/link/contact colour resolution, loading animation, text layout, ripple
-    and touch behaviour, reaction counters, avatars, animations or `ChatMessageCell` placement;
-  - risk: HIGH — both classes are shared beyond the message flow (`StoryCaptionView`, rich-text editors,
-    `ChatActionCell` reactions, `ActionBarMenuItem` tags), so an explicit per-instance opt-in would be
-    required exactly as in B1;
-  - precondition: the authenticated matrix (items 18, 26, 27-31) must be closed first, otherwise the
-    restyle cannot be validated.
+The spec does not state that the compact internal semantic controls — the reply plate/bar inside the bubble
+or the reaction pill — must themselves become angular. Rows 16, 17 and 21-24 are therefore recorded as
+**`DESIGN-OPEN`**: measured, owner-proven, and an open design question rather than a confirmed production
+defect.
 
-No B3 spec is generated; no other conditional pass is justified by this audit.
+Consequences:
+
+- **No B4 implementation spec is written and no B4 work is authorized.** Reply/reaction styling is
+  `B4 = DESIGN-OPEN / NOT AUTHORIZED` until an explicit design ruling states that these compact controls
+  should adopt the angular language.
+- `ReplyMessageLine.java` and `ReactionsLayoutInBubble.java` must not be modified on this basis.
+- The provenance recorded in sections 2.2/2.3 remains valid and is the correct starting evidence if a
+  ruling later requires angular reply/reaction controls. The shared-surface risk also remains: both classes
+  serve surfaces well beyond the message flow (`StoryCaptionView`, rich-text editors, `ChatActionCell`
+  reactions, `ActionBarMenuItem`/`SearchTagsList` tags), so any future work would need an explicit
+  per-instance opt-in in addition to the central Cybergram gate, exactly as in B1.
+
+No B3 spec and no B4 spec are generated; no other conditional pass is justified by this audit.
 
 ## 6. Totals
 
 | status | count |
 |---|---|
 | PASS | 14 |
-| DEFECT (polish, design-ruling required) | 6 |
+| CONFIRMED DEFECT | 0 |
+| DESIGN-OPEN (owners proven; implementation NOT AUTHORIZED) | 6 |
 | UNTESTED | 15 |
 | total cases | 35 |
 
-Defect owner list (all rows are the same two owners):
+`DESIGN-OPEN` owner list (provenance retained for any future design ruling; **no implementation is
+authorized**):
 
-| owner | rows | minimal future file scope |
+| owner | rows | minimal future file scope (only if a design ruling requires it) |
 |---|---|---|
 | `ReplyMessageLine.drawBackground` | 16, 17 | `TMessagesProj/src/main/java/org/telegram/ui/Components/ReplyMessageLine.java` |
 | `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` | 21, 22, 23, 24 | `TMessagesProj/src/main/java/org/telegram/ui/Components/Reactions/ReactionsLayoutInBubble.java` |
@@ -292,8 +336,14 @@ angular path rather than re-implementing geometry.
 
 ## 7. Explicit statements
 
-- **No production rendering fix was made in B2.** The only repository change in this pass is the
-  debug-only fixture and this audit document.
+- **No production rendering fix was made in B2.** The only repository changes in this pass are the
+  debug-only fixture and the audit/correction documentation. `ReplyMessageLine.java`,
+  `ReactionsLayoutInBubble.java` and `MessageDrawable.java` are untouched.
+- The six reply/reaction rows were reclassified from `DEFECT` to `DESIGN-OPEN` after consultant review.
+  This is a verdict/design-classification change only: all source, runtime and pixel evidence above is the
+  evidence gathered by the original run and was not re-measured or discarded.
+- `B3` is `CLOSED / NOT REQUIRED` and `B4` is `DESIGN-OPEN / NOT AUTHORIZED`; no implementation task exists
+  for either.
 - No authenticated (A) or physical (P) surface was exercised; every account-dependent state above is
   `UNTESTED`, not "passing by assumption".
 - The fixture proves component-level geometry for `MessageDrawable`, `ReplyMessageLine` and

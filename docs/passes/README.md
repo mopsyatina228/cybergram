@@ -8,13 +8,13 @@ Current pass set:
 
 - `B0_FILTER_TABS_VALIDATION.md` — `PARTIAL`: generic API 36 x86_64 emulator build/install/start baseline passed; authenticated production `FilterTabsView` interaction/visual matrix remains pending. Validation only, no opportunistic production fixes.
 - `B1_MAIN_TABS_FLAT.md` — `INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`: bounded main bottom-navigation presentation pass, landed on `dev` as `ab314d882b193ec5df9dd188b7e945ea7ef35c98` plus DEBUG fixture `6802e001012f2cad8eddcc89d137c17534e8f1ba`. Important constraint: `GlassTabView` (shared with attach/bot tabs and other `createMainTab` callers) and `MainTabsLayout` (also hosted by `StatisticActivity`) both require explicit per-instance main-tabs opt-in in addition to the central Cybergram gate.
-- `B2_MESSAGE_STATE_AUDIT.md` — `AUDIT COMPLETE / NO PRODUCTION FIX MADE / A PENDING`: production-fix-free evidence matrix for message body, replies, reactions, forwards, selected/pressed states and `TYPE_PREVIEW` ownership. Matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`. Result 14 PASS / 6 DEFECT / 15 UNTESTED; `TYPE_PREVIEW` closed (theme-preview-only callers); one conditional B4 proposed for reply/reaction plates, not authorized.
+- `B2_MESSAGE_STATE_AUDIT.md` — `AUDIT COMPLETE / REVISED (DESIGN-OPEN) / NO PRODUCTION FIX MADE / INTEGRATION PENDING`: production-fix-free evidence matrix for message body, replies, reactions, forwards, selected/pressed states and `TYPE_PREVIEW` ownership. Matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`. Result after semantic correction 14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED; `TYPE_PREVIEW` closed (theme-preview-only callers) so B3 is `CLOSED / NOT REQUIRED`; reply/reaction styling is `B4 = DESIGN-OPEN / NOT AUTHORIZED` — rounded compact internal controls are not a spec violation, so no implementation spec is written.
 - `B5_SERVICE_DATE_AUDIT.md` — `READY`: ordinary-vs-rich `ChatActionCell` ownership/runtime audit and geometry decision before any production service/date restyle.
 
 Pass numbering intentionally reserves conditional implementation work:
 
-- B3 — `MessageDrawable.TYPE_PREVIEW` only if B2 proves a real product requirement;
-- B4 — owner-specific reply/reaction/message fixes derived from B2 evidence;
+- B3 — `MessageDrawable.TYPE_PREVIEW`: `CLOSED / NOT REQUIRED` (B2 proved theme-preview-only callers);
+- B4 — reply/reaction styling: `DESIGN-OPEN / NOT AUTHORIZED` (measured, owner-proven, no ruling that compact internal controls must be angular);
 - B6 — ordinary service/date implementation derived from B5;
 - B7 — optional later chat-canvas HUD;
 - B8 — secondary screens/onboarding after the primary messaging flow is coherent.

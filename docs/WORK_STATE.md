@@ -727,15 +727,22 @@ Measured pixel results (decoded programmatically, not eyeballed):
 
 ### Matrix result
 
-**14 PASS / 6 DEFECT / 15 UNTESTED** across 35 cases.
+**14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED** across 35 cases.
+
+(Original run: 14 PASS / 6 DEFECT / 15 UNTESTED. The six reply/reaction rows were reclassified
+`DEFECT` -> `DESIGN-OPEN` after consultant review; see the correction record below. All measurements in
+this section are the original run's evidence and are unchanged.)
 
 - PASS: text/media body geometry, all four body colour states, grouped top/middle/bottom near-corner
   joins, media+caption bubble geometry, reactions-absent, non-Cybergram path intact, `TYPE_PREVIEW`
   geometry and its colour-source behaviour.
-- DEFECT (`polish`, design ruling required, owners proven, no regression introduced):
+- DESIGN-OPEN (measured, owner-proven, implementation NOT AUTHORIZED):
   `ReplyMessageLine.drawBackground` reply plates (2 cases) and
   `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` pills (4 cases) are rounded inside/next to
-  45-degree-chamfered bodies.
+  45-degree-chamfered bodies. `docs/CYBERGRAM_UI_SPEC.md` requires angular **outer** silhouettes and the
+  survival of replies/reactions, and names *large* rounded/glass capsules as the anti-target — it does not
+  require compact internal semantic controls to become angular, so this is an open design question rather
+  than a defect.
 - UNTESTED: everything account- or cell-dependent — cell-side group slicing, incoming media render,
   caption/time layout, media clipping/touch, multi-select overlay, reply layout/ripple, quote/code/link/
   contact/fact-check lines, reaction emoji glyphs, reaction interaction/animation, time/check/view
@@ -743,14 +750,23 @@ Measured pixel results (decoded programmatically, not eyeballed):
 
 ### Verdicts
 
-- **B3 closed**: `TYPE_PREVIEW` has only theme-preview call sites, so its rounded upstream path is correct
-  and no implementation pass is justified.
-- **B4 proposed, not authorized**: one conditional pass for angular reply/reaction plates, scoped to
-  `ReplyMessageLine.java` and `ReactionsLayoutInBubble.java`, requiring a design ruling plus an explicit
-  per-instance opt-in (both classes are shared beyond the message flow) and closure of the authenticated
-  matrix first.
+- **B3 = CLOSED / NOT REQUIRED**: `TYPE_PREVIEW` has only theme-preview call sites, so its rounded
+  upstream path is correct and no implementation task is created.
+- **B4 = DESIGN-OPEN / NOT AUTHORIZED**: reply/reaction styling stays untouched. No production
+  implementation spec is written, and `ReplyMessageLine.java` / `ReactionsLayoutInBubble.java` are not
+  modified on this basis. If a design ruling later requires angularity, the owner-proven scope plus an
+  explicit per-instance opt-in (both classes are shared beyond the message flow) and closure of the
+  authenticated matrix would still be prerequisites.
 - **No `ChatMessageCell` defect**: its states are UNTESTED, and source evidence shows it consumes the
   angular path rather than owning geometry.
+
+### Semantic correction record (consultant review)
+
+- Classification-only change: the six reply/reaction rows moved from `DEFECT` to `DESIGN-OPEN`. No source,
+  runtime or pixel evidence was re-collected, re-measured or discarded, and the change is docs-only.
+- Revised totals: 14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED across 35 cases.
+- Still true after the correction: no production rendering fix was made in B2, and none is authorized by
+  it.
 
 ## Explicitly deferred
 
