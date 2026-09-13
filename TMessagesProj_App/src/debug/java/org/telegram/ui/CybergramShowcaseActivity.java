@@ -62,8 +62,10 @@ public class CybergramShowcaseActivity extends Activity {
         // captured on an unauthenticated emulator without competing with the B1/B2 fixtures.
         //   adb shell am start -n org.telegram.messenger.beta/org.telegram.ui.CybergramShowcaseActivity --ez cybergram_b5 true
         final boolean b5Only = getIntent() != null && getIntent().getBooleanExtra("cybergram_b5", false);
+        final boolean b6Control = getIntent() != null && getIntent().getBooleanExtra("cybergram_b6_control", false);
         if (b5Only) {
-            setContentView(new B5OnlyView(this, palette, CybergramB5ServiceDateFixture.render(this, palette)));
+            final Theme.ResourcesProvider fixtureProvider = b6Control ? new PlainPalette(palette) : palette;
+            setContentView(new B5OnlyView(this, palette, CybergramB5ServiceDateFixture.render(this, fixtureProvider)));
         } else {
             setContentView(new ShowcaseView(this, palette, B1TabsFixture.render(this, palette),
                     CybergramB2MessageStatesFixture.render(this, palette)));
@@ -98,6 +100,29 @@ public class CybergramShowcaseActivity extends Activity {
 
         private int dp(float value) {
             return (int) (value * AndroidUtilities.density + 0.5f);
+        }
+    }
+
+    /**
+     * DEBUG-only palette wrapper that deliberately does NOT implement GeometryProvider.
+     * With a non-Cybergram saved theme this exercises ChatActionCell's upstream geometry
+     * while keeping the exact same deterministic Cybergram colours as the main probe.
+     */
+    private static final class PlainPalette implements Theme.ResourcesProvider {
+        private final Palette delegate;
+
+        PlainPalette(Palette delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int getColor(int key) {
+            return delegate.getColor(key);
+        }
+
+        @Override
+        public int getCurrentColor(int key) {
+            return delegate.getCurrentColor(key);
         }
     }
 
