@@ -19,9 +19,18 @@ Validation runbook: `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`
 > `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`. Integration point
 > `a5ab7c0de81738e89282dd441ca5f845294c5708` (fast-forward from `audit/cybergram-service-date`, the
 > underlying B5 commits preserved separately, no squash). No production rendering change was made.
-> B6 is now `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` per §5 of the evidence doc, but remains
-> **NOT IMPLEMENTED**; its scope stays narrow (ordinary `ChatActionCell.backgroundPath` only, with
-> rich/special states excluded). The contract below is the original handoff retained for provenance.
+> B6 was subsequently implemented as a bounded seam on branch `feature/cybergram-service-date-angular`
+> (production commit `f86ef812bb585db7c753335c7f573406e5129323`, `ChatActionCell.java` only, **+22/−1**;
+> independent review verdict `SAFE_MINIMAL_SEAM`), with `E-build`/`E-install+launch`/`E-geometry` and
+> `E-control` PASS; `E-rich` unavailable pre-auth, `A` pending, and it is **not integrated on `dev`**. Scope
+> stayed exactly as authorized: ordinary `ChatActionCell.backgroundPath` only, rich/special states excluded. The
+> `ThemePreviewActivity` preview-scope question raised by this audit is answered for current code (foreign
+> app-theme `SCREEN_TYPE_PREVIEW` instantiates no `ChatActionCell`/`contentType == 1` row, so no extra
+> production opt-out is required now) with a latent future-scope caveat. One disclosed deviation from the
+> debug-tooling rule below: B6's control run temporarily switched and then restored the emulator's saved theme
+> (no product code, nothing shipped). Implementation/evidence record:
+> `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`. The contract below is the original handoff retained for
+> provenance.
 
 ## Mission
 

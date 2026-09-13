@@ -1,6 +1,6 @@
 # Cybergram current state
 
-Last reconciled: 2026-09-13
+Last reconciled: 2026-09-14
 
 This is the concise recovery entrypoint for `mopsyatina228/cybergram`.
 
@@ -134,15 +134,62 @@ B5 fixture second, FATAL/ANR scan = 0, final APK SHA-256
 is a **debug-only measurement fix** in the fixture, not a production change. Full evidence and the B6
 proposal: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
 
-**B6 = `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION`**, because B5 has selected Strategy B and
-`docs/CYBERGRAM_UI_SPEC.md` (line 63) explicitly requires compact dark service/date plates. B6 remains
-**NOT IMPLEMENTED** in this docs pass. Production scope stays narrow: ideally only `ChatActionCell.java`
-plus imports of the existing `CybergramBubbleDrawable`/`CybergramTheme` helpers, and only the ordinary
-service/date `backgroundPath`. Explicitly excluded: `isButtonLayout`/rich gift/offer/community/wallpaper/
-birthday/story states, the suggested-post-approval special geometry, reactions, and non-Cybergram
-presentation. Paints/shaders/dim, measurement, interaction and the rich `backgroundPath2`/card/ribbon
-paths are preserved. The `ThemePreviewActivity` provider-leak concern remains a **B6 verification item**,
-not a reason to broaden scope in advance.
+**B6 is now IMPLEMENTED on a feature branch, not merely authorized** (see the next section), because B5 selected
+Strategy B and `docs/CYBERGRAM_UI_SPEC.md` (line 63) explicitly requires compact dark service/date plates. The
+authorization's production scope was respected exactly: only `ChatActionCell.java` plus imports of the existing
+`CybergramBubbleDrawable`/`CybergramTheme` helpers, and only the ordinary service/date `backgroundPath`.
+Explicitly excluded: `isButtonLayout`/rich gift/offer/community/wallpaper/birthday/story states, the
+suggested-post-approval special geometry, reactions, and non-Cybergram presentation. Paints/shaders/dim,
+measurement, interaction and the rich `backgroundPath2`/card/ribbon paths are preserved. The
+`ThemePreviewActivity` provider-leak concern was resolved by independent review: **no leak reachable today, no
+extra production opt-out required now**, with the latent future-scope caveat recorded in the B6 record.
+
+B6 (ordinary angular Cybergram service/date plate) is **implemented on branch
+`feature/cybergram-service-date-angular`** (HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`), from base
+`origin/dev` `cefa15eb7ba42d32b60d31ecf16d626f356344d5`. Production commit
+`f86ef812bb585db7c753335c7f573406e5129323` touches **`ChatActionCell.java` only, +22/−1**: Strategy B is a
+minimal additive seam taken *after* upstream ordinary path generation, replacing only the ordinary Cybergram
+service/date path with one compact `CybergramBubbleDrawable.buildPath(...)` chamfer and updated
+`backgroundLeft/Right`; rich/`isButtonLayout` states and the suggested-post-approval override keep upstream
+geometry, and the non-Cybergram upstream path is unchanged. Debug-only control commit
+`53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` adds the B6 non-Cybergram fixture/wrapper
+(`CybergramShowcaseActivity`, debug source set). Independent review verdict: **`SAFE_MINIMAL_SEAM`**; upstream
+two-pass side effects are safely superseded only inside `invalidatePath`, and the
+`ThemePreviewActivity` foreign app-theme `SCREEN_TYPE_PREVIEW` has no `ChatActionCell`/`contentType == 1` row
+today, so **no extra `ThemePreviewActivity` production opt-out is required now**. Latent caveat recorded: a
+future foreign-theme preview row that did instantiate a `ChatActionCell` would need an explicit opt-out,
+because the global `Theme.getCurrentTheme()` fallback is not preview-scoped. Its state is:
+
+`IMPLEMENTED ON FEATURE BRANCH / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / NOT INTEGRATED ON dev / RELEASE INSTALL ISSUE OPEN (Redmi/MIUI — non-rendering)`
+
+E evidence: x86_64 production-commit build BUILD SUCCESSFUL, APK `73,306,179` bytes, SHA-256
+`e415b00305d83122575bd81a18061d0e0b935487cbf0b9a7871388c0407eb621`, install on `emulator-5554`, normal launch
+plus real `ChatActionCell` B5/B6 fixture stable with no FATAL/ANR/process death, screenshot
+`.local-artifacts/b6/b6_f86ef812.png`, plate widths `98/160/288/230/310/642` px → visual Strategy B pass.
+arm64-v8a production-commit build BUILD SUCCESSFUL, `68,452,403` bytes, SHA-256
+`9d5f936b820766aec4f6c825e8625c147820b2fbc81b9690fe419ad7364e71c8` — **build evidence only, not a physical
+install or runtime**. Debug-control E run (x86_64, `53dd1368e`) BUILD SUCCESSFUL in 29s, `68,948,592` bytes,
+SHA-256 `ef97f76daf99bbd327287fb25c3a08edefa09b168f0ba9b439ab8b52fac12452`, install success, emulator saved
+theme temporarily Cybergram→Blue and **restored to Cybergram** afterwards, screenshot
+`.local-artifacts/b6/b6_control_blue.png` proving the upstream rounded ordinary path under the non-Cybergram
+provider, `CRASH_MATCHES=0` → **E-control PASS**. The universal 4-ABI compatibility build on `53dd1368e` is
+BUILD SUCCESSFUL in 1m 23s, `113,631,225` bytes, SHA-256
+`0c781a6b71f13034b36586b4c596a48a3b8719e108d51195dc89c305a78e12f0`, ABIs
+`arm64-v8a/armeabi-v7a/x86/x86_64`, minSdk 21 / targetSdk 36, signed v1+v2, published as a separate prerelease
+asset — **compatibility/build evidence and an installer probe, NOT device runtime validation**. Full record:
+`docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
+
+**Open release/install issue (non-rendering):** a Redmi Note 10S / MIUI 14.0.4 user reports the arm64 APK did
+not install; the exact `INSTALL_FAILED_*` code is unavailable because the device is not currently in `adb`. No
+ABI root cause is claimed; the universal APK is the explicit compatibility probe, and because the package is
+`org.telegram.messenger.beta` a signature/package conflict with an existing Telegram Beta remains a plausible
+unresolved install cause. This is tracked as a release/install issue, **not** as a B6 rendering defect.
+
+**E-rich remains unavailable pre-auth** (rich gift/offer/community/wallpaper/birthday/story rows were not
+faked); **A (authenticated service/date and rich cases) remains pending**; **P is not required** unless a
+device/OEM runtime defect appears — the Redmi report is unresolved installation compatibility, not runtime
+rendering evidence. B6 is **not integrated on `dev`**; no push, merge, rebase or release-asset change is part
+of this record.
 
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
@@ -159,7 +206,7 @@ B1 (flat/angular main bottom navigation) is implemented and integrated; see the 
 
 The B1 spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 has now audited ordinary service/date geometry and is integrated: the ordinary plate owner is `ChatActionCell.backgroundPath`, the E visual-density gate passed, and Strategy B is selected. That authorizes B6 for a bounded implementation, which remains `NOT IMPLEMENTED` in this docs pass. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence, B4 is blocked on a design ruling, and B6 is ready but not started.
+B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 has audited ordinary service/date geometry and is integrated: the ordinary plate owner is `ChatActionCell.backgroundPath`, the E visual-density gate passed, and Strategy B is selected. That authorized B6, which is now **implemented on `feature/cybergram-service-date-angular`** and carries E build/install/runtime/visual and E-control passes with A/E-rich open; it is **not integrated on `dev`**. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence, B4 is blocked on a design ruling, and B6's bounded implementation is complete at E tier pending A.
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 

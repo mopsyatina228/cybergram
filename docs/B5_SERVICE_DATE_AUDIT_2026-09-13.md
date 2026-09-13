@@ -237,8 +237,9 @@ Strategy B as specified in §5.
 - **Existing helper (import only, no change):** `org.telegram.ui.ActionBar.CybergramBubbleDrawable`
   (`buildPath`) and `org.telegram.ui.ActionBar.CybergramTheme` (`useAngularMessageGeometry` /
   `BUBBLE_CORNER_CUT_DP`). No new geometry class.
-- **Conditional extra (only if the ThemePreview leak in §6 is confirmed):**
-  `ThemePreviewActivity.java` — a single debug-free opt-out call. Not part of the default scope.
+- **Conditional extra (only if a ThemePreview leak is confirmed):** `ThemePreviewActivity.java` — a single
+  debug-free opt-out call. **Independent review of the implemented seam found no leak reachable in current
+  code**, so B6 did *not* touch this file; it remains a conditional future item (§6.2).
 
 ### 5.2 Exact central gate
 
@@ -320,13 +321,17 @@ stays in the non-Cybergram branch and is untouched.
 1. ~~**Visual-density gate (blocking B6 validation).**~~ **RESOLVED in B5**: the corrected E-tier run
    and supervisor visual review closed the gate; Strategy B is selected (§4.4, §8.3). No open
    density item remains for B6.
-2. **`ThemePreviewActivity` leak risk.** `ThemePreviewActivity.java:5370` constructs a real
-   `ChatActionCell` with the *preview* provider. `isCybergramPresentation(provider)` is false for a
-   plain preview provider, but falls back to `Theme.getCurrentTheme()`; if the active app theme is
-   Cybergram, the service plate could render angular inside a preview of a **different** theme.
-   `MessageDrawable` avoids the analogous problem by excluding `TYPE_PREVIEW`. Verify during B6 `A`;
-   if confirmed, add the minimal local opt-out in `ThemePreviewActivity` (the only conditional extra
-   file).
+2. **`ThemePreviewActivity` leak risk — RESOLVED for current code (2026-09-14).** `ThemePreviewActivity:5370`
+   does construct a real `ChatActionCell`, and `isCybergramPresentation(provider)` falls back to
+   `Theme.getCurrentTheme()` for a plain preview provider. **Independent review of the implemented B6 seam,
+   re-confirmed against source in the 2026-09-14 reconciliation, found the leak unreachable today:** in the
+   foreign app-theme `SCREEN_TYPE_PREVIEW` path the adapter instantiates no `ChatActionCell` at all — its only
+   two `contentType` assignments (`:4940` → 5, `:4962` → 1; view type 1 maps to `ChatActionCell`) both live
+   inside `screenType == SCREEN_TYPE_CHANGE_BACKGROUND` with `dialogId != 0 && serverWallpaper == null`, i.e.
+   the wallpaper/chat-theme preview, which is *current app presentation* and must follow the active theme.
+   **No extra `ThemePreviewActivity` production opt-out is required now**, and none was added. **Latent
+   caveat:** if a future foreign-theme preview ever instantiates a `ChatActionCell`/`contentType == 1` row, it
+   will need an explicit opt-out, because the global `Theme.getCurrentTheme()` fallback is not preview-scoped.
 3. **`SharedMediaLayout` floating date** uses `new ChatActionCell(context)` (null provider) plus
    `setOverrideColor(...)`; the gate falls back to `Theme.getCurrentTheme()`. This is ordinary
    geometry and is expected to angularize under Cybergram — confirm it is acceptable in B6 `A`.
@@ -484,10 +489,15 @@ B5 made **no production rendering change**. Only `TMessagesProj_App/src/debug/..
 set) and `docs/` were modified. Verified at the final B5 evidence-correction commit: the command
 above is empty and `git diff --check` is clean.
 
-**B6 remains NOT IMPLEMENTED.** The B6 proposal in §5 is unchanged: Strategy B — one compact
-enclosing `CybergramBubbleDrawable.buildPath(...)` plate for ordinary service/date geometry only,
-with the already-documented rich/special exclusions (`isButtonLayout`, new-style cards, birthday,
-star gift, offer/community/wallpaper/story, bot buttons/ribbon and the suggested-post-approval
-override) left on their upstream paths. `docs/CYBERGRAM_UI_SPEC.md` was not modified, and
-`CURRENT_STATE.md` / `EXECUTION_BACKLOG.md` / the pass index are intentionally not updated by this
-evidence correction — that happens only after integration review.
+**SUPERSEDED 2026-09-14 — B6 is now IMPLEMENTED on a feature branch.** This audit closed with “B6 remains NOT
+IMPLEMENTED”; it now exists as a bounded seam on branch `feature/cybergram-service-date-angular` (production
+commit `f86ef812bb585db7c753335c7f573406e5129323`, `ChatActionCell.java` only, **+22/−1**; independent review
+verdict `SAFE_MINIMAL_SEAM`), with `E-build`/`E-install+launch`/`E-geometry`/`E-control` PASS, `E-rich`
+unavailable pre-auth, `A` pending and **not integrated on `dev`**. The §5 proposal is otherwise unchanged:
+Strategy B — one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate for ordinary service/date
+geometry only, with the already-documented rich/special exclusions (`isButtonLayout`, new-style cards, birthday,
+star gift, offer/community/wallpaper/story, bot buttons/ribbon and the suggested-post-approval override) left on
+their upstream paths. Implementation/evidence record: `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
+`docs/CYBERGRAM_UI_SPEC.md` was not modified; `CURRENT_STATE.md` / `EXECUTION_BACKLOG.md` / the pass index are
+not touched by this evidence corrections note — those files were updated only by the separate 2026-09-14 B6
+reconciliation.
