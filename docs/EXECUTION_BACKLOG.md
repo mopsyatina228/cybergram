@@ -10,7 +10,7 @@ Upstream baseline: Telegram Android 12.10.1 (7038), `master` at `62b56a07ca7e30e
 
 Preserved product-code cut: `52b8e219729d0a90dd3335165cf4ef44acf46e5e`.
 
-Current documentation/validation HEAD at the start of this reconciliation: `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` on `feature/cybergram-service-date-angular`. `origin/dev` remains `cefa15eb7ba42d32b60d31ecf16d626f356344d5`; B6 is implemented on the feature branch and **not** integrated into `dev`.
+Current documentation/validation HEAD at the start of this reconciliation: `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` on `dev`, equal to `origin/dev`. `dev` reached this point by **ff-only** integration of `feature/cybergram-service-date-angular` from base `cefa15eb7ba42d32b60d31ecf16d626f356344d5` — no squash and no merge commit — carrying production `f86ef812bb585db7c753335c7f573406e5129323`, debug control `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` and evidence/docs `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`. B6 is **integrated on `dev`**.
 
 This file is the status/dependency index for remaining Cybergram work. Detailed implementation instructions live in `docs/passes/`; source-ownership evidence lives in `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`; design authority remains `docs/CYBERGRAM_UI_SPEC.md`; chronological machine evidence remains `docs/WORK_STATE.md`.
 
@@ -134,6 +134,8 @@ Owner-proven and measured: `ReplyMessageLine.drawBackground` plates and `Reactio
 
 No production implementation spec is written. `ReplyMessageLine.java` and `ReactionsLayoutInBubble.java` must not be modified on this basis. If a design ruling later requires angularity, split the work by actual owner (reply plate and reaction pill are separate bounded passes unless one seam is proven), and require an explicit per-instance opt-in in addition to the central gate, because both classes are shared well beyond the message flow (`StoryCaptionView`, rich-text editors, `ChatActionCell`, `ActionBarMenuItem`/`SearchTagsList`). Closure of the authenticated matrix items in B2 (reply layout, reaction interaction, metadata, service/date adjacency) would also be required before such work could be validated.
 
+B4 remains `DESIGN-OPEN / NOT AUTHORIZED` after the 2026-09-14 B6 integration reconciliation; nothing in the B6 integration changes B4's status, and next product work must not silently start B4.
+
 ### B5 — service/date ownership and geometry audit
 
 Status: `INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT REQUIRED FOR AUDIT`.
@@ -151,15 +153,16 @@ E validation passed on the real host via Remote Desktop Commander (not the DSH s
 
 ### B6 — ordinary angular plain service/date plate
 
-Status: `IMPLEMENTED ON FEATURE BRANCH / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / NOT INTEGRATED ON dev / RELEASE INSTALL ISSUE OPEN (Redmi/MIUI — non-rendering)`.
+Status: `INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / RELEASE INSTALL COMPATIBILITY OPEN FOR REDMI MIUI`.
 
 Spec source: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md` §5 (Strategy B, one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate). Evidence and reconciliation record: `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
 
-Branch `feature/cybergram-service-date-angular`, HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`, from base `origin/dev` `cefa15eb7ba42d32b60d31ecf16d626f356344d5`:
+Integrated on `dev` by **ff-only** fast-forward (no squash, no merge commit) from branch `feature/cybergram-service-date-angular`, HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`, base `origin/dev` `cefa15eb7ba42d32b60d31ecf16d626f356344d5`, integration final SHA `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`:
 
 - production commit `f86ef812bb585db7c753335c7f573406e5129323` — `TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatActionCell.java` only, **+22/−1**; Strategy B is a minimal additive seam placed **after** upstream ordinary path generation, so the upstream ordinary two-pass build stays byte-identical and is superseded only inside `invalidatePath`;
 - debug-only control commit `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` — B6 non-Cybergram fixture/wrapper in `TMessagesProj_App/src/debug/.../CybergramShowcaseActivity.java` only;
-- superseded pre-review iteration `1f31cfa91a8b734e414ca960f2124659ba45bf2f` (side branch `dev-b6-20260913-1f31cfa91`, +136/−100) is retained only as provenance for the earlier prerelease asset; it is not an ancestor of the current HEAD.
+- superseded pre-review iteration `1f31cfa91a8b734e414ca960f2124659ba45bf2f` (side branch `dev-b6-20260913-1f31cfa91`, +136/−100) is retained only as provenance for the earlier prerelease asset; it is not an ancestor of the current HEAD;
+- evidence/docs commit `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` — docs-only reconciliation, integration HEAD on `dev`.
 
 Gate: `CybergramTheme.useAngularMessageGeometry(themeDelegate)` combined with `!isButtonLayout(currentMessageObject)` and `!isMessageActionSuggestedPostApproval()` — the existing central gate on the provider actually available at the draw site, no theme-name or colour heuristic. Explicitly excluded and left on upstream paths: `isButtonLayout`/rich gift/offer/community/wallpaper/birthday/story states, new-style cards, bot buttons/ribbons, the suggested-post-approval override, reactions, and non-Cybergram presentation. Paints/shaders/dim, measurement, interaction and the rich `backgroundPath2`/card/ribbon paths are preserved; `docs/CYBERGRAM_UI_SPEC.md` was not modified.
 
@@ -167,7 +170,7 @@ Evidence (details and exact artifacts in the B6 record): x86_64 production-commi
 
 Independent review verdict `SAFE_MINIMAL_SEAM`, including: upstream two-pass side effects are safely superseded only inside `invalidatePath`; `ThemePreviewActivity` foreign app-theme `SCREEN_TYPE_PREVIEW` has no `ChatActionCell`/`contentType == 1` row today, so **no additional `ThemePreviewActivity` production opt-out is required now**; latent caveat recorded — a future foreign-theme preview row that did instantiate a `ChatActionCell` would need an explicit opt-out, because the global fallback is not preview-scoped.
 
-Open items: **A tier pending** (authenticated ordinary service/date rows and all rich/special rows; service-message reactions re-check); **E-rich unavailable pre-auth** and not faked; **P not required** unless a device/OEM runtime defect appears; **not integrated on `dev`**; **open release/install issue** — the universal 4-ABI APK is the explicit compatibility probe for the Redmi Note 10S / MIUI 14.0.4 install report (see R1).
+Open items: **A tier pending** (authenticated ordinary service/date rows and all rich/special rows; service-message reactions re-check); **E-rich unavailable pre-auth** and not faked; **P not required** unless a device/OEM runtime defect appears; **integrated on `dev`** (ff-only, no squash and no merge commit); **open release/install compatibility issue** — the universal 4-ABI APK is the explicit compatibility probe for the Redmi Note 10S / MIUI 14.0.4 install report (see R1).
 
 ### B7 — optional chat-canvas HUD/background layer
 
@@ -197,7 +200,7 @@ Open install-compatibility item (B6 prerelease, non-rendering): a Redmi Note 10S
 
 B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **done at E tier on `feature/cybergram-service-date-angular`** and is **not integrated on `dev`**, with A (and E-rich) still open. B7 and B8 remain later.
+Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **integrated on `dev`** (ff-only) at E tier, with A (and E-rich) still open. B7 and B8 remain later. B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: the B6 integration changes nothing about B4 and next product work must not silently start B4.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 

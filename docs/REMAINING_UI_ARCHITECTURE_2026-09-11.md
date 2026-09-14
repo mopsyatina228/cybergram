@@ -236,7 +236,7 @@ Validation tiers and their current meaning are maintained in `docs/EXECUTION_BAC
 - B2: message-state evidence/ownership matrix.
 - B3/B4: conditional message-owner fixes derived only from B2.
 - B5: service/date audit and geometry decision — `INTEGRATED / AUDIT COMPLETE`; Strategy B selected.
-- B6: ordinary `ChatActionCell.backgroundPath` implementation derived only from B5 — `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` (implemented 2026-09-14 on `feature/cybergram-service-date-angular`, not integrated on `dev`; status in `docs/EXECUTION_BACKLOG.md`, evidence in `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`).
+- B6: ordinary `ChatActionCell.backgroundPath` implementation derived only from B5 — `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` (implemented 2026-09-14 on `feature/cybergram-service-date-angular` and integrated on `dev` by ff-only fast-forward with no squash/merge commit; status in `docs/EXECUTION_BACKLOG.md`, evidence in `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`).
 - B7: optional later chat-canvas HUD.
 - B8: secondary screens/onboarding after primary flow is coherent.
 

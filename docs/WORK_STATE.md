@@ -853,9 +853,11 @@ Evidence/implementation-design audit only; **no production rendering change**. F
   they need real authenticated message data and were not faked. P is not required for this audit.
 - B6 status at B5's close was **NOT IMPLEMENTED**; the proposal is unchanged (Strategy B, one compact enclosing
   `CybergramBubbleDrawable.buildPath` plate for ordinary service/date only, rich/special exclusions
-  left upstream). **Superseded 2026-09-14:** B6 is now implemented on `feature/cybergram-service-date-angular` —
-  see the B6 section later in this file. `docs/CYBERGRAM_UI_SPEC.md` was not modified, and `CURRENT_STATE.md` /
-  `EXECUTION_BACKLOG.md` / the pass index were deliberately not updated until integration review.
+  left upstream). **Superseded 2026-09-14:** B6 is now implemented **and integrated on `dev`** by ff-only
+  fast-forward from `feature/cybergram-service-date-angular` — see the B6 section later in this file.
+  `docs/CYBERGRAM_UI_SPEC.md` was not modified; `CURRENT_STATE.md` / `EXECUTION_BACKLOG.md` / the pass index were
+  updated by the B6 integration reconciliation (integration final SHA
+  `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`).
 - No production rendering fix was made in B5, and none is authorized by it.
 
 ### Integration record (2026-09-13)
@@ -868,16 +870,18 @@ Evidence/implementation-design audit only; **no production rendering change**. F
 - Status after integration: B5 = `INTEGRATED / AUDIT COMPLETE / STATIC OWNERSHIP PASS / E
   BUILD+RUNTIME+VISUAL-DENSITY PASS / STRATEGY B SELECTED / A RICH+AUTHENTICATED CASES PENDING / P NOT
   REQUIRED FOR AUDIT`; B6 = `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION`, still `NOT IMPLEMENTED` at that
-  point — later implemented on `feature/cybergram-service-date-angular` (2026-09-14; see the B6 section below).
+  point — later implemented on `feature/cybergram-service-date-angular` and integrated on `dev` by ff-only
+  fast-forward (2026-09-14; see the B6 section below).
 - Preservation proof: `git diff 2db3b48e7f3425518278a909ff65594a5410962a..HEAD -- TMessagesProj/src/main`
   is empty; `git diff --check` clean. This status reconciliation is docs-only.
 
 ## B6 — ordinary angular service/date plate implementation (2026-09-14)
 
 Branch `feature/cybergram-service-date-angular`, base `origin/dev` `cefa15eb7ba42d32b60d31ecf16d626f356344d5`
-at implementation start; branch HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`, equal to
-`origin/feature/cybergram-service-date-angular`. **Not integrated on `dev`** (`origin/dev` is still
-`cefa15eb7`). Full record: `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
+at implementation start; branch HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`. **Integrated on `dev` by
+ff-only fast-forward** (no squash, no merge commit); integration final SHA
+`0c4172346764c5622a5cdbfa06a4ce624d3cd56a`. Full record:
+`docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
 
 - Production commit `f86ef812bb585db7c753335c7f573406e5129323` — `ChatActionCell.java` **only**, +22/−1.
   Minimal additive seam: upstream ordinary path generation is left byte-identical and the Cybergram branch is
@@ -945,8 +949,29 @@ at implementation start; branch HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`,
   compatibility probe and has not been run on that device; because the package is
   `org.telegram.messenger.beta`, a signature/package conflict with an already-installed Telegram Beta remains
   a plausible unresolved install cause. Tracked as release/install, not as a B6 rendering defect.
-- Integrity: this reconciliation changed `docs/` only; `docs/CYBERGRAM_UI_SPEC.md` was not modified; no
-  release asset was altered; no build, push, merge, rebase or fetch was performed; `git diff --check` clean.
+- Integrity: the 2026-09-14 B6 evidence reconciliation changed `docs/` only; `docs/CYBERGRAM_UI_SPEC.md` was not
+  modified; no release asset was altered; no build, push, merge or rebase was performed by it. The subsequent B6
+  integration reconciliation (below) fetched `origin`, verified the expected HEAD and fast-forwarded `dev`
+  locally without pushing; `git diff --check` clean.
+
+### Integration record (2026-09-14)
+
+- Preflight: `git fetch`, then `dev == origin/dev == 0c4172346764c5622a5cdbfa06a4ce624d3cd56a`. Base
+  `cefa15eb7ba42d32b60d31ecf16d626f356344d5` is an ancestor of that HEAD and `cefa15eb7..0c4172346` contains
+  exactly three commits (`f86ef812b`, `53dd1368e`, `0c4172346`) with **zero merge commits** → the integration was
+  **ff-only**: no squash and no merge commit.
+- Production scope unchanged: `ChatActionCell.java` only (**+22/−1**). The debug control commit is debug source
+  only (`TMessagesProj_App/src/debug/.../CybergramShowcaseActivity.java`, +26/−1). This reconciliation is
+  docs-only and performs no push.
+- Carried-forward limitations (unchanged): `E-rich` unavailable pre-auth (not faked); `A` pending; `P` not
+  required unless a device/OEM runtime defect appears; the `ThemePreviewActivity` foreign app-theme
+  `SCREEN_TYPE_PREVIEW` has no `ChatActionCell`/`contentType == 1` row today, so no extra production opt-out is
+  required now, and the **latent future-preview caveat stands**; the Redmi Note 10S / MIUI 14.0.4 manual install
+  failure remains **unresolved** because the exact installer error has not been captured — the universal 4-ABI
+  APK exists as an explicit compatibility probe and **no fix is claimed**; B4 remains
+  `DESIGN-OPEN / NOT AUTHORIZED`, and next product work must not silently start B4.
+- No production code, debug code, manifest, resource, release asset or `docs/CYBERGRAM_UI_SPEC.md` was modified;
+  `git diff --check` clean; nothing was pushed.
 
 ## Explicitly deferred
 

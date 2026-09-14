@@ -1,11 +1,11 @@
 # B6 — ordinary Cybergram service/date plate: bounded implementation record (2026-09-14)
 
-Status: `IMPLEMENTED ON FEATURE BRANCH / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / NOT INTEGRATED ON dev / RELEASE INSTALL ISSUE OPEN (Redmi/MIUI — non-rendering)`
+Status: `INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / RELEASE INSTALL COMPATIBILITY OPEN FOR REDMI MIUI`
 
 Type: bounded implementation, evidence and reconciliation
 
-Branch: `feature/cybergram-service-date-angular` (HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`, equal to
-`origin/feature/cybergram-service-date-angular`)
+Branch: `feature/cybergram-service-date-angular` (HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`),
+**integrated on `dev` by ff-only fast-forward** (no squash, no merge commit) — see §9
 
 Base `origin/dev` at implementation start: `cefa15eb7ba42d32b60d31ecf16d626f356344d5`
 
@@ -13,9 +13,9 @@ Spec source: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md` §5 (Strategy B), author
 commit `cefa15eb7`. Design authority: `docs/CYBERGRAM_UI_SPEC.md` (unmodified). Planning authority:
 `docs/EXECUTION_BACKLOG.md`. Validation runbook: `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`.
 
-Scope of this document: it records what was actually built, reviewed and measured. It does not
-integrate anything into `dev`, does not promote E evidence into A or P, and does not claim physical-device
-runtime from build output.
+Scope of this document: it records what was actually built, reviewed and measured. It does not promote E
+evidence into A or P and does not claim physical-device runtime from build output. The integration itself is a
+separate **ff-only** fast-forward of `dev`, recorded in §9.
 
 ---
 
@@ -27,7 +27,8 @@ runtime from build output.
 | production commit | `f86ef812bb585db7c753335c7f573406e5129323` | `ChatActionCell.java` only: **+22 / −1** |
 | superseded pre-review iteration | `1f31cfa91a8b734e414ca960f2124659ba45bf2f` | `ChatActionCell.java` only: +136 / −100 (side branch `dev-b6-20260913-1f31cfa91`, **not** an ancestor of the current branch HEAD) |
 | debug control fixture | `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` | `TMessagesProj_App/src/debug/.../CybergramShowcaseActivity.java`: +26 / −1 |
-| branch HEAD | `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` | debug commit on top of the production commit |
+| branch HEAD at implementation | `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` | debug commit on top of the production commit |
+| evidence/docs commit = integration HEAD on `dev` | `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` | docs-only reconciliation; `dev` fast-forwarded onto it (ff-only, no merge commit) |
 
 `git diff cefa15eb7..HEAD` over the repository touches exactly two files and no release asset, manifest or
 resource:
@@ -233,8 +234,10 @@ not runtime rendering evidence, and it neither closes nor contradicts any tier a
 5. **Latent preview caveat** (§3): the global fallback is not preview-scoped; a future foreign-theme preview
    row that instantiates a `ChatActionCell` would need an explicit opt-out.
 6. **Redmi/MIUI install report** (§5): open, non-rendering, exact installer error not yet captured.
-7. **Not integrated on `dev`**: this work lives on `feature/cybergram-service-date-angular`; `origin/dev` is
-   still `cefa15eb7`. No merge, rebase or push is part of this record.
+7. **Integrated on `dev` (ff-only)**: `dev` was fast-forwarded from `feature/cybergram-service-date-angular`
+   with no squash and no merge commit; integration final SHA
+   `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` (production `f86ef812b`, debug control `53dd1368e`, evidence/docs
+   `0c4172346`). No push, rebase or release-asset change is part of this record.
 8. **B5 evidence note**: B5's own audit doc remains the source for Strategy selection and the ordinary/rich
    ownership map; only its "B6 NOT IMPLEMENTED" and `ThemePreviewActivity` items are superseded by this
    document.
@@ -245,5 +248,28 @@ not runtime rendering evidence, and it neither closes nor contradicts any tier a
 - `docs/CYBERGRAM_UI_SPEC.md` was not modified.
 - No release asset was altered, replaced or re-uploaded by this pass. Sizes/SHA-256 for the retained
   artifacts were read **from disk** for cross-checking only; no file was rebuilt, re-signed or moved.
-- No build, push, merge, rebase or fetch was performed in this pass.
+- No build, push, merge or rebase was performed by this pass. The subsequent B6 integration reconciliation
+  fetched `origin`, verified `dev == origin/dev == 0c4172346764c5622a5cdbfa06a4ce624d3cd56a` before editing and
+  fast-forwarded `dev` locally by one docs-only commit; nothing was pushed.
 - E evidence is E evidence; the Redmi install report is a release/install issue; neither is A or P.
+
+## 9. Integration record (2026-09-14, ff-only)
+
+- Preflight: `git fetch`, then `dev == origin/dev == 0c4172346764c5622a5cdbfa06a4ce624d3cd56a`; base
+  `cefa15eb7ba42d32b60d31ecf16d626f356344d5` is an ancestor of that HEAD and `cefa15eb7..0c4172346` contains
+  exactly three commits (`f86ef812b`, `53dd1368e`, `0c4172346`) with **zero merge commits** → the integration was
+  **ff-only**, with no squash and no merge commit.
+- Production scope is unchanged and still `ChatActionCell.java` only (**+22/−1**); the debug control commit is
+  debug source only (`TMessagesProj_App/src/debug/.../CybergramShowcaseActivity.java`, +26/−1).
+- The integration itself is docs-only: the status lines in this record, `docs/CURRENT_STATE.md`,
+  `docs/EXECUTION_BACKLOG.md`, `docs/passes/README.md`, `docs/WORK_STATE.md`, the B5 records and
+  `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md` changed from feature-branch/not-integrated to
+  **integrated-on-dev**. No production code, debug code, manifest, resource, release asset or
+  `docs/CYBERGRAM_UI_SPEC.md` change is part of it, and nothing was pushed.
+- Limitations carried forward unchanged: `E-rich` unavailable pre-auth (not faked); `A` pending; `P` not
+  required unless a device/OEM runtime defect appears; `ThemePreviewActivity` current foreign app-theme preview
+  has no `ChatActionCell` row, so no extra production opt-out is required now, and the **latent future-preview
+  caveat remains**; B4 remains `DESIGN-OPEN / NOT AUTHORIZED` and next product work must not silently start B4.
+- The Redmi Note 10S / MIUI 14.0.4 manual install failure remains **unresolved**: the exact installer error has
+  **not** been captured. The universal 4-ABI APK (§4.4) exists as the explicit compatibility probe and has not
+  been run on that device — **no fix is claimed**.

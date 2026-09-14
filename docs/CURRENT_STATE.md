@@ -53,7 +53,8 @@ Durably landed on `dev`:
 - Cybergram primary-chrome `sans-serif-condensed` typography;
 - original launcher icon treatment;
 - Cybergram flat/angular dialog filter/folder tabs in `FilterTabsView`;
-- Cybergram flat/angular main bottom navigation (B1): dark chamfered outer panel, angular selected plate and angular long-press selector, replacing the rounded/glass capsule for main tabs only.
+- Cybergram flat/angular main bottom navigation (B1): dark chamfered outer panel, angular selected plate and angular long-press selector, replacing the rounded/glass capsule for main tabs only;
+- ordinary angular Cybergram service/date plate (B6): one compact chamfered `CybergramBubbleDrawable.buildPath(...)` envelope for the ordinary `ChatActionCell.backgroundPath` only, integrated on `dev` by fast-forward.
 
 No intentional Cybergram protocol, encryption, account/session, storage/database or networking redesign belongs to this state.
 
@@ -134,7 +135,7 @@ B5 fixture second, FATAL/ANR scan = 0, final APK SHA-256
 is a **debug-only measurement fix** in the fixture, not a production change. Full evidence and the B6
 proposal: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`.
 
-**B6 is now IMPLEMENTED on a feature branch, not merely authorized** (see the next section), because B5 selected
+**B6 is now INTEGRATED on `dev`, not merely implemented on a feature branch** (see the next section), because B5 selected
 Strategy B and `docs/CYBERGRAM_UI_SPEC.md` (line 63) explicitly requires compact dark service/date plates. The
 authorization's production scope was respected exactly: only `ChatActionCell.java` plus imports of the existing
 `CybergramBubbleDrawable`/`CybergramTheme` helpers, and only the ordinary service/date `backgroundPath`.
@@ -144,9 +145,11 @@ measurement, interaction and the rich `backgroundPath2`/card/ribbon paths are pr
 `ThemePreviewActivity` provider-leak concern was resolved by independent review: **no leak reachable today, no
 extra production opt-out required now**, with the latent future-scope caveat recorded in the B6 record.
 
-B6 (ordinary angular Cybergram service/date plate) is **implemented on branch
-`feature/cybergram-service-date-angular`** (HEAD `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`), from base
-`origin/dev` `cefa15eb7ba42d32b60d31ecf16d626f356344d5`. Production commit
+B6 (ordinary angular Cybergram service/date plate) is **integrated on `dev`** by **ff-only** fast-forward (no
+squash, no merge commit) from `feature/cybergram-service-date-angular` (branch HEAD
+`53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc`), whose base was `origin/dev`
+`cefa15eb7ba42d32b60d31ecf16d626f356344d5`; integration HEAD on `dev` is evidence/docs commit
+`0c4172346764c5622a5cdbfa06a4ce624d3cd56a`, reached without a merge commit, with production commit
 `f86ef812bb585db7c753335c7f573406e5129323` touches **`ChatActionCell.java` only, +22/−1**: Strategy B is a
 minimal additive seam taken *after* upstream ordinary path generation, replacing only the ordinary Cybergram
 service/date path with one compact `CybergramBubbleDrawable.buildPath(...)` chamfer and updated
@@ -160,7 +163,7 @@ today, so **no extra `ThemePreviewActivity` production opt-out is required now**
 future foreign-theme preview row that did instantiate a `ChatActionCell` would need an explicit opt-out,
 because the global `Theme.getCurrentTheme()` fallback is not preview-scoped. Its state is:
 
-`IMPLEMENTED ON FEATURE BRANCH / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / NOT INTEGRATED ON dev / RELEASE INSTALL ISSUE OPEN (Redmi/MIUI — non-rendering)`
+`INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / RELEASE INSTALL COMPATIBILITY OPEN FOR REDMI MIUI`
 
 E evidence: x86_64 production-commit build BUILD SUCCESSFUL, APK `73,306,179` bytes, SHA-256
 `e415b00305d83122575bd81a18061d0e0b935487cbf0b9a7871388c0407eb621`, install on `emulator-5554`, normal launch
@@ -188,8 +191,9 @@ unresolved install cause. This is tracked as a release/install issue, **not** as
 **E-rich remains unavailable pre-auth** (rich gift/offer/community/wallpaper/birthday/story rows were not
 faked); **A (authenticated service/date and rich cases) remains pending**; **P is not required** unless a
 device/OEM runtime defect appears — the Redmi report is unresolved installation compatibility, not runtime
-rendering evidence. B6 is **not integrated on `dev`**; no push, merge, rebase or release-asset change is part
-of this record.
+rendering evidence. B6 **is integrated on `dev`** by ff-only fast-forward from
+`feature/cybergram-service-date-angular` (no squash, no merge commit); this status reconciliation is docs-only
+and performs no push, no product-code change and no release-asset change.
 
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
@@ -206,7 +210,7 @@ B1 (flat/angular main bottom navigation) is implemented and integrated; see the 
 
 The B1 spec is `docs/passes/B1_MAIN_TABS_FLAT.md`.
 
-B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 has audited ordinary service/date geometry and is integrated: the ordinary plate owner is `ChatActionCell.backgroundPath`, the E visual-density gate passed, and Strategy B is selected. That authorized B6, which is now **implemented on `feature/cybergram-service-date-angular`** and carries E build/install/runtime/visual and E-control passes with A/E-rich open; it is **not integrated on `dev`**. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence, B4 is blocked on a design ruling, and B6's bounded implementation is complete at E tier pending A.
+B2 has audited message-state ownership without production fixes: bodies (`TYPE_TEXT`/`TYPE_MEDIA`) are angular and pass; `TYPE_PREVIEW` is theme-preview-only, so B3 is `CLOSED / NOT REQUIRED`; reply plates and reaction pills are rounded (owner-proven, measured) and are `DESIGN-OPEN`, not defects — B4 is `DESIGN-OPEN / NOT AUTHORIZED` and no implementation spec is written. B5 has audited ordinary service/date geometry and is integrated: the ordinary plate owner is `ChatActionCell.backgroundPath`, the E visual-density gate passed, and Strategy B is selected. That authorized B6, which is now **integrated on `dev`** (ff-only from `feature/cybergram-service-date-angular`, no squash and no merge commit) and carries E build/install/runtime/visual and E-control passes with A/E-rich open. Conditional B3/B4/B6 are generated only from those audits; B3 is closed by B2 evidence, B4 remains `DESIGN-OPEN / NOT AUTHORIZED` and next product work must not silently start B4, and B6's bounded implementation is integrated at E tier pending A.
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 

@@ -22,7 +22,8 @@ Validation runbook: `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`
 > B6 was subsequently implemented as a bounded seam on branch `feature/cybergram-service-date-angular`
 > (production commit `f86ef812bb585db7c753335c7f573406e5129323`, `ChatActionCell.java` only, **+22/−1**;
 > independent review verdict `SAFE_MINIMAL_SEAM`), with `E-build`/`E-install+launch`/`E-geometry` and
-> `E-control` PASS; `E-rich` unavailable pre-auth, `A` pending, and it is **not integrated on `dev`**. Scope
+> `E-control` PASS; `E-rich` unavailable pre-auth, `A` pending; it is **integrated on `dev`** by ff-only
+> fast-forward (no squash, no merge commit; integration final SHA `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`). Scope
 > stayed exactly as authorized: ordinary `ChatActionCell.backgroundPath` only, rich/special states excluded. The
 > `ThemePreviewActivity` preview-scope question raised by this audit is answered for current code (foreign
 > app-theme `SCREEN_TYPE_PREVIEW` instantiates no `ChatActionCell`/`contentType == 1` row, so no extra

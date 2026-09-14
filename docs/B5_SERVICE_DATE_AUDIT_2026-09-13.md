@@ -489,11 +489,13 @@ B5 made **no production rendering change**. Only `TMessagesProj_App/src/debug/..
 set) and `docs/` were modified. Verified at the final B5 evidence-correction commit: the command
 above is empty and `git diff --check` is clean.
 
-**SUPERSEDED 2026-09-14 — B6 is now IMPLEMENTED on a feature branch.** This audit closed with “B6 remains NOT
-IMPLEMENTED”; it now exists as a bounded seam on branch `feature/cybergram-service-date-angular` (production
+**SUPERSEDED 2026-09-14 — B6 is now IMPLEMENTED and INTEGRATED on `dev`.** This audit closed with “B6 remains
+NOT IMPLEMENTED”; it now exists as a bounded seam, fast-forwarded onto `dev` from branch
+`feature/cybergram-service-date-angular` (production
 commit `f86ef812bb585db7c753335c7f573406e5129323`, `ChatActionCell.java` only, **+22/−1**; independent review
 verdict `SAFE_MINIMAL_SEAM`), with `E-build`/`E-install+launch`/`E-geometry`/`E-control` PASS, `E-rich`
-unavailable pre-auth, `A` pending and **not integrated on `dev`**. The §5 proposal is otherwise unchanged:
+unavailable pre-auth and `A` pending; it is **integrated on `dev`** by ff-only fast-forward (no squash, no merge
+commit; integration final SHA `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`). The §5 proposal is otherwise unchanged:
 Strategy B — one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate for ordinary service/date
 geometry only, with the already-documented rich/special exclusions (`isButtonLayout`, new-style cards, birthday,
 star gift, offer/community/wallpaper/story, bot buttons/ribbon and the suggested-post-approval override) left on
