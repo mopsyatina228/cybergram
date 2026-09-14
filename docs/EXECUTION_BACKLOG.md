@@ -174,11 +174,23 @@ Open items: **A tier pending** (authenticated ordinary service/date rows and all
 
 ### B7 — optional chat-canvas HUD/background layer
 
-Status: `DEFERRED`.
+Status: `SPEC PREPARED / NOT AUTHORIZED`.
 
-Do not start before B1 and the primary message/service presentation are coherent. It must be non-interactive and must not reduce message readability or wallpaper/media behaviour.
+Spec: `docs/passes/B7_CHAT_CANVAS_HUD.md` (prepared 2026-09-14; writing it grants nothing).
 
-Likely ownership must be re-audited at execution time around `ChatActivity` / chat-background layers. Do not infer a file scope from this backlog entry alone.
+B7 is **optional**. Its stated precondition is met at E tier — B1 is integrated, message bodies are angular (B2) and ordinary service/date plates are angular (B6) — so the backlog's earlier "do not start before B1 and the primary message/service presentation are coherent" gate no longer blocks preparation.
+
+Ownership was re-audited rather than inferred, as this entry previously required. Verified 2026-09-14 against `dev` `23882dbf00e23b4a521f1185aeea2556d1c5afe7`:
+
+- chat canvas host is `ChatActivity.ChatActivityFragmentView` (`ChatActivity.java:17085`), used **only** by `ChatActivity`; `ChannelAdminLogActivity` has its own separate nested class of the same name (`ChannelAdminLogActivity.java:4493`), so a seam here does not leak into the admin-log screen;
+- the wallpaper layer is `SizeNotifierFrameLayout.BackgroundView` (`:166`, public field `backgroundView` at `:92`), installed lazily at **child index 0** by `setBackgroundImage` (`:363-368`) and driven from `ChatActivity.updateBackground()` (`:44179-44190`);
+- `chatListView` is added at `ChatActivity.java:6979`, i.e. the layer must sit above the wallpaper and below the message list;
+- `SizeNotifierFrameLayout` itself is extended by 19 classes and **must not** receive the seam;
+- the landed precedent to copy is `CybergramHeaderDecorationView` (non-interactive, runtime-gated in `onDraw`, reuses `CybergramBubbleDrawable.buildPath`, installed by `ChatActivity.java:8986`).
+
+Recommended seam (not executed): a dedicated non-interactive, runtime-gated child View inserted between the wallpaper and `chatListView`, with the insertion index derived from `indexOfChild(backgroundView)`; the `dispatchDraw`-override and base-class options are recorded as rejected with reasons.
+
+B7 must be non-interactive, must draw nothing outside Cybergram presentation, must not reduce message readability or wallpaper/media behaviour, and must not become a large opaque surface or carry microtext/fake security claims (`docs/CYBERGRAM_UI_SPEC.md` lines 19, 21, 23, 25, 55, 113, 115, 117). Its ownership must be re-verified again at execution time — do not trust the prepared copy.
 
 ### B8 — secondary client surfaces and onboarding
 
@@ -200,7 +212,11 @@ Open install-compatibility item (B6 prerelease, non-rendering): a Redmi Note 10S
 
 B0 can be completed whenever an authenticated session is available and does not need to block B1 design/execution.
 
-Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **integrated on `dev`** (ff-only) at E tier, with A (and E-rich) still open. B7 and B8 remain later. B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: the B6 integration changes nothing about B4 and next product work must not silently start B4.
+Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **integrated on `dev`** (ff-only) at E tier, with A (and E-rich) still open. B7 now has a prepared contract but is **optional and NOT AUTHORIZED**; B8 remains deferred.
+
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date + rich states) are all integrated at E tier with authenticated validation pending, and B2 carries 15 `UNTESTED` account-dependent rows. No integrated Cybergram surface has yet been verified on an authenticated product surface. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
+
+B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 

@@ -214,6 +214,10 @@ B2 has audited message-state ownership without production fixes: bodies (`TYPE_T
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date and rich states) are all integrated at E tier with authenticated validation pending, and B2 carries 15 `UNTESTED` account-dependent rows. No integrated Cybergram surface has yet been verified on an authenticated product surface, so E evidence must not be read as product-surface validation.
+
+B7 (optional chat-canvas HUD) now has a prepared bounded contract at `docs/passes/B7_CHAT_CANVAS_HUD.md`, status `SPEC PREPARED / NOT AUTHORIZED`. Its precondition (coherent primary message/service presentation) is met at E tier, and its ownership was re-audited rather than inferred: the chat canvas host is `ChatActivity.ChatActivityFragmentView` (used only by `ChatActivity`; `ChannelAdminLogActivity` has its own separate class), the wallpaper is `SizeNotifierFrameLayout.BackgroundView` at child index 0, and the landed `CybergramHeaderDecorationView` is the precedent to copy. Writing the spec authorizes nothing: B7 is optional, needs an explicit user priority decision, and `SizeNotifierFrameLayout` (19 hosts) must not receive the seam. B8 remains deferred.
+
 ## Documentation semantics
 
 `docs/CYBERGRAM_UI_SPEC.md` decides what Cybergram should look/behave like as a product.
