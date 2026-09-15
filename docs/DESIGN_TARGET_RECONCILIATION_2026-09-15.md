@@ -1,6 +1,7 @@
 # Design target reconciliation and work plan (2026-09-15)
 
-Status: `ANALYSIS / OWNER DECISIONS PENDING`. This document authorizes nothing.
+Status: `ANALYSIS / OWNER DECISIONS PARTIAL` — **D1 ruled by the owner on 2026-09-15: keep the landed
+45-degree chamfer**; D2 and D3 remain pending. This document authorizes nothing.
 
 Input: `design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg` (owner reference,
 committed 2026-09-15 as `39c301bb4`), compared against the design authority
@@ -62,6 +63,12 @@ opportunistic edit, and it would supersede recorded B2 evidence.
 Cost of changing: high — `MessageDrawable`, grouped joins, selection overlays, B6 plate consistency,
 plus new E/A validation.
 
+**Ruling (owner, 2026-09-15): keep the chamfer.** The landed 45-degree
+`CybergramBubbleDrawable.buildPath(...)` silhouette stands. D1 therefore closes with **no production
+change and no amendment to `docs/CYBERGRAM_UI_SPEC.md`**; Stage C is not re-opened and the recorded
+B2/B5/B6 geometry evidence remains valid. The reference's rounded 8 px + tail direction is retired
+unless the owner later opens a new bounded Stage C spec.
+
 **D2 — palette hues.** Keep landed amber `#E8D93A` / red `#FF2E46`, or move toward the reference's
 `#FFB300` / `#FF003C`?
 Recommendation: put this to an E-tier visual comparison rather than deciding from hex values; the change
@@ -89,7 +96,7 @@ deferred; R1 stays a separate release track.
 | 1 | **B7 — chat-canvas HUD layer** (map's next actionable implementation pass) | Contract ready; **needs the owner's explicit priority decision** | D3 for any textual label; nothing else. D1 is out of B7's scope by contract |
 | 2 | **D2 visual comparison** for the two candidate palettes | Not started | An E-tier run and a screenshot A/B; can run in parallel with B7 |
 | 3 | **Reconcile `DESIGN_TARGET.md` into the authority docs** (`CYBERGRAM_UI_SPEC.md` palette/typography/HUD sections, `CURRENT_STATE.md`) | Not started | D2 and D3 |
-| 4 | **D1 decision**; if it changes direction, write a new bounded Stage C spec | Not started | D1 ruling |
+| 4 | **D1 decision** — **ruled 2026-09-15: keep the landed chamfer**; no new Stage C spec is written and the item is closed | **Closed** | D1 ruling (done) |
 | 5 | A-tier validation debt (B0/B1/B2/B5/B6) | Blocked | An authenticated Telegram session |
 | 6 | R1 install compatibility (Redmi Note 10S / MIUI 14.0.4) | Blocked | Exact `INSTALL_FAILED_*` text from the device |
 

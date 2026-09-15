@@ -240,7 +240,9 @@ It **conflicts with or adds decisions about**:
 - **D1 — message silhouette**: the reference asks for rounded ~8 px corners with a tail, while
   `docs/CYBERGRAM_UI_SPEC.md` lines 71-74 require clipped/angled corners with the tail removed, and that
   is what landed and passed B2. Adopting the reference would re-open Stage C and supersede recorded B2
-  evidence; it would need a new bounded spec, not an opportunistic edit.
+  evidence; it would need a new bounded spec, not an opportunistic edit. **Ruled by the owner on
+  2026-09-15: keep the landed chamfer** — the angular silhouette stands, Stage C stays closed and no
+  code or spec change follows.
 - **D2 — two palette hues** (amber `#FFB300` vs landed `#E8D93A`; red `#FF003C` vs landed `#FF2E46`).
   Cheap and central, but should be decided from an E-tier visual comparison, not from JPEG-sampled hex.
 - **D3 — service-label copy**: the reference's `SECURE CHAT`, `END-TO-END`, lock icon and
@@ -272,7 +274,7 @@ Recommended production order is B1 first (now integrated, with A/P tiers open), 
 
 B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
 
-The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing. B7 remains the only unblocked implementation pass in this queue.
+The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing: **D1 is now ruled (keep the landed chamfer, 2026-09-15) and closed**, while D2 and D3 remain pending. B7 remains the only unblocked implementation pass in this queue.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 
