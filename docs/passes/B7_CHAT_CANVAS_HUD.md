@@ -257,6 +257,76 @@ Confirm before writing code: the child-index order at runtime, that `chatListVie
 full-size child above the wallpaper, that the container still overrides `onDraw`/`drawChild`/`dispatchDraw` at
 the lines above, and that `drawChild`'s blur branches still treat an unknown child as non-blur content.
 
+## Pre-flight findings (verified 2026-09-15 — documentation only, grants no authorization)
+
+Re-run against `dev` `7cf5b408d`; `TMessagesProj/src/main` is identical to `39c301bb4` / `9f8211503`.
+This section answers the two questions the contract above left explicitly open. It is **static**
+verification: runtime proof is still required at execution and is not replaced by this.
+
+### 1. Blur capture — resolved for both modes
+
+- The blur capture path never enumerates `contentView` children. `drawList` (17312) delegates to
+  `Blur3Utils.captureRelativeParent(this::drawListImpl, …)` (17322), and `drawListImpl` iterates
+  **`chatListView`'s** children only (`chatListView.getChildCount()` / `getChildAt(i)`, 17273-17307) and
+  calls `chatListView.drawChild(...)` (17305). A HUD that is a sibling of `chatListView` under
+  `contentView` is therefore outside the captured subtree by construction.
+- When the container itself is drawn as a background/blur source (`BlurBehindDrawable` sets
+  `TAG_DRAWING_AS_BACKGROUND`, `BlurBehindDrawable.java:167`), `drawChild` builds `needBlur` from a fixed
+  allow-list and returns `false` for every other child (17566-17575):
+  - `STATIC_CONTENT` → only `actionBar` (17568-17569);
+  - otherwise → only `chatListView`, `chatInputViewsContainer`, `bottomChannelButtonsLayout` (17570-17571).
+  A new HUD child is on neither list, so it is skipped in that pass. The contract's expectation is
+  **confirmed by code**.
+- In the third branch (`blurredView.fullyDrawing()`, 17576-17581) only `actionBar` and `chatListView` are
+  skipped; the HUD falls through to normal drawing — visible, and still not captured. Intended result.
+- `ChatActivityFragmentView.onDraw` (17539-17547) returns early in both blur branches and otherwise calls
+  `super.onDraw`; since it runs below every child it is irrelevant to the HUD's layer.
+
+### 2. Insertion index — resolved; the contract's formula is the fragile variant
+
+`backgroundView` is created lazily **and conditionally**:
+
+- `updateBackground()` (44179) runs early in `createView`, at `ChatActivity.java:4613`, i.e. **before**
+  `chatListView` is added at 6979;
+- it calls `contentView.setBackgroundImage(Theme.getCachedWallpaper(), …)` (44188);
+- `SizeNotifierFrameLayout.setBackgroundImage` (363) returns immediately when
+  `backgroundDrawable == bitmap` (364), so a **null** cached wallpaper creates nothing; otherwise it adds
+  `backgroundView` at index `0` (367-370) and then calls `onUpdateBackgroundDrawable` (388);
+- `getBackgroundImage()` (431) returns `backgroundDrawable` unguarded, so a fresh container always appears
+  wallpaper-less and the setter is reached.
+
+So at the moment a HUD is added (near the `CybergramHeaderDecorationView` insert at 8986) the wallpaper
+child may or may not exist yet, and plain `indexOfChild(backgroundView) + 1` has no valid index when it
+does not. The wallpaper-independent anchor is:
+
+```text
+contentView.addView(hudView, contentView.indexOfChild(chatListView),
+        LayoutHelper.createFrame(MATCH_PARENT, MATCH_PARENT));
+```
+
+which produces the required layer in both cases — wallpaper already present (index 2), and wallpaper
+created later at index 0 with the HUD shifting up with it — and matches the existing relative-index
+precedent at 17344 and 44375.
+
+### 3. Index-shift consequence that must be proven at execution
+
+Adding one child above the wallpaper shifts every later sibling by one. Existing **hard-coded** indices in
+the same container are:
+
+- `videoPlayerContainer` at index `1` (12157) — round-video playback: the later `addView(…, 1)` lands
+  below the HUD, so a playing round video would render under the decoration;
+- `emptyViewContainer` at index `3` (32523) — the empty-chat state: index `3` no longer denotes the same
+  sibling once the HUD exists;
+- `topUndoView` at index `17` (11348);
+- the relative pattern `1 + indexOfChild(chatListView)` for `thanosEffect` (44375), which this contract
+  already flags because `ThanosEffect` casts the parent to `ChatActivityFragmentView` (874-875).
+
+None of these is proven broken. Each must be exercised at execution (round video playing, empty chat, undo
+visible, topic switch, blur on/off). If a real conflict appears, the fallback is to insert the HUD as early
+as possible — before `invalidateBlurredSourcesView` at 4561, so only the wallpaper insert predates it — or
+to re-assert its position from the existing `onUpdateBackgroundDrawable` hook (17222), rather than
+restructuring the container.
+
 ## Allowed repository changes (if authorized)
 
 - the new decoration-View file under `TMessagesProj/src/main/java/org/telegram/ui/` (or `.../Components/`);

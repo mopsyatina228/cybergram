@@ -109,10 +109,11 @@ The contract's mandatory re-reconnaissance was re-run; every anchor holds:
   `onDraw(Canvas)` 17539, `drawChild(Canvas, View, long)` 17550;
 - wallpaper layer: `SizeNotifierFrameLayout.java:92` `public View backgroundView`,
   `setBackgroundImage` 363, `getBackgroundImage` 431, `skipBackgroundDrawing` 586, `BackgroundView`
-  guarded at 173; `TAG_DRAWING_AS_BACKGROUND` branches still present at `ChatActivity.java:17540`, 17543,
-  17566, 17568, 17576. The contract's claim that an unknown child returns `false` and is therefore not
-  captured into a blur pass is **plausible but not re-proven line-by-line here** — it must be confirmed
-  during B7 execution, not assumed;
+  guarded at 173; `TAG_DRAWING_AS_BACKGROUND` branches at `ChatActivity.java:17540`, 17543, 17566, 17568,
+  17576. The contract's claim that an unknown child returns `false` and is therefore not captured into a
+  blur pass was **confirmed by reading the code** in the follow-up pre-flight recorded in
+  `docs/passes/B7_CHAT_CANVAS_HUD.md` § "Pre-flight findings", which also resolves the insertion-index
+  question; runtime proof is still required at execution;
 - child order unchanged: `invalidateBlurredSourcesView` 4561, `chatListView` 6979,
   `chatActivityFadeView` 6985, `selectionReactionsOverlay` 6989, `animatingImageView` 6994,
   `progressView` 6998, `actionBar` 7797, `overlayView` 7807,
