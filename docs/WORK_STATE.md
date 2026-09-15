@@ -973,6 +973,71 @@ ff-only fast-forward** (no squash, no merge commit); integration final SHA
 - No production code, debug code, manifest, resource, release asset or `docs/CYBERGRAM_UI_SPEC.md` was modified;
   `git diff --check` clean; nothing was pushed.
 
+## Owner ruling round 2 — reference palette and chrome (2026-09-15)
+
+Owner rulings and their numbering map: `docs/OWNER_DECISIONS_2026-09-15.md`. Starting state:
+`dev == origin/dev == a469d5ed9`, working tree clean (the 12 previously local commits were pushed to
+`origin/dev` first, as instructed).
+
+Production changes (bounded, presentation only):
+
+- `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramTheme.java` — ruled palette:
+  `AMBER #E8D93A -> #FFB300`, `AMBER_HIGHLIGHT #F2E75B -> #FFC94D`, `DANGER #FF2E46 -> #FF003C`,
+  `TEXT #E6F2F2 -> #E6F7FF`, `TEXT_MUTED #7C8A91 -> #6B7A8A`, `HINT #66777E -> #5F6E7C`, and the
+  incoming surfaces recomputed from the ruled amber over `#080A0F` (`IN_BUBBLE #282715 -> #2B220D`
+  ≈14 %, `IN_BUBBLE_SELECTED #3E3C19 -> #43330B` ≈24 %). Cyan family, background/panel/raised and all
+  role semantics unchanged.
+- `TMessagesProj/src/main/assets/cybergram.attheme` — same ruling applied to the checked-in theme:
+  97 lines remapped; the six pure-amber keys take `#FFB300`, the seven amber-derived shades were
+  hue-rotated by −12.7° (54.8° → 42.1°, saturation/value preserved), pure red takes `#FF003C`, muted
+  and hint take the new muted pair, UI text takes `#E6F7FF`, and both in-bubble composites take the
+  recomputed values. Cyan and background keys are byte-identical.
+- `TMessagesProj/src/main/java/org/telegram/ui/CybergramHeaderDecorationView.java` — the two 8 dp cyan
+  chamfered header "ticks" were **removed** (owner D8: on device they read as two unexplained small
+  circles at the screen edges; identified at `onDraw` `ax+24dp` / `ax+aw-24dp`). The red bottom rule,
+  the short cyan identity segment and the thin red edge framing are kept, and the now-unused
+  `Path`/`CybergramBubbleDrawable` import and `drawTick` helper are gone.
+- `TMessagesProj/src/main/java/org/telegram/ui/Components/ChatActivityEnterView.java` — composer frame
+  stroke `dp(1) -> dp(1.5)` (owner D7). Still stroke-only by design: the frame is drawn after
+  `super.dispatchDraw`, so enabling a fill would overpaint the field's children.
+- `TMessagesProj_App/src/debug/java/org/telegram/ui/CybergramB5ServiceDateFixture.java` (debug source
+  set only) — literal `0xFFFF2E46` replaced by `CybergramTheme.DANGER`.
+
+Build / install / runtime (x86_64, AVD `Cybergram_API36` / `emulator-5554`, pre-existing authenticated
+session reused — explicitly authorized by the owner):
+
+- wrapper build: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` → **BUILD SUCCESSFUL in
+  5m 34s** (82 tasks, 21 executed / 61 up-to-date); APK `68,948,712` bytes, SHA-256
+  `B3E0E4F3EEB64A59CAA0B484D1483F2FF239DC955671757577679B5315FE95E6`; `adb install -r` over
+  `org.telegram.messenger.beta` → **Success**. Host note: `gradlew.bat` does not exist in this tree and
+  the wrapper needs write access to `~/.gradle` (outside the session workspace), so the build ran as
+  `java -classpath gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain …` with
+  escalated sandbox access; the JDK is `C:\Users\mopsy\AppData\Local\Android\toolchain\jdk-17.0.20.1+1`.
+- Pixel evidence (decoded programmatically from device screenshots kept in `.local-artifacts/`,
+  git-excluded): incoming card outline samples `#FAAF00`/`#FBB000` (ruled `#FFB300`; the old
+  `#E8D93A` would sample far greener); header rule composites to `#C10332` under α190, whose
+  `G = 0x03` matches `#FF003C` and not `#FF2E46` (`G` would be ≈`0x2F`); the two header edge diamonds
+  that are visible in the pre-change capture are **absent** in the post-change dialogs and chat
+  captures; the composer's top stroke measures 2 px → 4 px under the same strict cyan threshold in a
+  2× crop at `x=700` and `x=1000`.
+- One input-dispatch **ANR** occurred during the run
+  (`/data/anr/anr_2026-09-15-20-14-17-541`). The dumped main thread was blocked in upstream
+  `CalendarActivity.loadNext` → `MessageObject` → `VideoPlayer.getQualities` → `FilePathDatabase.getPath`
+  (`CountDownLatch`), i.e. the Calendar screen loading messages synchronously while a BACK key event
+  timed out. No file changed by this pass appears in that stack and no `FATAL EXCEPTION` was logged;
+  the ANR is recorded here, not hidden.
+
+Ruled but **not** implemented in this pass (next bounded work): D6 bubble spacing (the seam was
+researched — `ChatMessageCell.java:20535-20545` / `20618-20628` `offsetBottom` and
+`MessageDrawable.java:564`/`895` padding — but a draw-only vertical inset interacts with the
+time/check baseline at `ChatMessageCell.java:24235`, so it needs its own bounded contract); D5 font
+(measured: the upstream-bundled `fonts/rmono.ttf` and `fonts/rcondensedbold.ttf` already carry 255
+Cyrillic codepoints each, so a Cyrillic-first face needs **no** new asset and no APK growth); D4
+default replaceable wallpaper with minimal framing; and the ambiguous `флажки` item — outgoing
+send-state check marks already draw cyan (single = sent, double = read via
+`key_drawable_msgOutCheck`/`key_drawable_msgOutCheckRead`), so the owner must confirm what is missing
+before anything is changed.
+
 ## Explicitly deferred
 
 - package/application ID rename;

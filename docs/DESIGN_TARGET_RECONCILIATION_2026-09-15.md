@@ -1,7 +1,9 @@
 # Design target reconciliation and work plan (2026-09-15)
 
-Status: `ANALYSIS / OWNER DECISIONS PARTIAL` — **D1 ruled by the owner on 2026-09-15: keep the landed
-45-degree chamfer**; D2 and D3 remain pending. This document authorizes nothing.
+Status: `ANALYSIS / OWNER DECISIONS RULED` — **D1, D2 and D3 were all ruled by the owner on
+2026-09-15**; the binding record (including the owner's own D3 = default wallpaper, recorded here as
+D4) is `docs/OWNER_DECISIONS_2026-09-15.md`. The analysis below is kept as the historic
+reference-versus-spec comparison. This document still authorizes nothing by itself.
 
 Input: `design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg` (owner reference,
 committed 2026-09-15 as `39c301bb4`), compared against the design authority
@@ -76,6 +78,10 @@ itself is cheap and central (`CybergramTheme` + `cybergram.attheme` + validator 
 every surface at once and the reference has been through JPEG compression and a screen render, so its
 sampled hues are not authoritative.
 
+**Ruled (owner, 2026-09-15): adopt the reference hues** (`#FFB300`, `#FF003C`, muted `#6B7A8A`) —
+the owner ruled directly rather than waiting for the A/B recommendation. See
+`docs/OWNER_DECISIONS_2026-09-15.md` §2 D2.
+
 **D3 — service-label copy policy.** Which decorative labels are allowed?
 Hard constraint, non-negotiable: no `SECURE CHAT`, no `END-TO-END`, no lock/security iconography, no
 invented IDs or status that misrepresent Telegram (`CYBERGRAM_UI_SPEC.md` line 117, repeated as a hard
@@ -84,6 +90,11 @@ Recommendation: allow **original, non-deceptive** technical labels only, and tre
 plus signal bars as the same class of offence as `SECURE CHAT` (it asserts a live network property the
 client does not verify). Default for B7: **structural marks now, textual labels deferred until D3 is
 ruled**.
+
+**Ruled (owner, 2026-09-15): neutral Latin technical copy is allowed, including deliberately
+meaningless technical gibberish** (`CH 1.0.3.7`-class strings); every security and live-network claim
+named above stays banned. Note the numbering clash: the owner called this decision `D2`; in this
+repository it is `D3`. See `docs/OWNER_DECISIONS_2026-09-15.md` §2 D3.
 
 ## 4. Work plan derived from the existing map
 

@@ -245,9 +245,21 @@ It **conflicts with or adds decisions about**:
   code or spec change follows.
 - **D2 — two palette hues** (amber `#FFB300` vs landed `#E8D93A`; red `#FF003C` vs landed `#FF2E46`).
   Cheap and central, but should be decided from an E-tier visual comparison, not from JPEG-sampled hex.
+  **Ruled by the owner on 2026-09-15: adopt the reference hues** (`#FFB300` / `#FF003C`, muted
+  `#6B7A8A`) — implemented in `CybergramTheme` + `cybergram.attheme`; the A/B recommendation is
+  superseded.
 - **D3 — service-label copy**: the reference's `SECURE CHAT`, `END-TO-END`, lock icon and
   `CONNECTION STABLE` are the class of claim banned by `docs/CYBERGRAM_UI_SPEC.md` line 117. The
   *layer* is sanctioned by line 113; the *copy* is not. Until D3 is ruled, no label copy is approved.
+  **Ruled by the owner on 2026-09-15 (owner's own label `D2`): neutral Latin technical copy is allowed,
+  including deliberately meaningless technical gibberish; every security and live-network claim stays
+  banned.**
+- **D4 — default wallpaper** (the owner's own label `D3`): a default replaceable Cybergram wallpaper
+  with minimal framing is **allowed and expected**; a user wallpaper always overrides it.
+
+The binding record for these rulings, the owner's numbering clash, and the further taste rulings
+(palette, Cyrillic-first font, bubble spacing, composer outline, header-tick removal) is
+`docs/OWNER_DECISIONS_2026-09-15.md`.
 
 Also unowned from the reference: a faint background pattern layer (must not become a wallpaper
 override) and a bundled monospace HUD font (spec line 108 allows an open, redistributable font later;
@@ -274,7 +286,7 @@ Recommended production order is B1 first (now integrated, with A/P tiers open), 
 
 B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
 
-The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing: **D1 is now ruled (keep the landed chamfer, 2026-09-15) and closed**, while D2 and D3 remain pending. B7 remains the only unblocked implementation pass in this queue.
+The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing: **D1, D2 and D3 are all ruled by the owner (2026-09-15)** — see `docs/OWNER_DECISIONS_2026-09-15.md`, which also records the owner's `D3` = default wallpaper (repo `D4`) and the further taste rulings. B7 remains the only unblocked implementation pass in this queue and is still NOT AUTHORIZED.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 
