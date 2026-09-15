@@ -110,11 +110,11 @@ no permission was granted (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `CAMERA` all
 
 - Calls tab enabled/disabled and the Settings/Calls position swap — requires a persisted app setting change;
 - tabs show/hide animation;
-- non-Cybergram theme comparison — requires a persisted theme switch (the B6 run used
-  `.local-artifacts/b6/` backups to restore it);
 - attach/bot tab geometry — requires opening a conversation with a bot.
 
-B1 remains **`A PARTIAL`**: the navigation and presentation core is confirmed, the four items above are not.
+The non-Cybergram theme comparison, originally in this list, was performed afterwards — see §8.
+
+B1 remains **`A PARTIAL`**: the navigation and presentation core is confirmed, the three items above are not.
 
 ## 8. Non-Cybergram control (theme switch), 2026-09-15
 
@@ -136,3 +136,20 @@ presentation is restored" and B1's "non-Cybergram theme: upstream glass/rounded 
 
 B1's remaining open items are now: the Calls enable/disable and Settings/Calls swap, the tabs show/hide
 animation, and the attach/bot tab geometry (which needs a bot conversation opened).
+
+## 9. Deliberate stop of the settings-mutation line (2026-09-15)
+
+The B1 items still listed above — the Calls tab enable/disable and Settings/Calls swap, the tabs show/hide
+animation and the attach/bot tab geometry — plus every B2/B5/B6 row, were deliberately **not** exercised.
+They require either a persisted change to the owner's app settings or opening real conversations, which marks
+messages as read in a live account.
+
+While looking for the Calls setting through the app's own UI, a system contacts-permission dialog appeared on
+the live account. It was dismissed with the deny action and **no permission was granted**
+(`READ_MEDIA_IMAGES`, `WRITE_CONTACTS`, `CAMERA` all remained `granted=false`; `READ_CONTACTS` is not
+granted). Probing was stopped there: the remaining checkboxes are worth far less than the risk of interfering
+with a live messaging session.
+
+Those items stay open, and closing them needs either an explicit owner decision or a separate test account.
+The one settings mutation that *was* performed — the non-Cybergram theme control in §8 — was evidence-critical,
+byte-exact, backed up and fully restored.
