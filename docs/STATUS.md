@@ -1,14 +1,15 @@
 # Cybergram repository status
 
-Snapshot taken: 2026-09-15 21:06 +03:00
+Snapshot taken: 2026-09-15 21:35 +03:00
 
-Snapshot base: `dev` at `39c301bb448e65cc17fe2132e1b12612860fa732`
-(`docs(design): design target — референс владельца (киберпанк-чат) и разбор палитры/типографики`,
-committed 2026-09-15 19:52:57 +03:00), working tree otherwise clean.
+Snapshot base: `dev` at `09a6f2601e09497203fa4136c7853aeb286c4964`
+(`docs: B7 pre-flight - resolve blur-capture and insertion-index questions`, committed 2026-09-15
+21:30 +03:00), working tree clean.
 
-State movement during authoring: this snapshot was started against `9f8211503` (2026-09-14 21:11:32)
-with a clean tree; the design-target commit above landed locally at 19:52:57 on 2026-09-15. `dev` is
-therefore **1 commit ahead of `origin/dev`**, which still points at `9f8211503`.
+State movement: this snapshot was first written against `9f8211503`, then refreshed after the design-target
+commit `39c301bb4`, the `docs/STATUS.md` commit made by a concurrent agent (`88fdf88bd`), the design-target
+reconciliation `7cf5b408d` and the B7 pre-flight `09a6f2601`. `dev` is now **4 commits ahead of
+`origin/dev`**, which still points at `9f8211503`; nothing is pushed.
 
 **This document is descriptive only.** It is a point-in-time snapshot of what exists, what is
 unfinished and how validation is performed. It is **not** an authority: `docs/CURRENT_STATE.md` and
@@ -24,9 +25,9 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Baseline branch | `master` = Telegram Android 12.10.1 (7038), `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c` |
 | Integration branch | `dev` |
 | Preserved product-code cut | `52b8e219729d0a90dd3335165cf4ef44acf46e5e` |
-| Current `dev` HEAD | `39c301bb448e65cc17fe2132e1b12612860fa732` |
-| Working tree | no tracked modifications; one untracked file (`docs/STATUS.md`, this document); no stash; no `.git` lock files |
-| Local vs remote `dev` | local is **1 commit ahead**: `origin/dev` = `9f8211503…` (verified through `gh api`); the 2026-09-15 design-target commit is unpushed |
+| Current `dev` HEAD | `09a6f2601e09497203fa4136c7853aeb286c4964` |
+| Working tree | clean; no untracked files; no stash; no `.git` lock files |
+| Local vs remote `dev` | local is **4 commits ahead**: `origin/dev` = `9f8211503…` (verified through `gh api`); every 2026-09-15 commit is unpushed |
 | Open pull requests | none; repository issues are disabled |
 | Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 
@@ -71,8 +72,23 @@ screenshot `design/references/design-target-hex-chat.jpg` and derives from it co
 monospace service-label layer. It is explicitly a mood and decision reference, not a pixel spec, and it
 is linked from `README.md`. No product code changed with it.
 
-It is **not yet reconciled** with `docs/CYBERGRAM_UI_SPEC.md`, `docs/CURRENT_STATE.md` or
-`docs/EXECUTION_BACKLOG.md`, and no pass spec references it.
+It is reconciled against the authority and the landed code in
+`docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`, which confirms the landed colour roles, palette, thin
+outlines, service/date plate and edge-only decoration, and raises three pending owner decisions
+(**D1** message silhouette, **D2** two palette hues, **D3** service-label copy). The design authority
+itself has **not** been amended — that requires an owner ruling, so `docs/CYBERGRAM_UI_SPEC.md` remains
+unchanged and controlling.
+
+Work recorded on 2026-09-15 (all docs-only, all unpushed):
+
+- `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md` — reference versus spec versus landed code, the three
+  decisions, and the work plan mapped onto the existing pass queue (commit `7cf5b408d`);
+- `docs/passes/B7_CHAT_CANVAS_HUD.md` § "Pre-flight findings" — resolves the contract's two open questions
+  statically: blur capture never includes a `contentView` sibling of `chatListView`, and
+  `indexOfChild(chatListView)` is the wallpaper-independent insertion anchor, with the hard-coded sibling
+  indices (`1`, `3`, `17`) recorded for runtime proof (commit `09a6f2601`);
+- `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md` — the pending B0/B1/B2/B5/B6 authenticated matrices
+  consolidated into one executable checklist.
 
 Evidence lives in `docs/WORK_STATE.md` (chronological), `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`,
 `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`, `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`, and
@@ -95,7 +111,8 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 
 The dominant outstanding item is **A-tier verification debt**: B0, B1 and B6 are integrated at E tier
 only, and B2 carries 15 `UNTESTED` rows. No Cybergram surface has been confirmed on an authenticated
-product surface. Two known caveats are carried forward deliberately: `E-rich` was never faked, and the
+product surface. That debt is now executable as a single checklist in
+`docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`. Two known caveats are carried forward deliberately: `E-rich` was never faked, and the
 `ThemePreviewActivity` foreign-theme preview-scope question is answered for today's code but keeps a
 recorded latent caveat for any future foreign-theme preview row that instantiates a `ChatActionCell`.
 

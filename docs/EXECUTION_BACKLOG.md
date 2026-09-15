@@ -30,7 +30,7 @@ For high-risk upstream files, do not combine presentation changes with cleanup/r
 
 ## Validation baseline established 2026-09-11
 
-A reproducible emulator path now exists in `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`.
+A reproducible emulator path now exists in `docs/runbooks/CYBERGRAM_EMULATOR_VALIDATION.md`. The authenticated counterpart is `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`, which consolidates the pending B0/B1/B2/B5/B6 A-tier matrices into one executable checklist so the largest outstanding debt can be closed in a single run when an authenticated session is available.
 
 Current product tree was validated from documentation HEAD `5663bf329d9d78bad5a991350740fe51912f88fb`, which was confirmed byte-identical to product cut `52b8e219729d0a90dd3335165cf4ef44acf46e5e` for product sources.
 
