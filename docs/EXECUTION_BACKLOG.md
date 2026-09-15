@@ -83,6 +83,8 @@ Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Owner: `TMessagesProj/src/ma
 
 The selected dialog filter/folder tab loses its title because the Cybergram selector plate is opaque and is drawn after the labels. The smallest candidate fix is to draw the Cybergram plate before the children instead of after `super.drawChild`, keeping the upstream branch untouched; alternatives and the required E + A re-validation are listed in the defect record. **No fix has been applied and none is authorized by this entry.** A pass does not authorize the next pass.
 
+A same-class sweep of every other Cybergram seam is recorded in `docs/CYBERGRAM_PLATE_DRAWORDER_AUDIT_2026-09-15.md`. It found the defect to be **isolated**: every other filled plate (main-tabs selector, `GlassTabView`, search field, FAB, dialog rows, bubbles) is already drawn below the content it frames, so the fix should follow that existing pattern rather than invent a new one. The audit also records one latent hazard: the composer frame is likewise drawn after its children and is safe only because its fill is disabled (`ChatActivityEnterView.java:2672-2692`).
+
 ### B1 — flat/angular main bottom navigation
 
 Status: `INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING`.
