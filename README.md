@@ -55,6 +55,9 @@ Before attempting a release build, follow the original Telegram requirements for
 
 ## Project status
 
+Design target (референс владельца, палитра и типографика): [`design/DESIGN_TARGET.md`](design/DESIGN_TARGET.md),
+картинка — `design/references/design-target-hex-chat.jpg`.
+
 The fork has been bootstrapped. The current phase is UI foundation: establish a Cybergram palette/theme asset and map the existing Telegram rendering surfaces before changing message geometry. No protocol or account-data behaviour is intentionally changed at this stage.
 
 ## Telegram API and protocol documentation
