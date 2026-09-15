@@ -115,3 +115,24 @@ no permission was granted (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `CAMERA` all
 - attach/bot tab geometry — requires opening a conversation with a bot.
 
 B1 remains **`A PARTIAL`**: the navigation and presentation core is confirmed, the four items above are not.
+
+## 8. Non-Cybergram control (theme switch), 2026-09-15
+
+The `Blue` (non-Cybergram) theme was applied on the same device, account, session and build, and the same
+screens re-captured. Procedure and integrity notes are recorded in
+`docs/B0_FILTER_TABS_DEFECT_2026-09-15.md` ("Theme switch procedure and integrity"); the theme was restored
+to `Cybergram` afterwards and the device config re-read to confirm it.
+
+| Item | Under Cybergram | Under Blue (non-Cybergram) | Verdict |
+|---|---|---|---|
+| Dialog filter row, **selected** chip | chamfered plate, label missing | upstream rounded translucent pill, label fully legible | the Cybergram seam causes the B0 defect; upstream is intact |
+| Unselected filter chips | labelled | labelled | same |
+| Main bottom navigation | angular dark panel + cyan selected plate | upstream rounded/glass look, labels intact | **PASS** — B1's non-Cybergram requirement is now exercised |
+| Header rails, cyan search outline | present | upstream chrome | same |
+| No FATAL/ANR | `crash_matches=0` | `crash_matches=0` | — |
+
+This closes two previously open matrix items: B0's "switch to a non-Cybergram theme and verify upstream
+presentation is restored" and B1's "non-Cybergram theme: upstream glass/rounded tabs intact".
+
+B1's remaining open items are now: the Calls enable/disable and Settings/Calls swap, the tabs show/hide
+animation, and the attach/bot tab geometry (which needs a bot conversation opened).

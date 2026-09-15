@@ -77,6 +77,38 @@ So this is not a colour-contrast subtlety: the selected tab's label is **painted
   unaffected (its labels render correctly).
 - Not a crash, not a state-machine change; Telegram behaviour is otherwise intact.
 
+## Control run — the root cause is confirmed experimentally, not only by reading code
+
+After the static analysis above, the same screen was captured under a **non-Cybergram** theme on the same
+device, same account, same session, same build.
+
+| Theme | Selected first chip | Other chips |
+|---|---|---|
+| **Cybergram** | chamfered plate, **no label at all** | `263679`, `12412412`, `0` — all labelled |
+| **Blue** (non-Cybergram) | upstream rounded translucent pill, **`All Chats` fully legible** (with its counter) | `263679`, `12412412`, `0` — all labelled |
+
+Switching back to Cybergram reproduced the empty plate, so the behaviour tracks the theme and not the
+capture: **the Cybergram seam is the cause**, and the upstream branch is unaffected. Artifacts:
+`.local-artifacts/a-tier/control_blue_full2.png`, `blue_filters2.png`, `crop_baseline.png`,
+`restored_filters_final.png` (git-excluded).
+
+## Theme switch procedure and integrity
+
+The theme was changed by replacing exactly one string in the app's own preferences, with the app stopped:
+
+- read `shared_prefs/mainconfig.xml` through `run-as` and saved it byte-for-byte before touching anything
+  (`mainconfig_before_Cybergram.xml`, SHA-256 `12da72ba…`);
+- replaced only `<string name="theme">Cybergram</string>` with `Blue` and pushed the result back;
+- captured the control frames, then reversed exactly the same operation and re-read the device config to
+  confirm `<string name="theme">Cybergram</string>` (screenshots `control_blue_full2.png`,
+  `restored_final.png`).
+
+The restored preferences file is **112 bytes smaller** than the pre-run backup. The difference is entirely
+values the application itself rewrote while it ran — check timestamps, promo/birthday/stories state, the
+TON cache rate, a rotated `autologinToken`, and a dropped empty `proxyDialogAddress`. The only edit made
+here was the theme string. The backups contain session material and stay in the git-excluded
+`.local-artifacts/a-tier/`; they must never be committed.
+
 ## Explicitly not claimed
 
 - Not proven to be the *only* mechanism: an illegible dark-on-dark text colour would look identical in a
@@ -107,4 +139,5 @@ not fix production code inside B0." This run stopped at the defect. **No product
 no fix was attempted.
 
 Remaining B0 matrix items not exercised in this run (the run stopped): horizontal overflow/scroll to the
-end of the folder row, edit/reorder/delete mode, and the non-Cybergram theme comparison.
+end of the folder row and edit/reorder/delete mode. The non-Cybergram theme comparison **was** performed —
+see the control run above.
