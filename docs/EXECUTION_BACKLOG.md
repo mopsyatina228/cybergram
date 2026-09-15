@@ -63,15 +63,25 @@ Never promote E evidence into A or P evidence.
 
 ### B0 — final FilterTabs authenticated validation
 
-Status: `PARTIAL — E BASELINE PASSED / AUTHENTICATED FILTER-TABS MATRIX PENDING`
+Status: `A RUN STOPPED ON A CONFIRMED DEFECT — E BASELINE PASSED / SELECTED FILTER TAB LOSES ITS LABEL`
 
-Type: validation only.
+Type: validation only. The 2026-09-15 authenticated run was stopped at a confirmed presentation defect and no fix was attempted; the record is `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`.
+
+On the authenticated AVD the dialog filter/folder row works — chips can be switched, the list changes, `crash_matches=0` — but the **selected** chip renders as an empty chamfered plate with no title, while unselected chips are labelled normally. Root cause is verified statically: `FilterTabsView.drawChild` calls `drawSelector` *after* the labels are drawn, and the Cybergram branch sets the plate alpha to `255` (upstream uses `31`), so an opaque plate painted over the text hides it (`FilterTabsView.java:1531`).
 
 Spec: `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
 
 The 2026-09-11 emulator run proves the exact current product tree builds, installs and starts. It did not reach an authenticated dialogs screen, so it does not prove the final `FilterTabsView` interaction/visual matrix. B0 now consists only of closing that remaining authenticated-surface gap. No production fixes are authorized inside B0.
 
 B0 no longer blocks static design of B1. It blocks only claims that final filter tabs are fully runtime-validated.
+
+### B0-FIX — selected filter-tab label (bounded fix)
+
+Status: `CONFIRMED DEFECT / FIX NOT AUTHORIZED`.
+
+Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Owner: `TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java` (`drawChild` 1407-1411, `drawSelector` 1465-1534, alpha at 1531).
+
+The selected dialog filter/folder tab loses its title because the Cybergram selector plate is opaque and is drawn after the labels. The smallest candidate fix is to draw the Cybergram plate before the children instead of after `super.drawChild`, keeping the upstream branch untouched; alternatives and the required E + A re-validation are listed in the defect record. **No fix has been applied and none is authorized by this entry.** A pass does not authorize the next pass.
 
 ### B1 — flat/angular main bottom navigation
 

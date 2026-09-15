@@ -98,7 +98,7 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 
 | Pass | Status | Outstanding |
 |---|---|---|
-| B0 | `PARTIAL` | authenticated `FilterTabsView` interaction/visual matrix. Validation only; no production fixes authorized |
+| B0 | `A RUN STOPPED ON A CONFIRMED DEFECT` | the selected filter/folder tab draws an empty plate — its label is painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); record `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Fix **not** authorized |
 | B1 | `E PASS / A PARTIAL / P PENDING` | navigation and visual core confirmed on an authenticated surface on 2026-09-15 (`docs/A_TIER_VALIDATION_2026-09-15.md`); Calls swap, long-drag, show/hide animation, orientation and the non-Cybergram theme check remain |
 | B2 | `AUDIT COMPLETE` | 15 account-dependent `UNTESTED` rows (reply layout, reaction interaction, metadata, service/date adjacency) |
 | B3 | `CLOSED / NOT REQUIRED` | nothing — do not reopen |
