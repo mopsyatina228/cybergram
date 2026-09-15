@@ -15,23 +15,25 @@ public final class CybergramTheme {
 
     public static final int CYAN = 0xFF00E5FF;
     public static final int CYAN_SECONDARY = 0xFF33D6FF;
-    public static final int AMBER = 0xFFE8D93A;
-    public static final int AMBER_HIGHLIGHT = 0xFFF2E75B;
-    public static final int DANGER = 0xFFFF2E46;
+    /** Ruled 2026-09-15: reference amber (was #E8D93A). See docs/OWNER_DECISIONS_2026-09-15.md. */
+    public static final int AMBER = 0xFFFFB300;
+    public static final int AMBER_HIGHLIGHT = 0xFFFFC94D;
+    /** Ruled 2026-09-15: reference service red (was #FF2E46). */
+    public static final int DANGER = 0xFFFF003C;
 
-    public static final int TEXT = 0xFFE6F2F2;
-    public static final int TEXT_MUTED = 0xFF7C8A91;
+    public static final int TEXT = 0xFFE6F7FF;
+    public static final int TEXT_MUTED = 0xFF6B7A8A;
     public static final int TEXT_ON_AMBER = 0xFF101216;
 
     /** Stable opaque composites matching restrained translucent-looking message surfaces. */
-    public static final int IN_BUBBLE = 0xFF282715;
-    public static final int IN_BUBBLE_SELECTED = 0xFF3E3C19;
+    public static final int IN_BUBBLE = 0xFF2B220D;
+    public static final int IN_BUBBLE_SELECTED = 0xFF43330B;
     public static final int OUT_BUBBLE = 0xFF07252C;
     public static final int OUT_BUBBLE_SELECTED = 0xFF063A44;
     public static final int OUT_TEXT = 0xFFD7FCFF;
 
     public static final int DIVIDER = 0xFF1B2B32;
-    public static final int HINT = 0xFF66777E;
+    public static final int HINT = 0xFF5F6E7C;
 
     /** Built-in Cybergram theme name; used only for the presentation activation gate. */
     public static final String THEME_NAME = "Cybergram";

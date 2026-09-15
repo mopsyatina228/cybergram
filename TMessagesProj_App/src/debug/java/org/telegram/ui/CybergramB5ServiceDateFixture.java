@@ -101,7 +101,7 @@ public final class CybergramB5ServiceDateFixture {
         candidatePaint.setStrokeWidth(Math.max(1f, dp(1)));
         candidatePaint.setStrokeJoin(Paint.Join.MITER);
         candidatePaint.setStrokeCap(Paint.Cap.SQUARE);
-        candidatePaint.setColor(0xFFFF2E46);
+        candidatePaint.setColor(CybergramTheme.DANGER);
     }
 
     /** Renders the whole probe once; the caller blits the bitmap into the showcase canvas. */

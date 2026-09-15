@@ -2687,7 +2687,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                     cybergramComposerFrame = new CybergramHudDrawable();
                     cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
                 }
-                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend), dp(1), true);
+                // Owner ruling 2026-09-15 (docs/OWNER_DECISIONS_2026-09-15.md §2 D7): the frame read
+                // as too dim/weak on device, so the stroke is widened from 1dp to 1.5dp. Stroke-only
+                // by design: a fill would overpaint the field's children (this runs after dispatchDraw).
+                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend), dp(1.5f), true);
                 cybergramComposerFrame.setBounds(0, 0, w, h);
                 cybergramComposerFrame.draw(canvas);
             }

@@ -3,26 +3,27 @@ package org.telegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 /**
  * Production non-interactive presentation overlay that draws Cybergram structural
  * decoration over an {@link ActionBar}. Normal Cybergram chrome uses a restrained red
- * structural rail, a short cyan identity segment and small technical ticks/edge rails.
+ * structural rail, a short cyan identity segment and thin red edge framing.
  * Action-mode callers can request a neutral cyan rule-only state.
  *
  * It never intercepts touch, never draws when Cybergram presentation is not active (a
- * runtime gate in {@link #onDraw}), and it uses the shared
- * {@link CybergramBubbleDrawable#buildPath} polygon for the angular marks (no duplicated
- * polygon implementation). It adds no microtext and no fake security/network claims.
+ * runtime gate in {@link #onDraw}).
+ *
+ * Owner ruling 2026-09-15 (docs/OWNER_DECISIONS_2026-09-15.md §2 D8): the two 8dp cyan
+ * chamfered "ticks" that used to sit at the header edges were removed — on device they
+ * read as two unexplained small circles at the screen edges. The red bottom rule, the
+ * short cyan identity segment and the edge framing are kept.
  *
  * It is always present in the view hierarchy so a Day -&gt; Cybergram (or back) theme switch is
  * reflected without recreating the activity: the gate re-evaluates on every draw. When idle
@@ -36,7 +37,6 @@ public class CybergramHeaderDecorationView extends View {
     private final ActionBar actionBar;
     private final Theme.ResourcesProvider resourcesProvider;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path path = new Path();
     private final int[] actionBarLoc = new int[2];
     private final int[] selfLoc = new int[2];
 
@@ -125,23 +125,6 @@ public class CybergramHeaderDecorationView extends View {
         paint.setAlpha(120);
         canvas.drawRect(ax, ruleTop - dp(10), ax + ruleH, bottom, paint);
         canvas.drawRect(ax + aw - ruleH, ruleTop - dp(10), ax + aw, bottom, paint);
-
-        // Restrained cyan chamfered ticks keep the existing shared polygon language.
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(dp(1));
-        paint.setStrokeJoin(Paint.Join.MITER);
-        paint.setStrokeCap(Paint.Cap.SQUARE);
-        paint.setColor(cyanColor());
-        paint.setAlpha(CybergramTheme.HEADER_TECH_ALPHA);
-        int tick = dp(8);
-        drawTick(canvas, ax + dp(24), ruleTop - tick, ax + dp(24) + tick, ruleTop);
-        drawTick(canvas, ax + aw - dp(24) - tick, ruleTop - tick, ax + aw - dp(24), ruleTop);
-        paint.setAlpha(255);
-    }
-
-    private void drawTick(Canvas canvas, float left, float top, float right, float bottom) {
-        CybergramBubbleDrawable.buildPath(path, left, top, right, bottom, dp(3), dp(3), dp(3), dp(3));
-        canvas.drawPath(path, paint);
     }
 
     private int dp(float value) {
