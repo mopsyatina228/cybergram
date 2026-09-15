@@ -192,6 +192,8 @@ Recommended seam (not executed): a dedicated non-interactive, runtime-gated chil
 
 B7 must be non-interactive, must draw nothing outside Cybergram presentation, must not reduce message readability or wallpaper/media behaviour, and must not become a large opaque surface or carry microtext/fake security claims (`docs/CYBERGRAM_UI_SPEC.md` lines 19, 21, 23, 25, 55, 113, 115, 117). Its ownership must be re-verified again at execution time — do not trust the prepared copy.
 
+The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. That document re-verified B7's ownership anchors at `39c301bb4` (they hold) and corrected two contract details: `20` files match `extends SizeNotifierFrameLayout` (19 hosts besides `ChatActivity`), and index `1` is not free at runtime because `videoPlayerContainer` is inserted there (`ChatActivity.java:12157`). Until decision D3 is ruled, B7 draws structural marks only and no label copy.
+
 ### B8 — secondary client surfaces and onboarding
 
 Status: `DEFERRED / STAGE F`.
@@ -199,6 +201,37 @@ Status: `DEFERRED / STAGE F`.
 Settings, profiles, media viewers, calls, login/onboarding and secondary sheets come only after the primary messaging flow is coherent. The current emulator screenshot confirms pre-auth onboarding is still essentially upstream Telegram; that is known, not a regression in the current primary-flow scope.
 
 Split secondary work by surface rather than creating a global theme rewrite.
+
+### Design target alignment (new input, 2026-09-15)
+
+Status: `ANALYSIS / OWNER DECISIONS PENDING`.
+
+`design/DESIGN_TARGET.md` plus the owner reference image `design/references/design-target-hex-chat.jpg`
+(commit `39c301bb4`) were reconciled against the design authority and the landed state in
+`docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. That document's pre-flight also re-verified B7's
+ownership at `39c301bb4` and corrected two contract details.
+
+The reference **confirms** the landed direction: cyan/amber self/peer roles, near-black palette, thin
+bubble outlines, compact service/date plate, composer shape, and edge-only non-interactive decoration.
+
+It **conflicts with or adds decisions about**:
+
+- **D1 — message silhouette**: the reference asks for rounded ~8 px corners with a tail, while
+  `docs/CYBERGRAM_UI_SPEC.md` lines 71-74 require clipped/angled corners with the tail removed, and that
+  is what landed and passed B2. Adopting the reference would re-open Stage C and supersede recorded B2
+  evidence; it would need a new bounded spec, not an opportunistic edit.
+- **D2 — two palette hues** (amber `#FFB300` vs landed `#E8D93A`; red `#FF003C` vs landed `#FF2E46`).
+  Cheap and central, but should be decided from an E-tier visual comparison, not from JPEG-sampled hex.
+- **D3 — service-label copy**: the reference's `SECURE CHAT`, `END-TO-END`, lock icon and
+  `CONNECTION STABLE` are the class of claim banned by `docs/CYBERGRAM_UI_SPEC.md` line 117. The
+  *layer* is sanctioned by line 113; the *copy* is not. Until D3 is ruled, no label copy is approved.
+
+Also unowned from the reference: a faint background pattern layer (must not become a wallpaper
+override) and a bundled monospace HUD font (spec line 108 allows an open, redistributable font later;
+nothing is bundled today).
+
+None of this authorizes a pass, and none of it changes B7's file scope. A pass does not authorize the
+next pass.
 
 ### R1 — release identity / credentials / signing / Firebase / package policy
 
@@ -217,6 +250,8 @@ Recommended production order is B1 first (now integrated, with A/P tiers open), 
 **The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date + rich states) are all integrated at E tier with authenticated validation pending, and B2 carries 15 `UNTESTED` account-dependent rows. No integrated Cybergram surface has yet been verified on an authenticated product surface. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
 
 B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
+
+The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing. B7 remains the only unblocked implementation pass in this queue.
 
 A pass does not authorize the next pass. The user chooses execution priority.
 
