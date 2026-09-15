@@ -99,7 +99,7 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 | Pass | Status | Outstanding |
 |---|---|---|
 | B0 | `PARTIAL` | authenticated `FilterTabsView` interaction/visual matrix. Validation only; no production fixes authorized |
-| B1 | `E PASS / A PENDING / P PENDING` | authenticated main-tabs interaction matrix; authenticated visual confirmation of the outer panel |
+| B1 | `E PASS / A PARTIAL / P PENDING` | navigation and visual core confirmed on an authenticated surface on 2026-09-15 (`docs/A_TIER_VALIDATION_2026-09-15.md`); Calls swap, long-drag, show/hide animation, orientation and the non-Cybergram theme check remain |
 | B2 | `AUDIT COMPLETE` | 15 account-dependent `UNTESTED` rows (reply layout, reaction interaction, metadata, service/date adjacency) |
 | B3 | `CLOSED / NOT REQUIRED` | nothing — do not reopen |
 | B4 | `DESIGN-OPEN / NOT AUTHORIZED` | needs a design ruling first; no spec written; reply plate and reaction pill stay untouched |
@@ -110,9 +110,13 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 | R1 | `SEPARATE TRACK` | package/applicationId decision; signing/Firebase/keystore; unresolved Redmi Note 10S / MIUI 14.0.4 install report |
 
 The dominant outstanding item is **A-tier verification debt**: B0, B1 and B6 are integrated at E tier
-only, and B2 carries 15 `UNTESTED` rows. No Cybergram surface has been confirmed on an authenticated
-product surface. That debt is now executable as a single checklist in
-`docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`. Two known caveats are carried forward deliberately: `E-rich` was never faked, and the
+only, and B2 carries 15 `UNTESTED` rows. The first authenticated run, on 2026-09-15, partially validated
+**B1** — the tab navigation and the Cybergram nav presentation are confirmed on a real account — while
+**B0, B2, B5 and B6 remain entirely untested on an authenticated surface**; the account-dependent
+tranches that require opening conversations are flagged for an owner decision because they mark messages
+as read. The debt is executable as a single checklist in
+`docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`, and the recorded run is
+`docs/A_TIER_VALIDATION_2026-09-15.md`. Two known caveats are carried forward deliberately: `E-rich` was never faked, and the
 `ThemePreviewActivity` foreign-theme preview-scope question is answered for today's code but keeps a
 recorded latent caveat for any future foreign-theme preview row that instantiates a `ChatActionCell`.
 
@@ -265,7 +269,7 @@ AVD in use on this host: `Cybergram_API36`, Android 16 / API 36 / `x86_64`
 
 | Capability | State |
 |---|---|
-| A tier (authenticated UI) | not available: no authenticated Telegram session; the emulator is pre-auth |
+| A tier (authenticated UI) | **available since 2026-09-15**: the AVD has an authenticated session, and the first run is recorded in `docs/A_TIER_VALIDATION_2026-09-15.md`. Opening conversations marks messages as read in a live account, so that tranche needs an explicit owner decision |
 | P tier (physical device) | not available: the Redmi Note 10S is not reachable through `adb` |
 | `git fetch` from an unprivileged sandbox | fails with `SEC_E_NO_CREDENTIALS`; remote state is verified via `gh api` or a host-side git run |
 | CI | no workflow definitions exist in the `dev` tree; the only recorded runs are two 2026-09-10 runs on a filter-tabs patch branch |

@@ -75,7 +75,16 @@ B0 no longer blocks static design of B1. It blocks only claims that final filter
 
 ### B1 — flat/angular main bottom navigation
 
-Status: `INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`.
+Status: `INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING`.
+
+First authenticated (A) run: 2026-09-15, `docs/A_TIER_VALIDATION_2026-09-15.md`. On a real authenticated
+session the tab navigation (Chats → Contacts → Settings → Profile → Chats), the angular dark outer panel,
+the cyan selected plate tracking the active tab, the unread badge, the profile avatar and tab long-press
+were all confirmed, with `crash_matches=0` and the installed APK proven (by device pull + hash) to match
+the current product sources. Not yet exercised: Calls enable/disable and the Settings/Calls swap, reselect
+and scroll-to-top, long-drag selection, show/hide animation, orientation change, the non-Cybergram theme
+check, and attach/bot tab geometry. The earlier "A pending" reason — no authenticated session exists — was
+wrong and has been corrected in the status documents.
 
 Priority: was the highest-value remaining production presentation pass.
 
@@ -247,7 +256,7 @@ B0 can be completed whenever an authenticated session is available and does not 
 
 Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **integrated on `dev`** (ff-only) at E tier, with A (and E-rich) still open. B7 now has a prepared contract but is **optional and NOT AUTHORIZED**; B8 remains deferred.
 
-**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date + rich states) are all integrated at E tier with authenticated validation pending, and B2 carries 15 `UNTESTED` account-dependent rows. No integrated Cybergram surface has yet been verified on an authenticated product surface. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date + rich states) are integrated at E tier, and B2 carries 15 `UNTESTED` account-dependent rows. The assumption that A-tier was unreachable has been **corrected**: the `Cybergram_API36` AVD hosts an authenticated session, and the first authenticated run on 2026-09-15 partially validated B1 (`docs/A_TIER_VALIDATION_2026-09-15.md`). B0, B2, B5 and B6 remain entirely untested on an authenticated surface; the tranches that require opening conversations carry a read-marking side effect and need an explicit owner decision. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
 
 B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
 
