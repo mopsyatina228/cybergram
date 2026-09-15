@@ -2,6 +2,8 @@
 
 Status: `IN PROGRESS — FIRST AUTHENTICATED RUN`. This document records evidence; it authorizes nothing.
 
+Section 7 supersedes section 3 for the B1 rows it re-tests.
+
 This is the first recorded run of Cybergram on an **authenticated** Telegram surface. Every earlier
 validation in `docs/WORK_STATE.md` was E-tier (pre-auth emulator), and every status document up to
 2026-09-15 stated that A-tier was unavailable because no authenticated session existed. That assumption is
@@ -82,3 +84,34 @@ this document or anywhere else under version control.
 The chain "A-tier is blocked because no authenticated session exists", repeated in `docs/CURRENT_STATE.md`,
 `docs/EXECUTION_BACKLOG.md`, `docs/STATUS.md` and the pass records, is no longer accurate. A-tier work can
 proceed; the remaining constraint is time and the side effects listed in §4, not availability.
+
+## 7. B1 second pass (2026-09-15, later run)
+
+Further B1 items exercised on the same authenticated device. Artifacts in `.local-artifacts/a-tier/`.
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| Reselect the active tab / scroll-to-top | **PASS** | tapping the already-selected Chats tab returned the list to the top (stories row visible); `crash_matches=0` |
+| Long press on a tab | **PASS** | upstream tab popups open and render correctly: the folder list on Chats, the account switcher on Profile. The Cybergram flat plate does not break them |
+| Long-drag selection **across** tabs | **NOT REACHABLE on the phone layout** | both tested tabs consume long-press with their own upstream popup, so the drag selector never appears; its geometry is exercised only by the DEBUG fixture at E tier |
+| Orientation / configuration change | **N/A** | the top activity requests `SCREEN_ORIENTATION_PORTRAIT` (upstream), so a rotation request produces no layout change. Rotation settings were restored afterwards |
+| No FATAL/ANR | **PASS** | `crash_matches=0` after every step |
+
+Useful side result: the Chats-tab popup enumerates the folders — `All Chats`, `263679`, `12412412`, `0`.
+Those titles are therefore drawn normally by upstream code; the empty chip in the filter row is the
+**selected** one, which independently confirms the B0 defect recorded in
+`docs/B0_FILTER_TABS_DEFECT_2026-09-15.md` for a third time.
+
+Side-effect disclosure: `accelerometer_rotation` was set to 0 for the orientation attempt and restored to
+1; `user_rotation` was returned to 0. No app setting, permission, message or account data was changed, and
+no permission was granted (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `CAMERA` all remained `granted=false`).
+
+### B1 items still not exercised
+
+- Calls tab enabled/disabled and the Settings/Calls position swap — requires a persisted app setting change;
+- tabs show/hide animation;
+- non-Cybergram theme comparison — requires a persisted theme switch (the B6 run used
+  `.local-artifacts/b6/` backups to restore it);
+- attach/bot tab geometry — requires opening a conversation with a bot.
+
+B1 remains **`A PARTIAL`**: the navigation and presentation core is confirmed, the four items above are not.
