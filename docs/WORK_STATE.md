@@ -23,12 +23,17 @@ build log, APK or test report, and the `TMessagesProj_AppTests` module has never
 clone carries no build evidence and cannot confirm any build or run** — re-execute the documented
 steps to reproduce it.
 
-Concretely (re-verified 2026-09-16): only the round-3 debug APK
-(`74,816,192` bytes, SHA-256 `A5B7DCDF…DEA`) and the retained B6 release APKs survive in
-`.local-artifacts/`; the size and SHA-256 values this file cites for the 2026-09-11 baseline, B1 E, B2 E,
-B5 E, the B6 debug-control and the round-2 run are **asserted-only**, because every Gradle build
-overwrites the single output path `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`. No logcat
-capture file exists anywhere, so no ANR cause in this file is trace-backed.
+Concretely (re-verified on the operator's disk 2026-09-16; sizes and hashes from tool output): the round-3
+debug APK survives **at the single Gradle output path**
+`TMessagesProj_App/build/outputs/apk/afat/debug/app.apk` (`74,816,192` bytes, SHA-256
+`a5b7dcdf6d394e216246b0965f1bfd73b97b1ae1a4330cd5554b34f25d278dea`). `.local-artifacts/` holds only APKs
+copied out of that path: `releases/` carries the five retained B6/dev builds
+(`Cybergram-dev-23882dbf0-universal`, `Cybergram-dev-b6-20260914-53dd1368e-universal`,
+`Cybergram-dev-b6-1f31cfa91-x86_64`, `Cybergram-dev-b6-f86ef812b-arm64-v8a`,
+`Cybergram-dev-b6-f86ef812b-x86_64`) and `a-tier/` the installed baseline (`installed_base.apk`). The
+size and SHA-256 values this file cites for the 2026-09-11 baseline, B1 E, B2 E, B5 E, the B6
+debug-control and the round-2 run are **asserted-only**, because every Gradle build overwrites that one
+output path. No logcat capture file exists anywhere, so no ANR cause in this file is trace-backed.
 
 ## Current implementation state
 
