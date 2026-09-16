@@ -23,6 +23,13 @@ build log, APK or test report, and the `TMessagesProj_AppTests` module has never
 clone carries no build evidence and cannot confirm any build or run** — re-execute the documented
 steps to reproduce it.
 
+Concretely (re-verified 2026-09-16): only the round-3 debug APK
+(`74,816,192` bytes, SHA-256 `A5B7DCDF…DEA`) and the retained B6 release APKs survive in
+`.local-artifacts/`; the size and SHA-256 values this file cites for the 2026-09-11 baseline, B1 E, B2 E,
+B5 E, the B6 debug-control and the round-2 run are **asserted-only**, because every Gradle build
+overwrites the single output path `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`. No logcat
+capture file exists anywhere, so no ANR cause in this file is trace-backed.
+
 ## Current implementation state
 
 The Cybergram fork has been bootstrapped on `dev` without intentional protocol, networking, storage, authentication or encryption changes.

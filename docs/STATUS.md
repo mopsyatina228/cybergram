@@ -8,14 +8,15 @@ Snapshot base: `dev` at `937bbb8c597bf26fbdb833ed7b015c04404bd60c`
 2026-09-16 snapshot that named `375482a2eb31c01f6de1c19f6e7f1eb44140cd69`. The 2026-09-16 product
 changes (D4 default backdrop, D6 bubble spacing) live in the earlier product commit
 `22dfacce0092d6aaaf03f1a87d2cc5945eed1d97`. Both commits are pushed; the working tree was clean at
-snapshot time. The hash that was current when round 3 was first recorded (`375482a2e`) is **not** the
-current HEAD — always re-check `git rev-parse HEAD`.
+snapshot time. Two earlier hashes named in this file are **historical, not current**: `375482a2e`
+(the round-3 recording) and `937bbb8c5` (this snapshot's base). The reconciliation patch that produced
+this snapshot was itself committed afterwards, so the live HEAD has advanced past `937bbb8c5`;
+**always re-check `git rev-parse HEAD`** rather than trusting any hash in this file.
 
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
-pushed; **that is no longer true.** The remote was checked on 2026-09-16 and later reconciled locally
-against the current HEAD (see the identity table below); at snapshot time the live
-(`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) value and the local HEAD agree
-(`937bbb8c5…`), so `dev`,
+pushed; **that is no longer true.** The remote was checked on 2026-09-16 and reconciled locally the same
+day; at snapshot time the live (`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) value, the
+local HEAD and `origin/dev` all agreed (`937bbb8c5…` at that moment), so `dev`,
 `origin/dev` and the remote agree and **there is nothing unpushed**. The sandbox still cannot
 `git fetch` (`schannel: SEC_E_NO_CREDENTIALS`), which is why the remote was originally verified over HTTPS.
 
@@ -33,9 +34,9 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Baseline branch | `master` = Telegram Android 12.10.1 (7038), `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c` |
 | Integration branch | `dev` |
 | Preserved product-code cut | `52b8e219729d0a90dd3335165cf4ef44acf46e5e` |
-| Current `dev` HEAD | `937bbb8c597bf26fbdb833ed7b015c04404bd60c` (pushed; equal to `origin/dev`) |
+| `dev` HEAD at snapshot time (may be superseded) | `937bbb8c597bf26fbdb833ed7b015c04404bd60c` (pushed; equal to `origin/dev` at snapshot time) |
 | Working tree | clean at snapshot time; the round-3 product commit `22dfacce0` and the docs commits `375482a2e` / `937bbb8c5` are all pushed |
-| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `937bbb8c5…`, verified locally with `git rev-list --left-right --count`; nothing unpushed |
+| Local vs remote `dev` | **in sync at snapshot time** — `dev` == `origin/dev`, verified locally with `git rev-list --left-right --count`; nothing unpushed. Re-check for later commits |
 | Open pull requests | none; repository issues are disabled |
 | Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 

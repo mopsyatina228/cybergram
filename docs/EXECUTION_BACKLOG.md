@@ -309,13 +309,19 @@ A read-only review of the landed product code (`22dfacce0` and earlier Cybergram
 bounded findings. **None of them is authorized work**; they are recorded so they are not lost and so a
 future pass can pick them up. None changes any pass status above.
 
-- **R-GATE — presentation gate vs backdrop eligibility use different accessors (latent inconsistency).**
-  `CybergramTheme.isCybergramPresentation(...)` reads `Theme.getCurrentTheme()`
-  (`CybergramTheme.java:105`) while `CybergramBackdropDrawable.isEligible(...)` reads
-  `Theme.getActiveTheme()` (`CybergramBackdropDrawable.java:92`). Under day/night switching these can
-  resolve to different `ThemeInfo` objects, so the D4 backdrop's "user wallpaper always wins" check can
-  be evaluated against a different theme than the presentation gate. No crash and no confirmed
-  user-visible defect; smallest candidate fix is to align both sites on one accessor. **Unauthorized.**
+- **R-GATE — the presentation gate reads the DAY theme while the active theme may be the NIGHT theme
+  (code review 2026-09-16; accessors confirmed at source).** `CybergramTheme.isCybergramPresentation(...)`
+  reads `Theme.getCurrentTheme()` (`CybergramTheme.java:105`), which upstream returns as `currentDayTheme`
+  (`Theme.java:6444-6446`), while `CybergramBackdropDrawable.isEligible(...)` reads
+  `Theme.getActiveTheme()` (`CybergramBackdropDrawable.java:92`), which returns `currentTheme`
+  (`Theme.java:6460-6462`). The two `ThemeInfo` objects differ whenever the night slot holds a different
+  theme from the day slot. Two user-visible outcomes: (A) Cybergram selected as the **night** theme → the
+  gate is false, so the whole Cybergram chrome and the D4 backdrop are suppressed even though Cybergram is
+  the active theme (cold-start reachable); (B) Cybergram as the **day** theme with another night theme
+  active → the gate is true, so Cybergram chrome and the D4 grid can appear over a non-Cybergram palette,
+  with `isEligible` checking the night theme's `overrideWallpaper`. Smallest candidate fix: use
+  `Theme.getActiveTheme()` in the gate and resolve the `ThemeInfo` once inside `isEligible`. **Not
+  applied; unauthorized — needs an explicit owner go-ahead plus E/A re-validation.**
 - **R-D6 — the `E < dp(3)` ceiling of `BUBBLE_GAP_EXTRA_DP` is documented but unenforced.** The value is
   `2f` and the invariant lives only in javadoc; raising it (e.g. `4f`) would move the painted top past
   the body/metadata inset and collide. Either clamp/assert the constant or leave it as a documented
