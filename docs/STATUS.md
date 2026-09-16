@@ -16,7 +16,11 @@ this snapshot was itself committed afterwards, so the live HEAD has advanced pas
 Update (2026-09-16, later session): `dev` advanced past the base above with two owner-authorized bounded
 fixes and the documents that record them — **B0-FIX** (`3911690fe`, `FilterTabsView`, evidence
 `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`) and **R-GATE** (`4629e98a3`, `CybergramTheme`, evidence
-`docs/R_GATE_IMPLEMENTATION_2026-09-16.md`). The working tree was clean when this note was written. The
+`docs/R_GATE_IMPLEMENTATION_2026-09-16.md`). Both were then independently re-verified on the emulator by
+a separate session that rebuilt HEAD and a reverted pre-fix control and ran both on the same device:
+`docs/R1_INDEPENDENT_DEVICE_VERIFICATION_2026-09-16.md` (both edits confirmed; the R-GATE separation
+required a temporary theme-slot mutation that was backed up and restored). The working tree was clean
+when this note was written. The
 local branch is ahead of `origin/dev` and **nothing could be pushed from this sandbox**: GitHub TLS from
 the executor fails with `SEC_E_NO_CREDENTIALS`, so a host-side push is required.
 
