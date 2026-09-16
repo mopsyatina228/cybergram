@@ -84,8 +84,9 @@ enter a crossfade loop.
 ## What is drawn
 
 - a **grid** of 1 px hairlines on a `dp(28)` cell, alpha 10/255 (~4 %), built once into an
-  `ALPHA_8` tile and applied as a `BitmapShader(REPEAT)` — one `drawRect` per frame, no per-frame
-  allocation;
+  `ARGB_8888` tile with the colour baked into the shader (so the paint alpha is a pure modulation on
+  every supported API level) and applied as a `BitmapShader(REPEAT)` — one `drawRect` per frame, no
+  per-frame allocation;
 - **minimal framing**: one thin `CybergramTheme.DANGER` hairline rectangle inset `dp(5)` from the
   background bounds at alpha 24/255 (~9 %). No text, no labels, no live data, no security claim —
   `docs/CYBERGRAM_UI_SPEC.md` line 117 and the D3 copy ruling are respected by drawing no copy at all.

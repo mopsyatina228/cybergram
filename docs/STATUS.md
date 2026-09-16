@@ -3,9 +3,10 @@
 Snapshot taken: 2026-09-16 (refreshed after the owner's round-3 rulings work; the previous snapshot was
 2026-09-15 21:35 +03:00)
 
-Snapshot base: `dev` at `95639e5311fa53002cb11f430e78f25c674b23d8`
-(`docs: record the owner's round-2 rulings and the reference-alignment evidence`) plus the uncommitted
-2026-09-16 working tree described below.
+Snapshot base: `dev` at `375482a2eb31c01f6de1c19f6e7f1eb44140cd69`
+(`docs: record the round-3 rulings, verify Cyrillic on device, reconcile the authority`), whose parent
+`22dfacce0092d6aaaf03f1a87d2cc5945eed1d97` carries the 2026-09-16 product changes (D4 default
+backdrop, D6 bubble spacing). Both are pushed; the working tree was clean at snapshot time.
 
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
 pushed; **that is no longer true.** A live GitHub API check on 2026-09-16
@@ -27,9 +28,9 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Baseline branch | `master` = Telegram Android 12.10.1 (7038), `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c` |
 | Integration branch | `dev` |
 | Preserved product-code cut | `52b8e219729d0a90dd3335165cf4ef44acf46e5e` |
-| Current `dev` HEAD | `95639e5311fa53002cb11f430e78f25c674b23d8` (pushed; equal to `origin/dev`) |
-| Working tree | **dirty on 2026-09-16**: owner round-3 changes uncommitted (D4 default backdrop, D6 bubble spacing, D5 record, authority/docs reconciliation); no stash; no `.git` lock files |
-| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `95639e531…`, verified against the live GitHub API; nothing unpushed |
+| Current `dev` HEAD | `375482a2eb31c01f6de1c19f6e7f1eb44140cd69` (pushed; equal to `origin/dev`) |
+| Working tree | clean at snapshot time; the round-3 product commit `22dfacce0` and docs commit `375482a2e` are both pushed |
+| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `375482a2e…`, verified against the live GitHub API; nothing unpushed |
 | Open pull requests | none; repository issues are disabled |
 | Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 
