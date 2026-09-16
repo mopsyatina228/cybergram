@@ -92,8 +92,13 @@ public final class CybergramTheme {
      *
      * True when:
      *   - {@code provider} is a {@link GeometryProvider} (the debug showcase), OR
-     *   - the active {@link Theme#getCurrentTheme()} is the built-in Cybergram theme
+     *   - the active {@link Theme#getActiveTheme()} is the built-in Cybergram theme
      *     (a real client with Cybergram active usually has {@code provider == null}).
+     *
+     * The gate reads the <b>active</b> theme, not the day slot: {@link Theme#getCurrentTheme()}
+     * returns {@code currentDayTheme}, so with Cybergram selected as the night theme the gate
+     * was false while Cybergram was in fact the visible theme. {@link CybergramBackdropDrawable}
+     * already reads {@code getActiveTheme()}; both sites must agree.
      *
      * False in every other case. It never infers Cybergram from colour values.
      */
@@ -102,7 +107,7 @@ public final class CybergramTheme {
             return true;
         }
         try {
-            Theme.ThemeInfo info = Theme.getCurrentTheme();
+            Theme.ThemeInfo info = Theme.getActiveTheme();
             if (info != null && THEME_NAME.equals(info.name)) {
                 return true;
             }
