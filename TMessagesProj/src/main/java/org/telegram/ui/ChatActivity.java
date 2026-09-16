@@ -218,6 +218,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramBackdropDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.EmojiThemes;
@@ -18674,9 +18675,28 @@ public class ChatActivity extends BaseFragment implements
             return super.dispatchKeyEvent(event);
         }
 
+        private CybergramBackdropDrawable cybergramBackdrop;
+        private int cybergramBackdropColor;
+
         protected Drawable getNewDrawable() {
             Drawable drawable = themeDelegate.getWallpaperDrawable();
-            return drawable != null ? drawable : super.getNewDrawable();
+            if (drawable == null) {
+                drawable = super.getNewDrawable();
+            }
+            // Cybergram default replaceable backdrop (owner ruling D4): decorate only the
+            // built-in flat Cybergram background colour, and only while the user has no
+            // wallpaper of their own — isEligible() returns false otherwise, so a user
+            // wallpaper is handed back untouched. The cached instance keeps BackgroundView's
+            // identity check (SizeNotifierFrameLayout.BackgroundView.onDraw) stable.
+            if (CybergramBackdropDrawable.isEligible(ChatActivity.this.getResourceProvider(), drawable)) {
+                int color = ((ColorDrawable) drawable).getColor();
+                if (cybergramBackdrop == null || cybergramBackdropColor != color) {
+                    cybergramBackdrop = new CybergramBackdropDrawable(color, AndroidUtilities.density);
+                    cybergramBackdropColor = color;
+                }
+                return cybergramBackdrop;
+            }
+            return drawable;
         }
 
         protected boolean getNewDrawableMotion() {

@@ -821,8 +821,14 @@ public class MessageDrawable extends Drawable {
      * tail side) is NOT reclaimed to avoid moving existing content geometry.
      */
     private void generateCybergramPath(Path path, Rect bounds, int padding) {
-        float top = bounds.top + padding;
-        float bottom = bounds.bottom - padding;
+        // Owner ruling D6: give distinct (unjoined) Cybergram text bubbles a little more
+        // clear space. Paint-only: bounds, measurement and the time/check cluster are
+        // untouched, and an edge joined to a neighbour of the same run keeps the upstream
+        // inset so grouped bubbles still join cleanly. TYPE_MEDIA is excluded because its
+        // photo/image y is independent of the drawable bounds.
+        float gap = currentType == TYPE_TEXT ? dp(CybergramTheme.BUBBLE_GAP_EXTRA_DP) : 0f;
+        float top = bounds.top + padding + (isTopNear ? 0f : gap);
+        float bottom = bounds.bottom - padding - (isBottomNear ? 0f : gap);
         float left;
         float right;
         if (currentType == TYPE_MEDIA) {

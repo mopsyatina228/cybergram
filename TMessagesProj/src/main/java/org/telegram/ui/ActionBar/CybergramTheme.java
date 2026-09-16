@@ -47,6 +47,23 @@ public final class CybergramTheme {
     /** Cybergram message outline stroke width, in dp. */
     public static final float BUBBLE_BORDER_WIDTH_DP = 1f;
 
+    /**
+     * Extra vertical inset, in dp, applied to each *unjoined* vertical edge of a Cybergram
+     * TYPE_TEXT bubble body (owner ruling D6, docs/OWNER_DECISIONS_2026-09-15.md §2 D6).
+     *
+     * It is a paint-only inset inside {@code MessageDrawable.generateCybergramPath(...)}: no
+     * bounds, measurement, scroll or metadata position changes, and edges joined to a
+     * neighbouring bubble of the same run ({@code isTopNear}/{@code isBottomNear}) keep the
+     * upstream inset, so grouped joins are preserved. Distinct bubbles therefore gain
+     * {@code 2 * BUBBLE_GAP_EXTRA_DP} of clear space between them.
+     *
+     * Ceiling before the bubble's own text collides with the outline: the emoji-only body
+     * starts at dp(6) against a painted top of dp(3)+E, so E must stay below dp(3).
+     * TYPE_MEDIA is deliberately excluded: a lowered media outline would expose the photo,
+     * whose y is set independently of the drawable bounds.
+     */
+    public static final float BUBBLE_GAP_EXTRA_DP = 2f;
+
     /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
     public static final int HEADER_RULE_ALPHA = 190;
 
