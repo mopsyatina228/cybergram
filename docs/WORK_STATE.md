@@ -1038,6 +1038,76 @@ send-state check marks already draw cyan (single = sent, double = read via
 `key_drawable_msgOutCheck`/`key_drawable_msgOutCheckRead`), so the owner must confirm what is missing
 before anything is changed.
 
+## Owner ruling round 3 — default backdrop, bubble spacing, Cyrillic verification (2026-09-16)
+
+Owner re-issued the 2026-09-15 instruction verbatim. Push/progress were re-verified first, then the
+ruled-but-open items were executed. Rulings: `docs/OWNER_DECISIONS_2026-09-15.md` (§8 records this
+round). Pass files: `docs/passes/D4_DEFAULT_BACKDROP.md`, `docs/passes/D6_BUBBLE_SPACING.md`;
+typography record: `docs/D5_TYPOGRAPHY_2026-09-16.md`.
+
+Starting state: `dev` == `origin/dev` == `95639e531`, working tree clean, no stash. **Nothing was
+unpushed** — verified against the live GitHub API
+(`api.github.com/repos/mopsyatina228/cybergram/commits/dev` returned `95639e531…`), not only the local
+remote-tracking ref. Note: `git fetch` from the sandbox still fails with
+`schannel: SEC_E_NO_CREDENTIALS`, which is why the remote state was confirmed over HTTPS instead.
+
+Production changes (presentation only):
+
+- **`ActionBar/CybergramBackdropDrawable.java` (new)** — owner ruling D4: a `ColorDrawable` subclass
+  that paints a faint cyan grid (1 px hairlines on a `dp(28)` cell, alpha 10/255, `BitmapShader`
+  `REPEAT`) plus one thin `CybergramTheme.DANGER` framing hairline inset `dp(5)` (alpha 24/255).
+  `isEligible(...)` requires Cybergram presentation **and** `Theme.ThemeInfo.overrideWallpaper == null`
+  **and** a plain `ColorDrawable` source, so a user wallpaper is returned untouched. Stateless and
+  allocation-free in `draw()`.
+- **`ChatActivity.java`** — the existing `ChatActivityFragmentView.getNewDrawable()` override now wraps
+  the wallpaper drawable with the cached backdrop when eligible, and returns the upstream drawable
+  verbatim otherwise. **No child View is added**, so there is no z-order or child-index change: the
+  hard-coded `videoPlayerContainer` (index 1), `emptyViewContainer` (index 3), `topUndoView`
+  (index 17) and the `1 + indexOfChild(chatListView)` `thanosEffect` anchor are all untouched. This
+  deliberately avoids the sibling-View seam recorded in `docs/passes/B7_CHAT_CANVAS_HUD.md`.
+- **`ActionBar/MessageDrawable.java` + `ActionBar/CybergramTheme.java`** — owner ruling D6: a
+  paint-only, join-aware vertical inset in `generateCybergramPath(...)`, gated by the new
+  `CybergramTheme.BUBBLE_GAP_EXTRA_DP = 2f` and applied to `TYPE_TEXT` only. Joined edges
+  (`isTopNear`/`isBottomNear`, which come from Telegram's own same-run determination at
+  `ChatActivity.java:37594-37630`) keep the upstream inset. No bounds, measurement, layout, scroll or
+  metadata position changes.
+- **`docs/CYBERGRAM_UI_SPEC.md`** — the palette section was amended to the ruled values (it still
+  listed the superseded `#E8D93A` / `#FF2E46` / `#E6F2F2` / `#7C8A91` set, contradicting shipped
+  code), and the label-copy policy (D3), the default backdrop (D4) and the inter-bubble spacing (D6)
+  were added. This closes the "reconcile the design target into the authority" item flagged on
+  2026-09-15.
+
+Build / install / runtime (x86_64, AVD `Cybergram_API36` / `emulator-5554`, pre-existing authenticated
+session reused — explicitly authorized by the owner):
+
+- wrapper build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` →
+  **BUILD SUCCESSFUL in 5m 38s**; APK `74,816,192` bytes, SHA-256
+  `A5B7DCDF6D394E216246B0965F1BFD73B97B1AE1A4330CD5554B34F25D278DEA`; `adb install -r` → **Success**;
+  normal launch, `dumpsys window` focused on `org.telegram.messenger.beta/…DefaultIcon`; FATAL/ANR
+  scan over the run window = **0 matches**; `Tools/validate_cybergram_theme.py` →
+  `unknown=0 duplicates=0 malformed=0`, `OK`; `git diff --check` clean. (A first build attempt was
+  cancelled early to fold in the grid colour change; it produced no APK and is not evidence.)
+- **D4 measured on device** (pixel analysis of `.local-artifacts/r2/13-chat-after.png`, git-excluded):
+  the chat background carries periodic brighter rows at a **74 px** spacing —
+  `74 / 2.625 = 28.19 dp`, i.e. exactly the `dp(28)` grid cell — and the framing hairline is present
+  at `x = 12..13` and `x = 1066..1067`, whose composite `(31, 9, 20)` is `#FF003C` at alpha 24 over
+  `#080A0F` (predicted `(31, 9, 19)`).
+- **D6 measured on device** (same chat, same scroll position, `.local-artifacts/r2/03-chat-before.png`
+  vs `15-saved-after.png`): the lower text bubble's bottom outline moved **y 587 → 581 (−6 px =
+  −2.29 dp)** while the following media bubble's top outline stayed at **y 607**; the clear gap grew
+  **20 px → 26 px (7.62 dp → 9.90 dp)**, i.e. exactly one `E` on the single unjoined edge. The media
+  bubble is untouched, as designed (`TYPE_MEDIA` is excluded).
+- **Joined-run regression check**: in the `Hermes` chat (many same-run bot bubbles), adjacent same-run
+  bubbles remain ~5–7 px apart, i.e. still merged; the inset did not separate them.
+- Not run in this round: the **non-Cybergram control screenshot**. Producing it requires mutating the
+  saved theme preference on the live authenticated session (the documented procedure used for B6/B0);
+  the gates for both D4 and D6 are static (`CybergramTheme.isCybergramPresentation`), and no
+  non-Cybergram claim is made here. This is recorded as open E evidence rather than implied.
+
+Re-flagged, deliberately **not** acted on: the B0 selected-filter-tab defect is still visible on this
+build (the selected folder chip renders as an empty plate). Its recorded state is
+`CONFIRMED DEFECT / FIX NOT AUTHORIZED`, and no authorization was inferred from this round's rulings.
+
 ## Explicitly deferred
 
 - package/application ID rename;

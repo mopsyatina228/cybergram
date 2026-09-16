@@ -33,16 +33,24 @@ The palette is deliberately small so it can be revised centrally.
 - Raised panel: `#111820`
 - Primary cyan: `#00E5FF`
 - Secondary cyan: `#33D6FF`
-- Primary amber/yellow: `#E8D93A`
-- Highlight amber/yellow: `#F2E75B`
-- Warning/red accent: `#FF2E46`
-- Main light text: `#E6F2F2`
-- Muted text: `#7C8A91`
-- Incoming bubble surface: `#282715`
-- Incoming selected surface: `#3E3C19`
+- Primary amber/yellow: `#FFB300`
+- Highlight amber/yellow: `#FFC94D`
+- Warning/red accent: `#FF003C`
+- Main light text: `#E6F7FF`
+- Muted text: `#6B7A8A`
+- Incoming bubble surface: `#2B220D`
+- Incoming selected surface: `#43330B`
 - Outgoing bubble surface: `#07252C`
 - Outgoing selected surface: `#063A44`
 - Outgoing light text: `#D7FCFF`
+- Hint/placeholder: `#5F6E7C`
+
+Amended 2026-09-16: the amber, red, light-text, muted and hint values above were ruled by the owner
+on 2026-09-15 ("палитру — подгоняем под референс", decision D2 in
+`docs/OWNER_DECISIONS_2026-09-15.md`) and are already implemented in `CybergramTheme` and
+`cybergram.attheme`; the incoming surfaces are the stable opaque composites recomputed from the ruled
+amber over `#080A0F`. Cyan, background, panel and raised values are unchanged because the reference
+agrees with them.
 
 The incoming/outgoing surface colours above are stable opaque composites chosen to reproduce a restrained translucent tint over the Cybergram background without relying on Telegram preserving per-bubble colour alpha through every drawable path.
 
@@ -108,6 +116,17 @@ client into a decorative display-font terminal:
 - a redistributable open font may still be evaluated later for headings or compact HUD labels, and
   message body text should remain on a highly readable family.
 
+Amended 2026-09-16 (owner ruling D5, `docs/OWNER_DECISIONS_2026-09-15.md` §2 D5): Cyrillic is a
+**first-class script, not a fallback**, in both the interface layer and the monospace HUD service
+layer. `sans-serif-condensed` was resolved on the target device and its backing
+`/system/fonts/Roboto-Regular.ttf` was measured to carry **256/256 Cyrillic U+0400-04FF, 48/48
+Cyrillic Supplement and 32/32 Cyrillic Ext-A** — the broadest coverage of any candidate in the tree
+— so the landed chrome already satisfies the ruling and nothing is bundled. The reference's own
+`Rajdhani` and `Share Tech Mono` are **disqualified**: neither ships Cyrillic. A geometric/OFL face
+(e.g. `IBM Plex Sans Condensed`, `Inter`) may replace the chrome family later, but only as an
+owner-supplied OFL asset with an APK-size and licence/NOTICE note; measurement and method are
+recorded in `docs/D5_TYPOGRAPHY_2026-09-16.md`.
+
 ## HUD decoration
 
 Decorative lines, corner marks, IDs and micro-labels must be drawn by a dedicated Cybergram layer or reusable component rather than hard-coded independently into screens.
@@ -115,6 +134,37 @@ Decorative lines, corner marks, IDs and micro-labels must be drawn by a dedicate
 Thin cyan rails represent neutral/interactive structure. Thin red rails may be used for strong framing/state emphasis. Amber is primarily semantic/identity/attention colour. None of these accents should become large opaque surfaces without a functional reason.
 
 Do not add fake security claims such as `SECURE CHAT` or `END-TO-END` to ordinary chats. Decorative labels must not misrepresent Telegram's actual security properties.
+
+Amended 2026-09-16 (owner ruling D3, `docs/OWNER_DECISIONS_2026-09-15.md` §2 D3): the *copy* policy
+for that layer is now explicit. **Allowed:** original, non-deceptive technical inscriptions in Latin
+script, uppercase, monospace/HUD style — explicitly including deliberately meaningless technical
+"abracadabra" (e.g. `CH 1.0.3.7`-class channel/index/frequency-shaped strings). Labels stay
+decorative, edge-anchored, non-interactive and never over text. **Still banned, hard:** `SECURE CHAT`,
+`END-TO-END`, lock/security iconography, invented IDs or status that misrepresent Telegram, any live
+network/connection claim (including `CONNECTION STABLE` and its signal bars), third-party
+brands/slogans, and any text drawn over message content. The paragraph above is unchanged by this
+amendment.
+
+### Chat default backdrop
+
+Amended 2026-09-16 (owner ruling D4, `docs/OWNER_DECISIONS_2026-09-15.md` §2 D4): a **default,
+replaceable** Cybergram background layer is allowed and expected — a faint technical grid (the same
+cyan family, ~0.04 alpha) plus *minimal* thin edge framing. Hard constraints: a user's own wallpaper
+always overrides it; it must never crop, tint away, re-scale or obscure a user wallpaper; it must not
+intercept touch; and it never sits over message text. It is not a wallpaper shipped through the theme
+system, so it is never persisted into a user-saved theme and never uploaded to an account — see
+`docs/passes/D4_DEFAULT_BACKDROP.md`. The chat-canvas *label* layer remains
+`docs/passes/B7_CHAT_CANVAS_HUD.md`, which is still `NOT AUTHORIZED`.
+
+### Inter-bubble spacing
+
+Amended 2026-09-16 (owner ruling D6, `docs/OWNER_DECISIONS_2026-09-15.md` §2 D6): distinct
+(unjoined) text bubbles carry a small extra vertical inset so that the clear space between separate
+messages moves toward the reference's ~12 px gap. The inset is paint-only inside
+`MessageDrawable.generateCybergramPath(...)`: message measurement, layout, scroll and the
+time/check cluster are unchanged, and edges joined to a neighbour of the same run keep the upstream
+inset so grouped bubbles still join cleanly. `TYPE_MEDIA` is excluded because its image position is
+independent of the drawable bounds. Contract and ceiling: `docs/passes/D6_BUBBLE_SPACING.md`.
 
 ## Implementation stages
 

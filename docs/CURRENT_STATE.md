@@ -1,6 +1,6 @@
 # Cybergram current state
 
-Last reconciled: 2026-09-14
+Last reconciled: 2026-09-16
 
 This is the concise recovery entrypoint for `mopsyatina228/cybergram`.
 
@@ -54,7 +54,10 @@ Durably landed on `dev`:
 - original launcher icon treatment;
 - Cybergram flat/angular dialog filter/folder tabs in `FilterTabsView`;
 - Cybergram flat/angular main bottom navigation (B1): dark chamfered outer panel, angular selected plate and angular long-press selector, replacing the rounded/glass capsule for main tabs only;
-- ordinary angular Cybergram service/date plate (B6): one compact chamfered `CybergramBubbleDrawable.buildPath(...)` envelope for the ordinary `ChatActionCell.backgroundPath` only, integrated on `dev` by fast-forward.
+- ordinary angular Cybergram service/date plate (B6): one compact chamfered `CybergramBubbleDrawable.buildPath(...)` envelope for the ordinary `ChatActionCell.backgroundPath` only, integrated on `dev` by fast-forward;
+- owner-ruled palette alignment (D2, 2026-09-15): reference amber `#FFB300`, service red `#FF003C`, muted `#6B7A8A`, UI text `#E6F7FF`, applied to `CybergramTheme` and `cybergram.attheme`;
+- default **replaceable** Cybergram backdrop (D4, 2026-09-16): a faint cyan grid plus minimal edge framing, implemented as a `ColorDrawable` subclass returned from `ChatActivity.ChatActivityFragmentView.getNewDrawable()`, so there is no child-view insertion and no z-order change; suppressed whenever the user has a wallpaper of their own;
+- distinct-bubble spacing (D6, 2026-09-16): a paint-only, join-aware vertical inset in `MessageDrawable.generateCybergramPath(...)`; measurement, layout, scroll, metadata and grouped joins are unchanged.
 
 No intentional Cybergram protocol, encryption, account/session, storage/database or networking redesign belongs to this state.
 
@@ -218,7 +221,7 @@ Optional chat-canvas HUD and secondary screens/onboarding remain later work. Rel
 
 B7 (optional chat-canvas HUD) now has a prepared bounded contract at `docs/passes/B7_CHAT_CANVAS_HUD.md`, status `SPEC PREPARED / NOT AUTHORIZED`. Its precondition (coherent primary message/service presentation) is met at E tier, and its ownership was re-audited rather than inferred: the chat canvas host is `ChatActivity.ChatActivityFragmentView` (used only by `ChatActivity`; `ChannelAdminLogActivity` has its own separate class), the wallpaper is `SizeNotifierFrameLayout.BackgroundView` at child index 0, and the landed `CybergramHeaderDecorationView` is the precedent to copy. Writing the spec authorizes nothing: B7 is optional, needs an explicit user priority decision, and `SizeNotifierFrameLayout` (19 hosts) must not receive the seam. B8 remains deferred.
 
-The owner's design target (`design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg`, commit `39c301bb4`) is reconciled against this state and the design authority in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It **confirms** the landed colour roles (cyan self / amber peer / red service), the near-black palette, thin bubble outlines, the compact service/date plate and edge-only non-interactive decoration. It **raises three pending owner decisions**: the message silhouette (the reference's rounded corners with a tail versus the landed angular geometry that `docs/CYBERGRAM_UI_SPEC.md` requires), two palette hues, and what service-label copy may say — `SECURE CHAT` / `END-TO-END` remain banned by spec line 117. **D1 was ruled by the owner on 2026-09-15: keep the landed chamfer**, so no silhouette change, Stage C re-opening or spec amendment follows from the reference; D2 (palette hues) and D3 (service-label copy) remain pending. That reconciliation authorizes no pass, and it re-verified B7's ownership anchors on 2026-09-15 (they hold, with two details corrected in the backlog).
+The owner's design target (`design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg`, commit `39c301bb4`) is reconciled against this state and the design authority in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It **confirms** the landed colour roles (cyan self / amber peer / red service), the near-black palette, thin bubble outlines, the compact service/date plate and edge-only non-interactive decoration. It **raises three pending owner decisions**: the message silhouette (the reference's rounded corners with a tail versus the landed angular geometry that `docs/CYBERGRAM_UI_SPEC.md` requires), two palette hues, and what service-label copy may say — `SECURE CHAT` / `END-TO-END` remain banned by spec line 117. **D1 was ruled by the owner on 2026-09-15: keep the landed chamfer**, so no silhouette change, Stage C re-opening or spec amendment follows from the reference. **All the owner's round-2 decisions are now ruled and recorded** in `docs/OWNER_DECISIONS_2026-09-15.md`: D2 (palette) and D7/D8 (composer outline, header rudiment) were implemented on 2026-09-15; D4 (default replaceable backdrop) and D6 (distinct-bubble spacing) were implemented on 2026-09-16; D5 (Cyrillic-first typography) was verified on the device on 2026-09-16 and resolved without a new asset; D3 (label copy) is a copy policy, not an implementation; and the owner's `флажки` item is still unresolved pending clarification. The design authority `docs/CYBERGRAM_UI_SPEC.md` was amended on 2026-09-16 to match the ruled palette, the label-copy policy, the default backdrop and the bubble spacing. That reconciliation authorizes no pass, and it re-verified B7's ownership anchors on 2026-09-15 (they hold, with two details corrected in the backlog).
 
 ## Documentation semantics
 

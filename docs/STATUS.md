@@ -1,15 +1,17 @@
 # Cybergram repository status
 
-Snapshot taken: 2026-09-15 21:35 +03:00
+Snapshot taken: 2026-09-16 (refreshed after the owner's round-3 rulings work; the previous snapshot was
+2026-09-15 21:35 +03:00)
 
-Snapshot base: `dev` at `09a6f2601e09497203fa4136c7853aeb286c4964`
-(`docs: B7 pre-flight - resolve blur-capture and insertion-index questions`, committed 2026-09-15
-21:30 +03:00), working tree clean.
+Snapshot base: `dev` at `95639e5311fa53002cb11f430e78f25c674b23d8`
+(`docs: record the owner's round-2 rulings and the reference-alignment evidence`) plus the uncommitted
+2026-09-16 working tree described below.
 
-State movement: this snapshot was first written against `9f8211503`, then refreshed after the design-target
-commit `39c301bb4`, the `docs/STATUS.md` commit made by a concurrent agent (`88fdf88bd`), the design-target
-reconciliation `7cf5b408d` and the B7 pre-flight `09a6f2601`. `dev` is now **4 commits ahead of
-`origin/dev`**, which still points at `9f8211503`; nothing is pushed.
+State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
+pushed; **that is no longer true.** A live GitHub API check on 2026-09-16
+(`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) returns `95639e531…`, so `dev`,
+`origin/dev` and the remote agree and **there is nothing unpushed**. The sandbox still cannot
+`git fetch` (`schannel: SEC_E_NO_CREDENTIALS`), which is why the remote was verified over HTTPS.
 
 **This document is descriptive only.** It is a point-in-time snapshot of what exists, what is
 unfinished and how validation is performed. It is **not** an authority: `docs/CURRENT_STATE.md` and
@@ -25,9 +27,9 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Baseline branch | `master` = Telegram Android 12.10.1 (7038), `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c` |
 | Integration branch | `dev` |
 | Preserved product-code cut | `52b8e219729d0a90dd3335165cf4ef44acf46e5e` |
-| Current `dev` HEAD | `09a6f2601e09497203fa4136c7853aeb286c4964` |
-| Working tree | clean; no untracked files; no stash; no `.git` lock files |
-| Local vs remote `dev` | local is **4 commits ahead**: `origin/dev` = `9f8211503…` (verified through `gh api`); every 2026-09-15 commit is unpushed |
+| Current `dev` HEAD | `95639e5311fa53002cb11f430e78f25c674b23d8` (pushed; equal to `origin/dev`) |
+| Working tree | **dirty on 2026-09-16**: owner round-3 changes uncommitted (D4 default backdrop, D6 bubble spacing, D5 record, authority/docs reconciliation); no stash; no `.git` lock files |
+| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `95639e531…`, verified against the live GitHub API; nothing unpushed |
 | Open pull requests | none; repository issues are disabled |
 | Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 
@@ -52,7 +54,20 @@ Durably landed on `dev` (all of it inside or before the preserved product cut, p
 - **B1** — flat/angular main bottom navigation (dark chamfered outer panel, angular selected plate and
   long-press selector) with explicit per-instance opt-in in `GlassTabView` and `MainTabsLayout`;
 - **B6** — ordinary angular service/date plate: one compact chamfered plate for the ordinary
-  `ChatActionCell.backgroundPath` only.
+  `ChatActionCell.backgroundPath` only;
+- **D2 / D7 / D8** (owner round 2, 2026-09-15): ruled reference palette (`AMBER #FFB300`,
+  `DANGER #FF003C`, muted `#6B7A8A`, UI text `#E6F7FF`), composer frame stroke `dp(1) → dp(1.5)`, and
+  removal of the two 8 dp cyan header "ticks";
+- **D4** (owner round 3, 2026-09-16): default **replaceable** chat backdrop — `CybergramBackdropDrawable`
+  (faint cyan `dp(28)` grid at alpha 10/255 plus a `dp(5)`-inset red framing hairline at alpha 24/255)
+  wired through the existing `ChatActivity.ChatActivityFragmentView.getNewDrawable()` override. No child
+  View, no z-order change, suppressed when the user has any wallpaper override;
+- **D6** (owner round 3, 2026-09-16): distinct-bubble spacing — a paint-only, join-aware `TYPE_TEXT`
+  inset in `MessageDrawable.generateCybergramPath(...)` via `CybergramTheme.BUBBLE_GAP_EXTRA_DP = 2f`;
+- **D5** (owner round 3, 2026-09-16): Cyrillic-first typography verified on the device — the font behind
+  `sans-serif-condensed` carries 256/256 Cyrillic, 48/48 Cyrillic Supplement and 32/32 Cyrillic Ext-A,
+  so no asset is bundled; the reference's `Rajdhani`/`Share Tech Mono` have no Cyrillic and are
+  disqualified. Record: `docs/D5_TYPOGRAPHY_2026-09-16.md`.
 
 Product-code footprint since the preserved cut is deliberately small: **4 files, +177/−9** over
 `TMessagesProj/src/main` — `ChatActionCell.java` (B6) and `GlassTabView.java` /

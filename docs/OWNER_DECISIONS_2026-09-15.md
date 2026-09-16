@@ -165,3 +165,33 @@ message geometry, measurement/layout, the non-Cybergram path, and B0's confirmed
   `docs/EXECUTION_BACKLOG.md:5` still say "last reconciled 2026-09-14"; B1 section of the backlog and
   `docs/passes/B1_MAIN_TABS_FLAT.md` still say `A PENDING` although the 2026-09-15 A run is PARTIAL;
   `docs/WORK_STATE.md` has no 2026-09-15 entry.
+
+## 8. Follow-up round (2026-09-16)
+
+The owner re-issued the same instruction verbatim on 2026-09-16 ("повторю инструкции целиком, на
+всякий случай"). Push and progress reassessment were re-verified first, then the ruled-but-open
+items were executed.
+
+**Verified before any code change:** `dev` == `origin/dev` == `95639e531`, confirmed against the live
+GitHub API (not just the local remote-tracking ref); working tree clean; no local-only commits; no
+stash. **There was nothing to push** — every commit from the 2026-09-15 round, including the round-2
+rulings commit, was already on `origin/dev`.
+
+| item | state after this round |
+|---|---|
+| `D1` silhouette | unchanged — keep the landed chamfer (no code change) |
+| `D2` palette | already implemented on 2026-09-15; **`docs/CYBERGRAM_UI_SPEC.md` palette section now amended to match the ruled values**, which removes an authority/implementation contradiction |
+| `D3` label copy | ruling recorded in the authority (allowed: neutral Latin technical copy incl. gibberish; banned list unchanged) |
+| `D4` default backdrop | **IMPLEMENTED** — `CybergramBackdropDrawable` + one `getNewDrawable()` wiring change; see `docs/passes/D4_DEFAULT_BACKDROP.md` |
+| `D5` typography | **VERIFIED ON DEVICE, decision made** — the device font behind `sans-serif-condensed` carries 256/256 Cyrillic, 48/48 Cyrillic Supplement and 32/32 Cyrillic Ext-A; `Rajdhani`/`Share Tech Mono` from the reference have no Cyrillic and are disqualified; the geometric upgrade needs an owner-supplied OFL asset (network closed here). See `docs/D5_TYPOGRAPHY_2026-09-16.md` |
+| `D6` bubble spacing | **IMPLEMENTED** — paint-only inset in `MessageDrawable.generateCybergramPath(...)`; see `docs/passes/D6_BUBBLE_SPACING.md` |
+| `D7` composer outline | already implemented on 2026-09-15 (stroke 1 → 1.5 dp) |
+| `D8` header rudiment | already implemented on 2026-09-15 (the two cyan chamfered ticks removed) |
+| owner `флажки` | **still unresolved** — see §4; the owner must confirm whether check marks or a literal flag/marker decoration is meant |
+
+**Re-raised, deliberately NOT acted on:** the B0 selected-filter-tab defect
+(`docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`) is still visible on the current build — the selected
+folder chip renders as an empty plate because the Cybergram seam paints an opaque plate after the
+labels. Its recorded status is `CONFIRMED DEFECT / FIX NOT AUTHORIZED`; that authorization was **not**
+assumed from this round's rulings, so no fix was applied. It is the highest-value one-line change
+available and needs an explicit go-ahead.

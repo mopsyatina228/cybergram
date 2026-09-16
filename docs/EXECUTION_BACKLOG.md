@@ -2,7 +2,7 @@
 
 Status: active planning / execution handoff
 
-Last reconciled: 2026-09-14
+Last reconciled: 2026-09-16
 
 Repository: `mopsyatina228/cybergram`
 
@@ -256,14 +256,27 @@ It **conflicts with or adds decisions about**:
   banned.**
 - **D4 — default wallpaper** (the owner's own label `D3`): a default replaceable Cybergram wallpaper
   with minimal framing is **allowed and expected**; a user wallpaper always overrides it.
+  **Implemented 2026-09-16** as a `ColorDrawable` subclass returned from
+  `ChatActivity.ChatActivityFragmentView.getNewDrawable()` — no child-view insertion, no z-order
+  change, gated on Cybergram presentation **and** `ThemeInfo.overrideWallpaper == null` **and** a plain
+  `ColorDrawable` source. Pass file: `docs/passes/D4_DEFAULT_BACKDROP.md`.
+- **D5 — Cyrillic-first typography**: **verified on device 2026-09-16.** The font `sans-serif-condensed`
+  actually resolves to on `Cybergram_API36` carries 256/256 Cyrillic, 48/48 Cyrillic Supplement and
+  32/32 Cyrillic Ext-A, so the landed chrome already satisfies the ruling; the reference's own
+  `Rajdhani` and `Share Tech Mono` have no Cyrillic and are disqualified. A geometric OFL face needs an
+  owner-supplied asset. Record: `docs/D5_TYPOGRAPHY_2026-09-16.md`.
+- **D6 — bubble spacing**: **implemented 2026-09-16** as a paint-only, join-aware inset in
+  `MessageDrawable.generateCybergramPath(...)`; measurement, layout, scroll, metadata and grouped
+  joins are untouched and `TYPE_MEDIA` is excluded. Pass file: `docs/passes/D6_BUBBLE_SPACING.md`.
 
 The binding record for these rulings, the owner's numbering clash, and the further taste rulings
 (palette, Cyrillic-first font, bubble spacing, composer outline, header-tick removal) is
-`docs/OWNER_DECISIONS_2026-09-15.md`.
+`docs/OWNER_DECISIONS_2026-09-15.md`, whose §8 records the 2026-09-16 follow-up round.
 
-Also unowned from the reference: a faint background pattern layer (must not become a wallpaper
-override) and a bundled monospace HUD font (spec line 108 allows an open, redistributable font later;
-nothing is bundled today).
+Also unowned from the reference: a bundled monospace HUD font (spec line 108 allows an open,
+redistributable font later; nothing is bundled today, and the HUD label layer that would consume it is
+B7, which is **not authorized**). The faint background pattern layer is no longer unowned: it was ruled
+as D4 and implemented.
 
 None of this authorizes a pass, and none of it changes B7's file scope. A pass does not authorize the
 next pass.
