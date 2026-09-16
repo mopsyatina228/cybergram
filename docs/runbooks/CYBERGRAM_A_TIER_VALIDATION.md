@@ -43,6 +43,13 @@ covers the E tier. **Never promote E evidence into A or P.**
 
 Source: `docs/passes/B0_FILTER_TABS_VALIDATION.md`. Validation only; no fixes.
 
+> **Status banner (2026-09-16):** B0 was **already run** on the authenticated AVD on 2026-09-15 and
+> **stopped on a confirmed defect** — the selected chip renders as an empty chamfered plate because the
+> Cybergram plate is opaque and drawn after the labels (`FilterTabsView.java:1531`). The fix is
+> `CONFIRMED DEFECT / FIX NOT AUTHORIZED` (`docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`). Do **not**
+> re-run this section as a blind "pending validation": it re-runs only **after** an authorized fix, and
+> the checklist below then covers the post-fix matrix.
+
 - [ ] selected and unselected tabs;
 - [ ] tapping between tabs;
 - [ ] horizontal overflow/scroll when enough folders exist;

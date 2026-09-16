@@ -232,11 +232,11 @@ Validation tiers and their current meaning are maintained in `docs/EXECUTION_BAC
 ## 7. Backlog relationship
 
 - B0: authenticated final FilterTabs validation; generic E/build baseline already exists.
-- B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances — INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING.
+- B1: main bottom navigation through `MainTabsActivity` + `MainTabsLayout` + explicitly opted-in main-tab `GlassTabView` instances — INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING.
 - B2: message-state evidence/ownership matrix.
 - B3/B4: conditional message-owner fixes derived only from B2.
 - B5: service/date audit and geometry decision — `INTEGRATED / AUDIT COMPLETE`; Strategy B selected.
-- B6: ordinary `ChatActionCell.backgroundPath` implementation derived only from B5 — `READY / AUTHORIZED FOR BOUNDED IMPLEMENTATION` (implemented 2026-09-14 on `feature/cybergram-service-date-angular` and integrated on `dev` by ff-only fast-forward with no squash/merge commit; status in `docs/EXECUTION_BACKLOG.md`, evidence in `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`).
+- B6: ordinary `ChatActionCell.backgroundPath` implementation derived only from B5 — `INTEGRATED ON dev` (implemented 2026-09-14 on `feature/cybergram-service-date-angular` and integrated on `dev` by ff-only fast-forward with no squash/merge commit; status in `docs/EXECUTION_BACKLOG.md`, evidence in `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`).
 - B7: optional chat-canvas HUD. Ownership re-audited 2026-09-14 and a bounded contract prepared at `docs/passes/B7_CHAT_CANVAS_HUD.md` (`SPEC PREPARED / NOT AUTHORIZED`): host is `ChatActivity.ChatActivityFragmentView` (`ChatActivity.java:17085`, used only by `ChatActivity`; `ChannelAdminLogActivity` has its own separate nested class at `:4493`), the wallpaper is `SizeNotifierFrameLayout.BackgroundView` added at child index 0 (`:368`), `chatListView` is added at `ChatActivity.java:6979`, and `SizeNotifierFrameLayout` is shared by 19 classes so the seam must not go there. `CybergramHeaderDecorationView` is the landed precedent.
 - B8: secondary screens/onboarding after primary flow is coherent.
 

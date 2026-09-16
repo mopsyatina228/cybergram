@@ -98,9 +98,13 @@ repository it is `D3`. See `docs/OWNER_DECISIONS_2026-09-15.md` §2 D3.
 
 ## 4. Work plan derived from the existing map
 
-The map already exists, so this is an execution order inside it, not a second roadmap. B0/B1/B2/B5/B6
-remain blocked on A-tier (an authenticated session); B4 stays `DESIGN-OPEN / NOT AUTHORIZED`; B8 stays
-deferred; R1 stays a separate release track.
+The map already exists, so this is an execution order inside it, not a second roadmap. Superseded
+later on 2026-09-15/16: the A-tier assumption below was **wrong** — the `Cybergram_API36` AVD is
+authenticated and the first A run partially validated B1 and confirmed the B0 defect
+(`docs/A_TIER_VALIDATION_2026-09-15.md`), so the live constraint is the read-marking side effect and
+owner time, not availability. The other statements here held at reconciliation time: B4 stays
+`DESIGN-OPEN / NOT AUTHORIZED`; B8 stays deferred; R1 stays a separate release track; D2/D3 were ruled
+and the authority was amended on 2026-09-16.
 
 | Order | Item | Status | Depends on |
 |---|---|---|---|
@@ -108,7 +112,7 @@ deferred; R1 stays a separate release track.
 | 2 | **D2 visual comparison** for the two candidate palettes | Not started | An E-tier run and a screenshot A/B; can run in parallel with B7 |
 | 3 | **Reconcile `DESIGN_TARGET.md` into the authority docs** (`CYBERGRAM_UI_SPEC.md` palette/typography/HUD sections, `CURRENT_STATE.md`) | Not started | D2 and D3 |
 | 4 | **D1 decision** — **ruled 2026-09-15: keep the landed chamfer**; no new Stage C spec is written and the item is closed | **Closed** | D1 ruling (done) |
-| 5 | A-tier validation debt (B0/B1/B2/B5/B6) | Blocked | An authenticated Telegram session |
+| 5 | A-tier validation debt (B0/B1/B2/B5/B6) | Available (the AVD is authenticated; B1 partially validated, B0 stopped on the defect) | Owner time and the read-marking side effect |
 | 6 | R1 install compatibility (Redmi Note 10S / MIUI 14.0.4) | Blocked | Exact `INSTALL_FAILED_*` text from the device |
 
 **Recommendation: start at item 1 (B7).** It is the only unblocked implementation work in the map, the

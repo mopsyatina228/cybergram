@@ -1,8 +1,8 @@
 # B1 — Cybergram flat/angular main tabs
 
-Status: INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING
+Status: INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING
 
-Type: production presentation change
+The `A PENDING` shown in the 2026-09-12 execution record below is historical: the 2026-09-15 authenticated run moved B1 to `A PARTIAL` (`docs/A_TIER_VALIDATION_2026-09-15.md`).
 
 Branch: `feature/cybergram-main-tabs-flat` (merged into `dev` by fast-forward, not squashed)
 
@@ -270,7 +270,7 @@ A branch may be technically ready for repository integration after clean static 
 
 ## Execution record (2026-09-12)
 
-Status: INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING.
+Status: INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING. (The `A PENDING` shown in the execution record above is historical; the 2026-09-15 authenticated run moved B1 to `A PARTIAL` — `docs/A_TIER_VALIDATION_2026-09-15.md`.)
 
 Integrated on `dev` by fast-forward from `feature/cybergram-main-tabs-flat`; the two commits were kept separate (no squash):
 

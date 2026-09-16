@@ -10,7 +10,7 @@ Upstream baseline: Telegram Android 12.10.1 (7038), `master` at `62b56a07ca7e30e
 
 Preserved product-code cut: `52b8e219729d0a90dd3335165cf4ef44acf46e5e`.
 
-Current documentation/validation HEAD at the start of this reconciliation: `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` on `dev`, equal to `origin/dev`. `dev` reached this point by **ff-only** integration of `feature/cybergram-service-date-angular` from base `cefa15eb7ba42d32b60d31ecf16d626f356344d5` — no squash and no merge commit — carrying production `f86ef812bb585db7c753335c7f573406e5129323`, debug control `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` and evidence/docs `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`. B6 is **integrated on `dev`**.
+Current documentation/validation HEAD **at the start of this reconciliation** was `0c4172346764c5622a5cdbfa06a4ce624d3cd56a` on `dev` (that was equal to `origin/dev` at that moment, but it is a historical snapshot and is **not** the live HEAD — re-check `git rev-parse HEAD`). At that point `dev` had reached `0c4172346` by **ff-only** integration of `feature/cybergram-service-date-angular` from base `cefa15eb7ba42d32b60d31ecf16d626f356344d5` — no squash and no merge commit — carrying production `f86ef812bb585db7c753335c7f573406e5129323`, debug control `53dd1368e478ce6a1f9845d1a1797ecfa4e3e0fc` and evidence/docs `0c4172346764c5622a5cdbfa06a4ce624d3cd56a`. B6 is **integrated on `dev`**. The live `dev` HEAD at this reconciliation was `937bbb8c5`.
 
 This file is the status/dependency index for remaining Cybergram work. Detailed implementation instructions live in `docs/passes/`; source-ownership evidence lives in `docs/REMAINING_UI_ARCHITECTURE_2026-09-11.md`; design authority remains `docs/CYBERGRAM_UI_SPEC.md`; chronological machine evidence remains `docs/WORK_STATE.md`.
 
@@ -213,7 +213,7 @@ Recommended seam (not executed): a dedicated non-interactive, runtime-gated chil
 
 B7 must be non-interactive, must draw nothing outside Cybergram presentation, must not reduce message readability or wallpaper/media behaviour, and must not become a large opaque surface or carry microtext/fake security claims (`docs/CYBERGRAM_UI_SPEC.md` lines 19, 21, 23, 25, 55, 113, 115, 117). Its ownership must be re-verified again at execution time — do not trust the prepared copy.
 
-The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. That document re-verified B7's ownership anchors at `39c301bb4` (they hold) and corrected two contract details: `20` files match `extends SizeNotifierFrameLayout` (19 hosts besides `ChatActivity`), and index `1` is not free at runtime because `videoPlayerContainer` is inserted there (`ChatActivity.java:12157`). Until decision D3 is ruled, B7 draws structural marks only and no label copy.
+The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. That document re-verified B7's ownership anchors at `39c301bb4` (they hold) and corrected two contract details: `20` files match `extends SizeNotifierFrameLayout` (19 hosts besides `ChatActivity`), and index `1` is not free at runtime because `videoPlayerContainer` is inserted there (`ChatActivity.java:12157`). B7 draws structural marks only and no label copy; decision D3 has since been ruled (neutral Latin technical copy including meaningless gibberish is allowed, security/live-network claims stay banned), so the copy blocker is cleared while B7 itself remains `NOT AUTHORIZED`.
 
 ### B8 — secondary client surfaces and onboarding
 
@@ -295,13 +295,43 @@ B0 can be completed whenever an authenticated session is available and does not 
 
 Recommended production order is B1 first (now integrated, with A/P tiers open), then the evidence-oriented B2 and B5 audits (which may run independently), followed only by the B3/B4/B6 tasks actually justified by those audits. B2 is complete with zero confirmed defects: B3 is closed and B4 is `DESIGN-OPEN / NOT AUTHORIZED`. B5 is integrated and selected Strategy B; B6's bounded implementation is **integrated on `dev`** (ff-only) at E tier, with A (and E-rich) still open. B7 now has a prepared contract but is **optional and NOT AUTHORIZED**; B8 remains deferred.
 
-**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date + rich states) are integrated at E tier, and B2 carries 15 `UNTESTED` account-dependent rows. The assumption that A-tier was unreachable has been **corrected**: the `Cybergram_API36` AVD hosts an authenticated session, and the first authenticated run on 2026-09-15 partially validated B1 (`docs/A_TIER_VALIDATION_2026-09-15.md`). B0, B2, B5 and B6 remain entirely untested on an authenticated surface; the tranches that require opening conversations carry a read-marking side effect and need an explicit owner decision. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B1 (main tabs) and B6 (ordinary service/date + rich states) are integrated at E tier, B0 (filter tabs) has been exercised at E tier and is **stopped on a confirmed defect** in the authenticated run, and B2 carries 15 `UNTESTED` account-dependent rows. The assumption that A-tier was unreachable has been **corrected**: the `Cybergram_API36` AVD hosts an authenticated session, and the first authenticated run on 2026-09-15 partially validated B1 (`docs/A_TIER_VALIDATION_2026-09-15.md`) and confirmed the B0 selected-chip defect. B2, B5 and B6 remain entirely untested on an authenticated surface (B0 *was* exercised on 2026-09-15 and stopped at the confirmed defect — see §B0); the tranches that require opening conversations carry a read-marking side effect and need an explicit owner decision. B7 does not reduce that debt, and preparing it is not a reason to defer closing it.
 
 B4 stays `DESIGN-OPEN / NOT AUTHORIZED`: neither the B6 integration nor the B7 preparation changes anything about B4, and next product work must not silently start B4.
 
 The 2026-09-15 owner design target is reconciled in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It adds three owner decisions (D1 message silhouette, D2 palette hues, D3 service-label copy) and authorizes nothing: **D1, D2 and D3 are all ruled by the owner (2026-09-15)** — see `docs/OWNER_DECISIONS_2026-09-15.md`, which also records the owner's `D3` = default wallpaper (repo `D4`) and the further taste rulings. B7 remains the only unblocked implementation pass in this queue and is still NOT AUTHORIZED.
 
 A pass does not authorize the next pass. The user chooses execution priority.
+
+### Code-review follow-ups (R-series, recorded 2026-09-16)
+
+A read-only review of the landed product code (`22dfacce0` and earlier Cybergram commits) produced five
+bounded findings. **None of them is authorized work**; they are recorded so they are not lost and so a
+future pass can pick them up. None changes any pass status above.
+
+- **R-GATE — presentation gate vs backdrop eligibility use different accessors (latent inconsistency).**
+  `CybergramTheme.isCybergramPresentation(...)` reads `Theme.getCurrentTheme()`
+  (`CybergramTheme.java:105`) while `CybergramBackdropDrawable.isEligible(...)` reads
+  `Theme.getActiveTheme()` (`CybergramBackdropDrawable.java:92`). Under day/night switching these can
+  resolve to different `ThemeInfo` objects, so the D4 backdrop's "user wallpaper always wins" check can
+  be evaluated against a different theme than the presentation gate. No crash and no confirmed
+  user-visible defect; smallest candidate fix is to align both sites on one accessor. **Unauthorized.**
+- **R-D6 — the `E < dp(3)` ceiling of `BUBBLE_GAP_EXTRA_DP` is documented but unenforced.** The value is
+  `2f` and the invariant lives only in javadoc; raising it (e.g. `4f`) would move the painted top past
+  the body/metadata inset and collide. Either clamp/assert the constant or leave it as a documented
+  caveat. **Unauthorized.**
+- **R-STUB — D4 grid may decorate the per-chat default-theme stub.** `ChatActivity.java:44139` returns
+  `new ColorDrawable(Color.BLACK)` for the `chatTheme.showAsDefaultStub` branch; with a null global
+  `overrideWallpaper` this can pass `isEligible`, so the faint grid/frame can appear on that stub.
+  Cosmetic only; decide whether a per-chat default theme is "a user wallpaper". **Unauthorized.**
+- **R-PERF — the Cybergram bubble border is rebuilt and stroked uncached every frame.** Per-bubble,
+  per-frame cost only; no correctness impact. **Unauthorized.**
+- **R-OVERLAY — every `ChatActivity`, including non-Cybergram, now carries a full-size inert overlay
+  view** (`CybergramHeaderDecorationView`) with a per-draw gate call. No functional change (the view is
+  non-interactive); a minor always-on cost. **Unauthorized.**
+
+Recorded findings only. Acting on any of these requires an explicit owner authorization, exactly like
+B0-FIX.
 
 ## Executor startup rule
 

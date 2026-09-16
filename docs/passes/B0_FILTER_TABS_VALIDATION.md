@@ -1,6 +1,8 @@
 # B0 — final FilterTabs authenticated validation
 
-Status: PARTIAL — E BASELINE PASSED / AUTHENTICATED FILTER-TABS MATRIX PENDING
+Status: PARTIAL — E BASELINE PASSED / A RUN STOPPED ON A CONFIRMED DEFECT / SELECTED FILTER TAB LOSES ITS LABEL / FIX NOT AUTHORIZED
+
+The 2026-09-15 authenticated run was stopped at a confirmed presentation defect: the **selected** filter/folder chip renders as an empty chamfered plate because the Cybergram selector plate is opaque (alpha 255 vs upstream 31) and is drawn after the labels (`FilterTabsView.java:1531`). Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`; status `CONFIRMED DEFECT / FIX NOT AUTHORIZED`. The remaining authenticated matrix must be re-run **after** an authorized fix, not before.
 
 Type: validation only
 

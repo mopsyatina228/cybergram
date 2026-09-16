@@ -1,6 +1,6 @@
 # Cybergram work state
 
-Last updated: 2026-09-13
+Last updated: 2026-09-16
 
 ## Repository authority
 
@@ -15,6 +15,13 @@ Branch policy:
 - `master` remains the upstream-aligned baseline.
 - `dev` is the Cybergram integration branch.
 - product changes should not be committed directly to `master`.
+
+Machine-evidence policy: the machine evidence behind this file (build logs, APKs, screenshots, device
+dumps, logcat) is deliberately **untracked**. It lives outside git in the git-excluded
+`.local-artifacts/` (`.git/info/exclude`) and the ignored `build/`. There is no CI and no committed
+build log, APK or test report, and the `TMessagesProj_AppTests` module has never been built. **A fresh
+clone carries no build evidence and cannot confirm any build or run** — re-execute the documented
+steps to reproduce it.
 
 ## Current implementation state
 
@@ -35,7 +42,7 @@ Added Cybergram-owned UI primitives/constants:
 - `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramTheme.java`
 - `TMessagesProj/src/main/java/org/telegram/ui/ActionBar/CybergramBubbleDrawable.java`
 
-`CybergramBubbleDrawable` is deliberately not wired into Telegram's `MessageDrawable` yet. It provides the first angular clipped-corner panel primitive while keeping the existing message renderer untouched until grouped messages, media clipping and selection behaviour can be tested on a real Android build.
+`CybergramBubbleDrawable` was originally left deliberately unwired from Telegram's `MessageDrawable` at this bootstrap stage. **This is historical:** it was wired in later by the Stage C / B2 angular-geometry work (`MessageDrawable.generateCybergramPath` → `CybergramBubbleDrawable.buildPath`), so the statement above is no longer true of the current tree.
 
 ## Theme-system findings
 
@@ -1084,9 +1091,18 @@ session reused — explicitly authorized by the owner):
   **BUILD SUCCESSFUL in 5m 38s**; APK `74,816,192` bytes, SHA-256
   `A5B7DCDF6D394E216246B0965F1BFD73B97B1AE1A4330CD5554B34F25D278DEA`; `adb install -r` → **Success**;
   normal launch, `dumpsys window` focused on `org.telegram.messenger.beta/…DefaultIcon`; FATAL/ANR
-  scan over the run window = **0 matches**; `Tools/validate_cybergram_theme.py` →
+  scan over the **post-install run window only** = **0 matches** (this scan did not cover the pre-build
+  "before" phase — see the unrecorded-ANR bullet below); `Tools/validate_cybergram_theme.py` →
   `unknown=0 duplicates=0 malformed=0`, `OK`; `git diff --check` clean. (A first build attempt was
   cancelled early to fold in the grid colour change; it produced no APK and is not evidence.)
+- **Unrecorded pre-build ANR (cause unknown; outside the scan above):** during the same round-3 device
+  session, the pre-build "before" phase produced `.local-artifacts/r2/00-anr-dialog.png`
+  (2026-09-16 09:49:53, git-excluded) — a live "Telegram Beta isn't responding / Close app / Wait"
+  dialog on Saved Messages. It predates the round-3 APK install (the post-install captures start at
+  `10-dialogs-after.png`, 10:05:35), so the post-install FATAL/ANR scan above does not cover it. No
+  logcat was captured for this event, so the cause is **unknown** and no root cause is claimed. This is
+  a **separate** event from the already-recorded 2026-09-15 input-dispatch ANR (upstream
+  `CalendarActivity.loadNext` → `FilePathDatabase.getPath`) in the "Owner ruling round 2" section.
 - **D4 measured on device** (pixel analysis of `.local-artifacts/r2/13-chat-after.png`, git-excluded):
   the chat background carries periodic brighter rows at a **74 px** spacing —
   `74 / 2.625 = 28.19 dp`, i.e. exactly the `dp(28)` grid cell — and the framing hairline is present

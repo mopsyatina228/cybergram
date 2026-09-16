@@ -32,7 +32,9 @@ Preserved product-code cut:
 
 `52b8e219729d0a90dd3335165cf4ef44acf46e5e`
 
-Subsequent preservation/planning/runbook commits do not imply product implementation unless explicitly stated. Always fresh-fetch `dev` rather than trusting a documentation HEAD copied into an old chat.
+Subsequent preservation/planning/runbook commits do not imply product implementation unless explicitly stated. Any documentation HEAD cited in a record is a historical snapshot of that record, not the current repository state; **re-check the branch, HEAD and `git status` yourself instead of trusting a hash copied into an old chat.**
+
+**Documentation drift note (2026-09-16 reconciliation):** a documentation HEAD/status hash quoted in an older record (for example `execution_backlog` line 13 citing `0c4172346`) is that record's *starting* snapshot, not the live HEAD. At the time of this reconciliation the live `dev` HEAD was `937bbb8c5`. Always resolve the current HEAD from git.
 
 ## Current product state
 
@@ -84,16 +86,16 @@ This proves current product-tree build/install/basic API 36 runtime. It does not
 
 In particular, the final `FilterTabsView` patch is no longer accurately described as “build validation pending”. Its state is:
 
-`LANDED / GENERIC E BUILD+RUNTIME BASELINE PASSED / AUTHENTICATED FILTER-TABS MATRIX PENDING`
+`A RUN STOPPED ON A CONFIRMED DEFECT / E BASELINE PASSED / CONFIRMED DEFECT: FIX NOT AUTHORIZED`
 
-B0 in `docs/passes/B0_FILTER_TABS_VALIDATION.md` now contains only the remaining authenticated-surface validation work.
+On the authenticated AVD the dialog filter/folder row works — chips switch, the list changes, `crash_matches=0` — but the **selected** chip renders as an empty chamfered plate with no title, because the Cybergram selector plate is opaque (alpha 255 versus upstream 31) and `FilterTabsView.drawChild` paints it after the labels (`FilterTabsView.java:1531`). Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`; status in `docs/EXECUTION_BACKLOG.md` is `CONFIRMED DEFECT / FIX NOT AUTHORIZED`. **No B0 fix has been applied and none is authorized by that record.** B0 itself is validation-only; the remaining work is the authenticated filter-tabs matrix *after* an authorized fix.
 
 B1 (main bottom navigation) is integrated on `dev` at
 `ab314d882b193ec5df9dd188b7e945ea7ef35c98` (production) plus `6802e001012f2cad8eddcc89d137c17534e8f1ba` (DEBUG-only fixture). Its state is:
 
-`INTEGRATED / STATIC PASS / E PASS / A PENDING / P PENDING`
+`INTEGRATED / STATIC PASS / E PASS / A PARTIAL / P PENDING`
 
-Its E evidence (build, install, launch, no FATAL/ANR, DEBUG opt-in fixture, APK size/SHA-256) is recorded in `docs/WORK_STATE.md` and `docs/passes/B1_MAIN_TABS_FLAT.md`. The authenticated main-tabs interaction matrix and physical-device confidence remain open, and the outer-panel footprint has no authenticated visual confirmation yet.
+Its E evidence (build, install, launch, no FATAL/ANR, DEBUG opt-in fixture, APK size/SHA-256) is recorded in `docs/WORK_STATE.md` and `docs/passes/B1_MAIN_TABS_FLAT.md`. The first authenticated run on 2026-09-15 confirmed the tab navigation, the cyan selected plate, the unread badge, the profile avatar, tab long-press, the angular dark outer panel and the non-Cybergram theme control (`crash_matches=0`) — record `docs/A_TIER_VALIDATION_2026-09-15.md` — so B1 is `A PARTIAL`, not `A PENDING`. Still open on the authenticated surface: the Calls enable/disable swap, show/hide animation, attach/bot tab geometry. Physical-device confidence remains `P PENDING`.
 
 B2 (message-state coverage and ownership audit) is complete and integrated on `dev` against
 `e000ef8286a406fc27fc55889c286ebbffef2890`: **14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED**
@@ -217,11 +219,34 @@ B2 has audited message-state ownership without production fixes: bodies (`TYPE_T
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 
-**The largest outstanding item is A-tier verification debt, not new presentation work.** B0 (filter tabs), B1 (main tabs) and B6 (ordinary service/date and rich states) are integrated at E tier, and B2 carries 15 `UNTESTED` account-dependent rows. The long-standing assumption that no authenticated session was available was **wrong**: the `Cybergram_API36` AVD is authenticated, and the first authenticated run on 2026-09-15 partially validated **B1** (tab navigation, angled nav panel, selected plate, badge, avatar, long-press; `crash_matches=0`) — record: `docs/A_TIER_VALIDATION_2026-09-15.md`. B0, B2, B5 and B6 remain untested on an authenticated surface; those tranches that require opening conversations mark messages as read in a live account and therefore need an explicit owner decision. E evidence must still not be read as product-surface validation.
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B1 (main tabs) is `A PARTIAL` and B6 is `A PENDING`; B0 is stopped on a confirmed defect with the fix unauthorized; and B2 carries 15 `UNTESTED` account-dependent rows. The long-standing assumption that no authenticated session was available was **wrong**: the `Cybergram_API36` AVD is authenticated, and the first authenticated run on 2026-09-15 partially validated **B1** (tab navigation, angled nav panel, selected plate, badge, avatar, long-press; `crash_matches=0`) while also confirming the B0 selected-chip defect — record: `docs/A_TIER_VALIDATION_2026-09-15.md`. B0 reached the authenticated filter row and stopped on the defect (it is not untested; it is blocked on an unauthorized fix); B2, B5 and B6 remain untested on an authenticated surface; those tranches that require opening conversations mark messages as read in a live account and therefore need an explicit owner decision. E evidence must still not be read as product-surface validation.
 
 B7 (optional chat-canvas HUD) now has a prepared bounded contract at `docs/passes/B7_CHAT_CANVAS_HUD.md`, status `SPEC PREPARED / NOT AUTHORIZED`. Its precondition (coherent primary message/service presentation) is met at E tier, and its ownership was re-audited rather than inferred: the chat canvas host is `ChatActivity.ChatActivityFragmentView` (used only by `ChatActivity`; `ChannelAdminLogActivity` has its own separate class), the wallpaper is `SizeNotifierFrameLayout.BackgroundView` at child index 0, and the landed `CybergramHeaderDecorationView` is the precedent to copy. Writing the spec authorizes nothing: B7 is optional, needs an explicit user priority decision, and `SizeNotifierFrameLayout` (19 hosts) must not receive the seam. B8 remains deferred.
 
-The owner's design target (`design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg`, commit `39c301bb4`) is reconciled against this state and the design authority in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It **confirms** the landed colour roles (cyan self / amber peer / red service), the near-black palette, thin bubble outlines, the compact service/date plate and edge-only non-interactive decoration. It **raises three pending owner decisions**: the message silhouette (the reference's rounded corners with a tail versus the landed angular geometry that `docs/CYBERGRAM_UI_SPEC.md` requires), two palette hues, and what service-label copy may say — `SECURE CHAT` / `END-TO-END` remain banned by spec line 117. **D1 was ruled by the owner on 2026-09-15: keep the landed chamfer**, so no silhouette change, Stage C re-opening or spec amendment follows from the reference. **All the owner's round-2 decisions are now ruled and recorded** in `docs/OWNER_DECISIONS_2026-09-15.md`: D2 (palette) and D7/D8 (composer outline, header rudiment) were implemented on 2026-09-15; D4 (default replaceable backdrop) and D6 (distinct-bubble spacing) were implemented on 2026-09-16; D5 (Cyrillic-first typography) was verified on the device on 2026-09-16 and resolved without a new asset; D3 (label copy) is a copy policy, not an implementation; and the owner's `флажки` item is still unresolved pending clarification. The design authority `docs/CYBERGRAM_UI_SPEC.md` was amended on 2026-09-16 to match the ruled palette, the label-copy policy, the default backdrop and the bubble spacing. That reconciliation authorizes no pass, and it re-verified B7's ownership anchors on 2026-09-15 (they hold, with two details corrected in the backlog).
+The owner's design target (`design/DESIGN_TARGET.md` and `design/references/design-target-hex-chat.jpg`, commit `39c301bb4`) is reconciled against this state and the design authority in `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`. It **confirms** the landed colour roles (cyan self / amber peer / red service), the near-black palette, thin bubble outlines, the compact service/date plate and edge-only non-interactive decoration. It **raised three owner decisions** — all since ruled: the message silhouette (the reference's rounded corners with a tail versus the landed angular geometry that `docs/CYBERGRAM_UI_SPEC.md` requires), two palette hues, and what service-label copy may say — `SECURE CHAT` / `END-TO-END` remain banned by spec line 117. **D1 was ruled by the owner on 2026-09-15: keep the landed chamfer**, so no silhouette change, Stage C re-opening or spec amendment follows from the reference. **All the owner's round-2 decisions are now ruled and recorded** in `docs/OWNER_DECISIONS_2026-09-15.md`: D2 (palette) and D7/D8 (composer outline, header rudiment) were implemented on 2026-09-15; D4 (default replaceable backdrop) and D6 (distinct-bubble spacing) were implemented on 2026-09-16; D5 (Cyrillic-first typography) was verified on the device on 2026-09-16 and resolved without a new asset; D3 (label copy) is a copy policy, not an implementation; and the owner's `флажки` item is still unresolved pending clarification. The design authority `docs/CYBERGRAM_UI_SPEC.md` was amended on 2026-09-16 to match the ruled palette, the label-copy policy, the default backdrop and the bubble spacing. That reconciliation authorizes no pass, and it re-verified B7's ownership anchors on 2026-09-15 (they hold, with two details corrected in the backlog).
+
+## Open blockers and decisions (2026-09-16)
+
+A reader resuming this project should treat the following as **not done and not authorized**:
+
+1. **B0-FIX — confirmed defect, fix not authorized.** The selected dialog filter/folder tab loses its
+   label; the smallest candidate fix is a draw-order change in `FilterTabsView`. Record:
+   `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Needs an explicit owner go-ahead plus an E + A re-run.
+2. **A-tier verification debt.** B1 is `A PARTIAL`; B2, B5 and B6 are untested on an authenticated
+   surface. Tranches that open conversations mark messages as read in a live account and therefore need
+   an explicit owner decision; checklist: `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`.
+3. **Owner item `флажки` is unresolved.** `docs/OWNER_DECISIONS_2026-09-15.md` §4/§8 records the
+   ambiguity (send-state check marks versus a literal flag/marker decoration); nothing was implemented.
+4. **Open E gaps.** D4/D6 have no non-Cybergram control screenshot; `E-rich` service/date states were
+   never faked pre-auth and are unavailable; the 2026-09-16 pre-build ANR is recorded in
+   `docs/WORK_STATE.md` with an unknown cause and no logcat.
+5. **Release/install issue.** The Redmi Note 10S / MIUI 14.0.4 arm64 install report is unresolved and
+   has no `INSTALL_FAILED_*` text; the universal 4-ABI APK is the compatibility probe (track R1).
+6. **R-series code-review follow-ups** (`R-GATE`, `R-D6`, `R-STUB`, `R-PERF`, `R-OVERLAY`) are recorded
+   in `docs/EXECUTION_BACKLOG.md` and are **not authorized**.
+
+None of the above is a reason to treat the landed presentation work as unvalidated at E tier; they are
+the open items that remain after the E-tier work.
 
 ## Documentation semantics
 

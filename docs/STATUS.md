@@ -3,16 +3,21 @@
 Snapshot taken: 2026-09-16 (refreshed after the owner's round-3 rulings work; the previous snapshot was
 2026-09-15 21:35 +03:00)
 
-Snapshot base: `dev` at `375482a2eb31c01f6de1c19f6e7f1eb44140cd69`
-(`docs: record the round-3 rulings, verify Cyrillic on device, reconcile the authority`), whose parent
-`22dfacce0092d6aaaf03f1a87d2cc5945eed1d97` carries the 2026-09-16 product changes (D4 default
-backdrop, D6 bubble spacing). Both are pushed; the working tree was clean at snapshot time.
+Snapshot base: `dev` at `937bbb8c597bf26fbdb833ed7b015c04404bd60c`
+(`docs: correct the round-3 status snapshot and the backdrop tile detail`); it supersedes the
+2026-09-16 snapshot that named `375482a2eb31c01f6de1c19f6e7f1eb44140cd69`. The 2026-09-16 product
+changes (D4 default backdrop, D6 bubble spacing) live in the earlier product commit
+`22dfacce0092d6aaaf03f1a87d2cc5945eed1d97`. Both commits are pushed; the working tree was clean at
+snapshot time. The hash that was current when round 3 was first recorded (`375482a2e`) is **not** the
+current HEAD — always re-check `git rev-parse HEAD`.
 
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
-pushed; **that is no longer true.** A live GitHub API check on 2026-09-16
-(`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) returns `95639e531…`, so `dev`,
+pushed; **that is no longer true.** The remote was checked on 2026-09-16 and later reconciled locally
+against the current HEAD (see the identity table below); at snapshot time the live
+(`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) value and the local HEAD agree
+(`937bbb8c5…`), so `dev`,
 `origin/dev` and the remote agree and **there is nothing unpushed**. The sandbox still cannot
-`git fetch` (`schannel: SEC_E_NO_CREDENTIALS`), which is why the remote was verified over HTTPS.
+`git fetch` (`schannel: SEC_E_NO_CREDENTIALS`), which is why the remote was originally verified over HTTPS.
 
 **This document is descriptive only.** It is a point-in-time snapshot of what exists, what is
 unfinished and how validation is performed. It is **not** an authority: `docs/CURRENT_STATE.md` and
@@ -28,9 +33,9 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Baseline branch | `master` = Telegram Android 12.10.1 (7038), `62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c` |
 | Integration branch | `dev` |
 | Preserved product-code cut | `52b8e219729d0a90dd3335165cf4ef44acf46e5e` |
-| Current `dev` HEAD | `375482a2eb31c01f6de1c19f6e7f1eb44140cd69` (pushed; equal to `origin/dev`) |
-| Working tree | clean at snapshot time; the round-3 product commit `22dfacce0` and docs commit `375482a2e` are both pushed |
-| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `375482a2e…`, verified against the live GitHub API; nothing unpushed |
+| Current `dev` HEAD | `937bbb8c597bf26fbdb833ed7b015c04404bd60c` (pushed; equal to `origin/dev`) |
+| Working tree | clean at snapshot time; the round-3 product commit `22dfacce0` and the docs commits `375482a2e` / `937bbb8c5` are all pushed |
+| Local vs remote `dev` | **in sync** — `dev` == `origin/dev` == `937bbb8c5…`, verified locally with `git rev-list --left-right --count`; nothing unpushed |
 | Open pull requests | none; repository issues are disabled |
 | Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 
@@ -41,7 +46,7 @@ Retained side refs: `feature/cybergram-main-tabs-flat` (`6802e0010`),
 
 ## 2. What already exists
 
-Durably landed on `dev` (all of it inside or before the preserved product cut, plus two later passes):
+Durably landed on `dev` (all of it inside or before the preserved product cut, plus the later B1/B6 and D2/D4/D6/D7/D8 passes):
 
 - built-in Cybergram theme, `.attheme` palette and fresh-install day/night default that does not
   overwrite an existing user choice;
@@ -70,17 +75,22 @@ Durably landed on `dev` (all of it inside or before the preserved product cut, p
   so no asset is bundled; the reference's `Rajdhani`/`Share Tech Mono` have no Cyrillic and are
   disqualified. Record: `docs/D5_TYPOGRAPHY_2026-09-16.md`.
 
-Product-code footprint since the preserved cut is deliberately small: **4 files, +177/−9** over
-`TMessagesProj/src/main` — `ChatActionCell.java` (B6) and `GlassTabView.java` /
-`MainTabsActivity.java` / `MainTabsLayout.java` (B1). Everything else is already inside the cut, or is
-documentation and debug-source-set tooling.
+Product-code footprint since the preserved cut is **11 files, +473/−145** over `TMessagesProj/src/main`:
+`cybergram.attheme` (D2 palette), `CybergramBackdropDrawable.java` (new, D4), `CybergramTheme.java`
+(D2/D6 constants), `MessageDrawable.java` (D6 seam), `ChatActionCell.java` (B6), `ChatActivity.java`
+(D4 wiring), `ChatActivityEnterView.java` (D7), `GlassTabView.java` / `MainTabsActivity.java` /
+`MainTabsLayout.java` (B1) and `CybergramHeaderDecorationView.java` (D8 tick removal). Excluding the
+`.attheme` asset the code footprint is 10 files, +374/−46. An earlier note claimed "4 files, +177/−9":
+that figure counted only the B1 and B6 production files (`ChatActionCell` 22/1, `GlassTabView` 49/3,
+`MainTabsActivity` 58/1, `MainTabsLayout` 48/4 = 177/9) and is **superseded** — it never included the
+D2/D7/D8 and D4/D6 product changes. Everything else is documentation and debug-source-set tooling.
 
 Debug-only tooling (never in release sources or manifests):
 
 - `TMessagesProj_App/src/debug/.../CybergramShowcaseActivity.java` — showcase host with optional modes;
 - `.../CybergramB2MessageStatesFixture.java`, `.../CybergramB5ServiceDateFixture.java`.
 
-### Owner design target (landed 2026-09-15, not pushed)
+### Owner design target (landed 2026-09-15; pushed)
 
 `design/DESIGN_TARGET.md` (written in Russian, unlike the older docs) records the owner's reference
 screenshot `design/references/design-target-hex-chat.jpg` and derives from it colour roles
@@ -92,10 +102,10 @@ It is reconciled against the authority and the landed code in
 `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md`, which confirms the landed colour roles, palette, thin
 outlines, service/date plate and edge-only decoration, and raises three pending owner decisions
 (**D1** message silhouette, **D2** two palette hues, **D3** service-label copy). The design authority
-itself has **not** been amended — that requires an owner ruling, so `docs/CYBERGRAM_UI_SPEC.md` remains
-unchanged and controlling.
+was later **amended on 2026-09-16** to match the ruled palette, the label-copy policy, the default
+backdrop and the bubble spacing, so `docs/CYBERGRAM_UI_SPEC.md` is the amended controlling authority.
 
-Work recorded on 2026-09-15 (all docs-only, all unpushed):
+Work recorded on 2026-09-15 (all docs-only; pushed):
 
 - `docs/DESIGN_TARGET_RECONCILIATION_2026-09-15.md` — reference versus spec versus landed code, the three
   decisions, and the work plan mapped onto the existing pass queue (commit `7cf5b408d`);
@@ -103,8 +113,8 @@ Work recorded on 2026-09-15 (all docs-only, all unpushed):
   statically: blur capture never includes a `contentView` sibling of `chatListView`, and
   `indexOfChild(chatListView)` is the wallpaper-independent insertion anchor, with the hard-coded sibling
   indices (`1`, `3`, `17`) recorded for runtime proof (commit `09a6f2601`);
-- `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md` — the pending B0/B1/B2/B5/B6 authenticated matrices
-  consolidated into one executable checklist.
+- `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md` — the remaining B0/B2/B5/B6 and the still-open B1
+  authenticated items consolidated into one executable checklist.
 
 Evidence lives in `docs/WORK_STATE.md` (chronological), `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`,
 `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md`, `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`, and
@@ -114,7 +124,7 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 
 | Pass | Status | Outstanding |
 |---|---|---|
-| B0 | `A RUN STOPPED ON A CONFIRMED DEFECT` | the selected filter/folder tab draws an empty plate — its label is painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); record `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Fix **not** authorized |
+| B0 | `A RUN STOPPED ON A CONFIRMED DEFECT / FIX NOT AUTHORIZED` | the selected filter/folder tab draws an empty plate — its label is painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); record `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Fix **not** authorized |
 | B1 | `E PASS / A PARTIAL / P PENDING` | navigation and visual core confirmed on an authenticated surface on 2026-09-15, plus reselect/scroll-to-top, the upstream tab long-press popups and the **non-Cybergram theme control** (`docs/A_TIER_VALIDATION_2026-09-15.md` §7-8); the long-drag selector is unreachable on the phone layout and rotation is `N/A` (portrait-locked); still open: Calls swap, show/hide animation, attach/bot geometry |
 | B2 | `AUDIT COMPLETE` | 15 account-dependent `UNTESTED` rows (reply layout, reaction interaction, metadata, service/date adjacency) |
 | B3 | `CLOSED / NOT REQUIRED` | nothing — do not reopen |
@@ -125,12 +135,14 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 | B8 | `DEFERRED / STAGE F` | secondary surfaces and onboarding |
 | R1 | `SEPARATE TRACK` | package/applicationId decision; signing/Firebase/keystore; unresolved Redmi Note 10S / MIUI 14.0.4 install report |
 
-The dominant outstanding item is **A-tier verification debt**: B0, B1 and B6 are integrated at E tier
-only, and B2 carries 15 `UNTESTED` rows. The first authenticated run, on 2026-09-15, partially validated
-**B1** — the tab navigation and the Cybergram nav presentation are confirmed on a real account — while
-**B0, B2, B5 and B6 remain entirely untested on an authenticated surface**; the account-dependent
-tranches that require opening conversations are flagged for an owner decision because they mark messages
-as read. The debt is executable as a single checklist in
+The dominant outstanding item is **A-tier verification debt**: B1 is `A PARTIAL`, B6 is `A PENDING`,
+B0 is stopped on a confirmed defect whose fix is not authorized, and B2 carries 15 `UNTESTED` rows.
+The first authenticated run, on 2026-09-15, partially validated
+**B1** — the tab navigation and the Cybergram nav presentation are confirmed on a real account — and
+also reached the B0 filter row, where it **confirmed the selected-chip defect** (so B0 is blocked on an
+unauthorized fix, not untested). **B2, B5 and B6 remain entirely untested on an authenticated surface**;
+the account-dependent tranches that require opening conversations are flagged for an owner decision
+because they mark messages as read. The debt is executable as a single checklist in
 `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`, and the recorded run is
 `docs/A_TIER_VALIDATION_2026-09-15.md`. Two known caveats are carried forward deliberately: `E-rich` was never faked, and the
 `ThemePreviewActivity` foreign-theme preview-scope question is answered for today's code but keeps a
@@ -156,7 +168,7 @@ Recorded so they are not lost, not raised as confirmed defects:
 - `Tools/validate_cybergram_theme.py` documents its own usage as `tools/…` (lowercase). Case-sensitive
   filesystems need `Tools/…`.
 
-### Design target vs design authority (open decision, not a defect)
+### Design target vs design authority (resolved 2026-09-15)
 
 `design/DESIGN_TARGET.md` describes the reference's service-label layer and lists among its examples
 `SECURE CHAT`, `END-TO-END`, a lock icon and `CONNECTION STABLE`. It rules out the borrowed Cyberpunk
@@ -165,10 +177,11 @@ explicitly exclude the security-claim microtext.
 
 `docs/CYBERGRAM_UI_SPEC.md` line 117 forbids exactly that, and `docs/passes/B7_CHAT_CANVAS_HUD.md`
 repeats the ban as a hard stop: no `SECURE CHAT`, no `END-TO-END`, no invented IDs that misrepresent
-Telegram. This is a conflict between a newly landed reference document and the design authority that
-has to be resolved by a human decision — the authority is currently silent about the design target, and
-the design target does not mention the authority. Until it is resolved, no implementation should treat
-the service-label examples as approved copy.
+Telegram. The owner ruled this on 2026-09-15 (decision D3, `docs/OWNER_DECISIONS_2026-09-15.md` §2):
+**neutral Latin technical copy, including deliberately meaningless technical gibberish, is allowed;
+`SECURE CHAT`, `END-TO-END`, lock/security iconography, live-network claims and misrepresenting IDs
+stay banned.** The authority was amended to match on 2026-09-16. B7's copy blocker is cleared, but B7
+itself remains `NOT AUTHORIZED`.
 
 ## 4. What runs, and how
 
@@ -178,7 +191,8 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`:
 - **A** — authenticated production UI on emulator or device; required for account-dependent surfaces;
 - **P** — physical device / OEM confidence.
 
-Never promote E evidence into A or P. No integrated Cybergram surface has A evidence today.
+Never promote E evidence into A or P. Only B1 carries partial A evidence today
+(`docs/A_TIER_VALIDATION_2026-09-15.md`); no Cybergram surface has full A or any P evidence.
 
 ### 4.1 Theme palette validator (no Android toolchain required)
 

@@ -63,8 +63,7 @@ authenticated surface, the interaction edge cases above are not.
 
 ## 4. Not covered by this record
 
-- **B0** (filter tabs authenticated matrix) — not started, although the production dialogs surface with its
-  folder row is reachable and visible in the B1 Chats screenshots;
+- **B0** (filter tabs authenticated matrix) — **partially exercised**: the production dialogs surface was reached and §8 confirms the selected-chip defect, but the rest of the B0 matrix was not run because the run stopped at that defect (fix not authorized); note this supersedes the earlier "not started" wording;
 - **B2** — all 15 account-dependent `UNTESTED` rows remain untested;
 - **B5/B6** — the authenticated ordinary and rich service/date rows remain untested;
 - **P** — no physical device was involved; nothing here is OEM/Samsung evidence.
