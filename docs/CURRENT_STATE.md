@@ -86,9 +86,9 @@ This proves current product-tree build/install/basic API 36 runtime. It does not
 
 In particular, the final `FilterTabsView` patch is no longer accurately described as “build validation pending”. Its state is:
 
-`A RUN STOPPED ON A CONFIRMED DEFECT / E BASELINE PASSED / CONFIRMED DEFECT: FIX NOT AUTHORIZED`
+`FIX LANDED 2026-09-16 / E BUILD+INSTALL+VISUAL PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN`
 
-On the authenticated AVD the dialog filter/folder row works — chips switch, the list changes, `crash_matches=0` — but the **selected** chip renders as an empty chamfered plate with no title, because the Cybergram selector plate is opaque (alpha 255 versus upstream 31) and `FilterTabsView.drawChild` paints it after the labels (`FilterTabsView.java:1531`). Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`; status in `docs/EXECUTION_BACKLOG.md` is `CONFIRMED DEFECT / FIX NOT AUTHORIZED`. **No B0 fix has been applied and none is authorized by that record.** B0 itself is validation-only; the remaining work is the authenticated filter-tabs matrix *after* an authorized fix.
+On the authenticated AVD the dialog filter/folder row works — chips switch, the list changes, `crash_matches=0` — but the **selected** chip rendered as an empty chamfered plate with no title, because the Cybergram selector plate is opaque (alpha 255 versus upstream 31) and `FilterTabsView.drawChild` painted it after the labels (`FilterTabsView.java:1531`). Finding: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. **The defect is fixed** by the bounded B0-FIX change (production commit `3911690fe`, ff-only into `dev`; E evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`): the Cybergram plate is now drawn before the labels for the Cybergram branch only, and E captures show the selected `All Chats` chip and then the selected `12412412 104` chip rendered with their labels. B0 itself is validation-only; the remaining work is the authenticated filter-tabs matrix (including the fixed selection behaviour, horizontal overflow/scroll and edit/reorder/delete mode) plus the non-Cybergram control re-run.
 
 B1 (main bottom navigation) is integrated on `dev` at
 `ab314d882b193ec5df9dd188b7e945ea7ef35c98` (production) plus `6802e001012f2cad8eddcc89d137c17534e8f1ba` (DEBUG-only fixture). Its state is:

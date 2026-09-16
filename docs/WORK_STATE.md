@@ -1136,6 +1136,75 @@ Re-flagged, deliberately **not** acted on: the B0 selected-filter-tab defect is 
 build (the selected folder chip renders as an empty plate). Its recorded state is
 `CONFIRMED DEFECT / FIX NOT AUTHORIZED`, and no authorization was inferred from this round's rulings.
 
+## B0-FIX and R-GATE — owner-delegated bounded fixes (2026-09-16, later session)
+
+Authorization: the repository owner instructed this session to continue the work and determine the tasks
+(2026-09-16). The two selected items were the highest-value unauthorized entries in the queue: the
+confirmed B0 selected-filter-tab defect and the code-review finding **R-GATE**. Both changes are
+presentation-layer, independently bounded, and carry their own evidence records
+(`docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`, `docs/R_GATE_IMPLEMENTATION_2026-09-16.md`).
+
+Starting state: `dev` = `3f509b8eb`, working tree clean, 2 commits ahead of `origin/dev`. GitHub is not
+reachable from the sandbox (TLS fails with `SEC_E_NO_CREDENTIALS`), so the remote state could not be
+re-verified this round; a host-side push is required for everything below.
+
+### B0-FIX — selected filter-tab label
+
+- Production commit `3911690fe` on `fix/cybergram-filter-tabs-plate`, **fast-forward into `dev`** (no
+  squash, no merge commit). `FilterTabsView.java` only, **+9/−1**: when the Cybergram gate is true the
+  selector plate is now drawn **before** `super.drawChild`, i.e. behind the tab labels; when the gate is
+  false the expression reduces to the previous `child == listView`, so the upstream order and its alpha 31
+  are untouched.
+- E build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64` → **BUILD SUCCESSFUL in 7m 17s**;
+  APK `73,844,985` bytes, SHA-256
+  `E817B00FB4AE053F9BF034BFB9B2C5EE9EBD6C9FF796B9DAD7F832DA94D00538`; `adb install -r` → **Success**.
+- Visual result (git-excluded captures under `.local-artifacts/r3/`): `08_dialogs_filterrow.png` — the
+  selected `All Chats 2` chip renders with its label and counter while the unselected chips keep theirs;
+  `11_third_chip_selected.png` — after tapping the third chip, `12412412 104` is selected *and* legible and
+  `All Chats 2` is back to its labelled unselected state; `07_dialogs_clean.png` — the second
+  `FilterTabsView` surface (search tabs) also renders the selected `Chats` chip with its label.
+- Logcat over the validated run: `fatal_matches=0`, `anr_matches=0`, `crash_matches=0`
+  (`/.local-artifacts/r3/logcat_b0fix_full.txt`).
+- **ANR disclosure:** one ANR occurred on the **first cold start after install**, before any filter-row
+  interaction — `Input dispatching timed out … Waited 5003ms for FocusEvent(hasFocus=false)`
+  (`/.local-artifacts/r3/anr_logcat.txt`). It was dismissed with *Wait*, the app was closed and relaunched
+  warm, after which the run above was captured. No trace-level causation analysis was done; the event is
+  reported, not explained. A comparable cold-start ANR is already recorded for round 3
+  (`/.local-artifacts/r2/00-anr-dialog.png`).
+- Not done: the non-Cybergram **control** re-run (needs a persisted theme mutation, deliberately not
+  performed; the non-Cybergram branch is statically unchanged) and the A re-run. `uiautomator` does not
+  expose the custom-drawn chips as nodes, so the verification is screenshot-based, as in the defect record.
+
+### R-GATE — presentation gate accessor
+
+- Production commit `4629e98a3` on `fix/cybergram-theme-gate-accessor`, **fast-forward into `dev`**.
+  `CybergramTheme.java` only, **+7/−2**: `isCybergramPresentation()` now reads `Theme.getActiveTheme()`
+  (`currentTheme`) instead of `Theme.getCurrentTheme()` (`currentDayTheme`,
+  `Theme.java:6444-6446`; active accessor `Theme.java:6460-6462`), matching
+  `CybergramBackdropDrawable.isEligible()`. This removes the state where Cybergram selected in the **night**
+  slot suppressed the whole Cybergram chrome and the D4 backdrop, and the mirror state where the chrome
+  could be drawn over a non-Cybergram night palette.
+- E build → **BUILD SUCCESSFUL in 3m 1s**; APK `79,183,709` bytes, SHA-256
+  `BF62D0150ED1FC05287B6533268616522C06DB902F1F2CE20D27EC3899670F52`; `adb install -r` → **Success**;
+  the APK carries only the `x86_64` ABI (41.2 MB of `lib/`).
+- Regression evidence: `.local-artifacts/r3/21_rgate_dialogs.png` (full Cybergram dialogs chrome still
+  active, selected filter chip labelled) and `.local-artifacts/r3/24_rgate_chat_clean.png` (`Saved
+  Messages` chat with Cybergram header/bubbles/composer frame **and** the D4 backdrop grid visible, i.e.
+  the gate and `isEligible()` now agree on the active theme). Logcat: `fatal_matches=0`, `anr_matches=1`.
+- **ANR disclosure:** the single ANR is the run's own tap on `Saved Messages` —
+  `Input dispatching timed out … Waited 5004ms for MotionEvent(… pointers=[0: (544.0, 941.0)])`; the debug
+  build exceeded the input-dispatch budget while opening the chat. Dismissed with *Wait*; the chat then
+  rendered normally (capture above). No trace-level analysis; reported, not explained.
+- Not done: the two night-slot scenarios (Cybergram as **night** theme; Cybergram as day with another night
+  theme active) — reproducing them requires a persisted theme-slot mutation, and the repository
+  deliberately stopped the settings-mutation line. The accessor semantics are verified at source instead.
+- Grep in this round found no other Cybergram file reading `Theme.getCurrentTheme()`; the gate remains the
+  single funnel for every call site listed in the review.
+
+Footprint after both changes: **12 files, +489/−148** over `TMessagesProj/src/main` versus the preserved
+cut `52b8e219…` (11 files, +390/−49 excluding the `.attheme` asset). This supersedes the round-3 note that
+declined to act on the filter-tab defect and the R-series entry that listed R-GATE as unauthorized.
+
 ## Explicitly deferred
 
 - package/application ID rename;

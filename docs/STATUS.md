@@ -13,6 +13,13 @@ snapshot time. Two earlier hashes named in this file are **historical, not curre
 this snapshot was itself committed afterwards, so the live HEAD has advanced past `937bbb8c5`;
 **always re-check `git rev-parse HEAD`** rather than trusting any hash in this file.
 
+Update (2026-09-16, later session): `dev` advanced past the base above with two owner-authorized bounded
+fixes and the documents that record them — **B0-FIX** (`3911690fe`, `FilterTabsView`, evidence
+`docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`) and **R-GATE** (`4629e98a3`, `CybergramTheme`, evidence
+`docs/R_GATE_IMPLEMENTATION_2026-09-16.md`). The working tree was clean when this note was written. The
+local branch is ahead of `origin/dev` and **nothing could be pushed from this sandbox**: GitHub TLS from
+the executor fails with `SEC_E_NO_CREDENTIALS`, so a host-side push is required.
+
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
 pushed; **that is no longer true.** The remote was checked on 2026-09-16 and reconciled locally the same
 day; at snapshot time the live (`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) value, the
@@ -74,17 +81,25 @@ Durably landed on `dev` (all of it inside or before the preserved product cut, p
 - **D5** (owner round 3, 2026-09-16): Cyrillic-first typography verified on the device — the font behind
   `sans-serif-condensed` carries 256/256 Cyrillic, 48/48 Cyrillic Supplement and 32/32 Cyrillic Ext-A,
   so no asset is bundled; the reference's `Rajdhani`/`Share Tech Mono` have no Cyrillic and are
-  disqualified. Record: `docs/D5_TYPOGRAPHY_2026-09-16.md`.
+  disqualified. Record: `docs/D5_TYPOGRAPHY_2026-09-16.md`;
+- **B0-FIX** (2026-09-16, E tier): the Cybergram filter-tab plate is drawn before the tab labels, so the
+  selected dialog filter/folder chip renders its title again (production commit `3911690fe`, ff-only into
+  `dev`; evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`);
+- **R-GATE** (2026-09-16, E tier): the Cybergram presentation gate now reads `Theme.getActiveTheme()`
+  instead of the day slot (`Theme.getCurrentTheme()`), matching `CybergramBackdropDrawable.isEligible`
+  (production commit `4629e98a3`, ff-only into `dev`; evidence `docs/R_GATE_IMPLEMENTATION_2026-09-16.md`).
 
-Product-code footprint since the preserved cut is **11 files, +473/−145** over `TMessagesProj/src/main`:
+Product-code footprint since the preserved cut is **12 files, +489/−148** over `TMessagesProj/src/main`:
 `cybergram.attheme` (D2 palette), `CybergramBackdropDrawable.java` (new, D4), `CybergramTheme.java`
-(D2/D6 constants), `MessageDrawable.java` (D6 seam), `ChatActionCell.java` (B6), `ChatActivity.java`
-(D4 wiring), `ChatActivityEnterView.java` (D7), `GlassTabView.java` / `MainTabsActivity.java` /
-`MainTabsLayout.java` (B1) and `CybergramHeaderDecorationView.java` (D8 tick removal). Excluding the
-`.attheme` asset the code footprint is 10 files, +374/−46. An earlier note claimed "4 files, +177/−9":
+(D2/D6 constants, R-GATE gate accessor), `MessageDrawable.java` (D6 seam), `ChatActionCell.java` (B6),
+`ChatActivity.java` (D4 wiring), `ChatActivityEnterView.java` (D7), `GlassTabView.java` /
+`MainTabsActivity.java` / `MainTabsLayout.java` (B1), `CybergramHeaderDecorationView.java` (D8 tick
+removal) and `FilterTabsView.java` (B0-FIX plate draw order, +9/−1). Excluding the
+`.attheme` asset the code footprint is 11 files, +390/−49. An earlier note claimed "4 files, +177/−9":
 that figure counted only the B1 and B6 production files (`ChatActionCell` 22/1, `GlassTabView` 49/3,
 `MainTabsActivity` 58/1, `MainTabsLayout` 48/4 = 177/9) and is **superseded** — it never included the
-D2/D7/D8 and D4/D6 product changes. Everything else is documentation and debug-source-set tooling.
+D2/D7/D8, D4/D6, B0-FIX and R-GATE product changes. Everything else is documentation and
+debug-source-set tooling.
 
 Debug-only tooling (never in release sources or manifests):
 
@@ -125,7 +140,7 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 
 | Pass | Status | Outstanding |
 |---|---|---|
-| B0 | `A RUN STOPPED ON A CONFIRMED DEFECT / FIX NOT AUTHORIZED` | the selected filter/folder tab draws an empty plate — its label is painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); record `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Fix **not** authorized |
+| B0 | `FIX LANDED 2026-09-16 / E PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN` | the selected filter/folder tab drew an empty plate — its label was painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); fixed by B0-FIX (`3911690fe`, E evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`). Still open: A re-run, horizontal overflow/scroll, edit/reorder/delete mode, non-Cybergram control re-run |
 | B1 | `E PASS / A PARTIAL / P PENDING` | navigation and visual core confirmed on an authenticated surface on 2026-09-15, plus reselect/scroll-to-top, the upstream tab long-press popups and the **non-Cybergram theme control** (`docs/A_TIER_VALIDATION_2026-09-15.md` §7-8); the long-drag selector is unreachable on the phone layout and rotation is `N/A` (portrait-locked); still open: Calls swap, show/hide animation, attach/bot geometry |
 | B2 | `AUDIT COMPLETE` | 15 account-dependent `UNTESTED` rows (reply layout, reaction interaction, metadata, service/date adjacency) |
 | B3 | `CLOSED / NOT REQUIRED` | nothing — do not reopen |
@@ -137,11 +152,11 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 | R1 | `SEPARATE TRACK` | package/applicationId decision; signing/Firebase/keystore; unresolved Redmi Note 10S / MIUI 14.0.4 install report |
 
 The dominant outstanding item is **A-tier verification debt**: B1 is `A PARTIAL`, B6 is `A PENDING`,
-B0 is stopped on a confirmed defect whose fix is not authorized, and B2 carries 15 `UNTESTED` rows.
-The first authenticated run, on 2026-09-15, partially validated
+B0's confirmed defect is now fixed at E tier but still awaits an A re-run, and B2 carries 15 `UNTESTED`
+rows. The first authenticated run, on 2026-09-15, partially validated
 **B1** — the tab navigation and the Cybergram nav presentation are confirmed on a real account — and
-also reached the B0 filter row, where it **confirmed the selected-chip defect** (so B0 is blocked on an
-unauthorized fix, not untested). **B2, B5 and B6 remain entirely untested on an authenticated surface**;
+also reached the B0 filter row, where it **confirmed the selected-chip defect** (fixed on 2026-09-16 at E
+tier; the A re-run is the remaining item). **B2, B5 and B6 remain entirely untested on an authenticated surface**;
 the account-dependent tranches that require opening conversations are flagged for an owner decision
 because they mark messages as read. The debt is executable as a single checklist in
 `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`, and the recorded run is

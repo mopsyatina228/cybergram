@@ -1,8 +1,9 @@
 # B0 filter-tabs defect (2026-09-15)
 
-Status: **CONFIRMED DEFECT on an authenticated surface. NOT FIXED.**
-A fix requires separate authorization; this document records the finding and stops the B0 run, per the
-stop rule in `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
+Status: **CONFIRMED DEFECT on an authenticated surface — FIXED 2026-09-16 at E tier**
+(production commit `3911690fe`, evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`; A re-run pending).
+This document is kept as the finding/evidence record exactly as it was written, when the fix was still
+unauthorized; it stops the B0 validation run per `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
 
 ## Summary
 
@@ -118,7 +119,7 @@ here was the theme string. The backups contain session material and stay in the 
   was not modified by the Cybergram seam.
 - No P/OEM evidence; emulator only.
 
-## Proposed bounded fix (NOT APPLIED — needs authorization)
+## Proposed bounded fix (approach 1 applied 2026-09-16 — see `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`)
 
 Candidate approaches, to be chosen in a bounded fix pass with its own spec:
 
@@ -131,6 +132,10 @@ Candidate approaches, to be chosen in a bounded fix pass with its own spec:
 Approach 1 is the smallest correct change, but it must be proven not to disturb the selector animation,
 `listView` translation/scale handling and the clip path. Validation: E (build + install + screenshot under
 Cybergram and under a non-Cybergram theme) plus an A re-run of the exact reproduction above.
+
+**Outcome (2026-09-16):** approach 1 was implemented and E-validated — the selected chip renders with its
+label (`docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`). The non-Cybergram control was not re-run that round;
+the non-Cybergram branch is unchanged, and the Blue-theme control recorded above remains its reference.
 
 ## Stop-rule compliance
 

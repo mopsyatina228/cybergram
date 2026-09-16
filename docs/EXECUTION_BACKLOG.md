@@ -63,27 +63,29 @@ Never promote E evidence into A or P evidence.
 
 ### B0 — final FilterTabs authenticated validation
 
-Status: `A RUN STOPPED ON A CONFIRMED DEFECT — E BASELINE PASSED / SELECTED FILTER TAB LOSES ITS LABEL`
+Status: `FIX LANDED 2026-09-16 — E BUILD+INSTALL+VISUAL PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN`
 
-Type: validation only. The 2026-09-15 authenticated run was stopped at a confirmed presentation defect and no fix was attempted; the record is `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`.
+Type: validation only. The 2026-09-15 authenticated run was stopped at a confirmed presentation defect and no fix was attempted; the record is `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. The defect was fixed on 2026-09-16 by a separate bounded change (B0-FIX below), so the remaining B0 work is the authenticated matrix re-run, not the defect.
 
-On the authenticated AVD the dialog filter/folder row works — chips can be switched, the list changes, `crash_matches=0` — but the **selected** chip renders as an empty chamfered plate with no title, while unselected chips are labelled normally. Root cause is verified statically: `FilterTabsView.drawChild` calls `drawSelector` *after* the labels are drawn, and the Cybergram branch sets the plate alpha to `255` (upstream uses `31`), so an opaque plate painted over the text hides it (`FilterTabsView.java:1531`).
+On the authenticated AVD the dialog filter/folder row works — chips can be switched, the list changes, `crash_matches=0` — but the **selected** chip rendered as an empty chamfered plate with no title, while unselected chips are labelled normally. Root cause was verified statically: `FilterTabsView.drawChild` calls `drawSelector` *after* the labels are drawn, and the Cybergram branch sets the plate alpha to `255` (upstream uses `31`), so an opaque plate painted over the text hides it (`FilterTabsView.java:1531` before the fix, `:1539` after). **Fixed 2026-09-16** — the Cybergram plate is now painted before the labels and the selected chip renders with its label (`docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`).
 
 Spec: `docs/passes/B0_FILTER_TABS_VALIDATION.md`.
 
-The 2026-09-11 emulator run proves the exact current product tree builds, installs and starts. It did not reach an authenticated dialogs screen, so it does not prove the final `FilterTabsView` interaction/visual matrix. B0 now consists only of closing that remaining authenticated-surface gap. No production fixes are authorized inside B0.
+The 2026-09-11 emulator run proves the exact current product tree builds, installs and starts. It did not reach an authenticated dialogs screen, so it does not prove the final `FilterTabsView` interaction/visual matrix. B0 now consists only of closing that remaining authenticated-surface gap (horizontal overflow/scroll to the last folder, edit/reorder/delete mode) plus the A re-run of the fixed selection behaviour.
 
 B0 no longer blocks static design of B1. It blocks only claims that final filter tabs are fully runtime-validated.
 
 ### B0-FIX — selected filter-tab label (bounded fix)
 
-Status: `CONFIRMED DEFECT / FIX NOT AUTHORIZED`.
+Status: `IMPLEMENTED 2026-09-16 / E BUILD+INSTALL+RUNTIME+VISUAL PASS / A PENDING / P NOT RUN`.
 
-Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Owner: `TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java` (`drawChild` 1407-1411, `drawSelector` 1465-1534, alpha at 1531).
+Record: `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md` (finding: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`). Owner: `TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java` (`drawChild` 1407-1471, new guard at 1412-1419, `drawSelector` 1473-1543, alpha at 1539).
 
-The selected dialog filter/folder tab loses its title because the Cybergram selector plate is opaque and is drawn after the labels. The smallest candidate fix is to draw the Cybergram plate before the children instead of after `super.drawChild`, keeping the upstream branch untouched; alternatives and the required E + A re-validation are listed in the defect record. **No fix has been applied and none is authorized by this entry.** A pass does not authorize the next pass.
+The selected dialog filter/folder tab lost its title because the Cybergram selector plate is opaque and was drawn after the labels. The applied fix draws the Cybergram plate before the children instead of after `super.drawChild`, keeping the upstream branch untouched (production commit `3911690fe`, ff-only into `dev`). E evidence: build + install + `crash_matches=0`, and captures showing the selected `All Chats` chip and then the selected `12412412 104` chip rendered with their labels, while the previously selected chip returns to its labelled unselected state.
 
-A same-class sweep of every other Cybergram seam is recorded in `docs/CYBERGRAM_PLATE_DRAWORDER_AUDIT_2026-09-15.md`. It found the defect to be **isolated**: every other filled plate (main-tabs selector, `GlassTabView`, search field, FAB, dialog rows, bubbles) is already drawn below the content it frames, so the fix should follow that existing pattern rather than invent a new one. The audit also records one latent hazard: the composer frame is likewise drawn after its children and is safe only because its fill is disabled (`ChatActivityEnterView.java:2672-2692`).
+Not done: the non-Cybergram control re-run (needs a persisted theme mutation, deliberately not performed; the branch is statically unchanged) and the A re-run.
+
+A same-class sweep of every other Cybergram seam is recorded in `docs/CYBERGRAM_PLATE_DRAWORDER_AUDIT_2026-09-15.md`. It found the defect to be **isolated**: every other filled plate (main-tabs selector, `GlassTabView`, search field, FAB, dialog rows, bubbles) is already drawn below the content it frames, so the applied fix follows that existing pattern rather than inventing a new one. The audit also records one latent hazard: the composer frame is likewise drawn after its children and is safe only because its fill is disabled (`ChatActivityEnterView.java:2672-2692`).
 
 ### B1 — flat/angular main bottom navigation
 
@@ -306,22 +308,23 @@ A pass does not authorize the next pass. The user chooses execution priority.
 ### Code-review follow-ups (R-series, recorded 2026-09-16)
 
 A read-only review of the landed product code (`22dfacce0` and earlier Cybergram commits) produced five
-bounded findings. **None of them is authorized work**; they are recorded so they are not lost and so a
-future pass can pick them up. None changes any pass status above.
+bounded findings. **R-GATE was fixed on 2026-09-16** (§ below); the other four remain unauthorized and are
+recorded so they are not lost.
 
-- **R-GATE — the presentation gate reads the DAY theme while the active theme may be the NIGHT theme
-  (code review 2026-09-16; accessors confirmed at source).** `CybergramTheme.isCybergramPresentation(...)`
-  reads `Theme.getCurrentTheme()` (`CybergramTheme.java:105`), which upstream returns as `currentDayTheme`
+- **R-GATE — the presentation gate read the DAY theme while the active theme may be the NIGHT theme
+  (code review 2026-09-16; accessors confirmed at source). FIXED 2026-09-16 at E tier** — production
+  commit `4629e98a3`, evidence `docs/R_GATE_IMPLEMENTATION_2026-09-16.md`. `CybergramTheme.isCybergramPresentation(...)`
+  read `Theme.getCurrentTheme()` (`CybergramTheme.java:105`), which upstream returns as `currentDayTheme`
   (`Theme.java:6444-6446`), while `CybergramBackdropDrawable.isEligible(...)` reads
   `Theme.getActiveTheme()` (`CybergramBackdropDrawable.java:92`), which returns `currentTheme`
   (`Theme.java:6460-6462`). The two `ThemeInfo` objects differ whenever the night slot holds a different
-  theme from the day slot. Two user-visible outcomes: (A) Cybergram selected as the **night** theme → the
-  gate is false, so the whole Cybergram chrome and the D4 backdrop are suppressed even though Cybergram is
-  the active theme (cold-start reachable); (B) Cybergram as the **day** theme with another night theme
-  active → the gate is true, so Cybergram chrome and the D4 grid can appear over a non-Cybergram palette,
-  with `isEligible` checking the night theme's `overrideWallpaper`. Smallest candidate fix: use
-  `Theme.getActiveTheme()` in the gate and resolve the `ThemeInfo` once inside `isEligible`. **Not
-  applied; unauthorized — needs an explicit owner go-ahead plus E/A re-validation.**
+  theme from the day slot, with two user-visible outcomes: (A) Cybergram selected as the **night** theme →
+  the gate was false, so the whole Cybergram chrome and the D4 backdrop were suppressed even though
+  Cybergram was the active theme; (B) Cybergram as the **day** theme with another night theme active → the
+  gate was true, so Cybergram chrome and the D4 grid could appear over a non-Cybergram palette. The gate
+  now reads `Theme.getActiveTheme()`, so both sites agree. E regression PASS (dialog chrome and the D4 grid
+  in-chat); the two night-slot scenarios are **not** exercised (they need a persisted theme-slot mutation,
+  deliberately not performed) and A/P remain open.
 - **R-D6 — the `E < dp(3)` ceiling of `BUBBLE_GAP_EXTRA_DP` is documented but unenforced.** The value is
   `2f` and the invariant lives only in javadoc; raising it (e.g. `4f`) would move the painted top past
   the body/metadata inset and collide. Either clamp/assert the constant or leave it as a documented
@@ -336,8 +339,9 @@ future pass can pick them up. None changes any pass status above.
   view** (`CybergramHeaderDecorationView`) with a per-draw gate call. No functional change (the view is
   non-interactive); a minor always-on cost. **Unauthorized.**
 
-Recorded findings only. Acting on any of these requires an explicit owner authorization, exactly like
-B0-FIX.
+R-D6, R-STUB, R-PERF and R-OVERLAY are recorded findings only. Acting on any of them still requires an
+explicit owner authorization; B0-FIX and R-GATE were the two exceptions, authorized by the owner's
+2026-09-16 instruction to continue the work and choose the tasks.
 
 ## Executor startup rule
 
