@@ -219,7 +219,7 @@ B2 has audited message-state ownership without production fixes: bodies (`TYPE_T
 
 Optional chat-canvas HUD and secondary screens/onboarding remain later work. Release identity/signing/Firebase/package decisions remain a separate release track.
 
-**The largest outstanding item is A-tier verification debt, not new presentation work.** B1 (main tabs) is `A PARTIAL` and B6 is `A PENDING`; B0 is stopped on a confirmed defect with the fix unauthorized; and B2 carries 15 `UNTESTED` account-dependent rows. The long-standing assumption that no authenticated session was available was **wrong**: the `Cybergram_API36` AVD is authenticated, and the first authenticated run on 2026-09-15 partially validated **B1** (tab navigation, angled nav panel, selected plate, badge, avatar, long-press; `crash_matches=0`) while also confirming the B0 selected-chip defect — record: `docs/A_TIER_VALIDATION_2026-09-15.md`. B0 reached the authenticated filter row and stopped on the defect (it is not untested; it is blocked on an unauthorized fix); B2, B5 and B6 remain untested on an authenticated surface; those tranches that require opening conversations mark messages as read in a live account and therefore need an explicit owner decision. E evidence must still not be read as product-surface validation.
+**The largest outstanding item is A-tier verification debt, not new presentation work.** B1 (main tabs) is `A PARTIAL` and B6 is `A PENDING`; B0's confirmed defect is fixed by B0-FIX and the fixed behaviour carries A-partial evidence; and B2 carries 15 `UNTESTED` account-dependent rows. The long-standing assumption that no authenticated session was available was **wrong**: the `Cybergram_API36` AVD is authenticated, and the first authenticated run on 2026-09-15 partially validated **B1** (tab navigation, angled nav panel, selected plate, badge, avatar, long-press; `crash_matches=0`) while also confirming the B0 selected-chip defect — record: `docs/A_TIER_VALIDATION_2026-09-15.md`. B0 reached the authenticated filter row and stopped on the defect (it is not untested; it is blocked on an unauthorized fix); B2, B5 and B6 remain untested on an authenticated surface; those tranches that require opening conversations mark messages as read in a live account and therefore need an explicit owner decision. E evidence must still not be read as product-surface validation.
 
 B7 (optional chat-canvas HUD) now has a prepared bounded contract at `docs/passes/B7_CHAT_CANVAS_HUD.md`, status `SPEC PREPARED / NOT AUTHORIZED`. Its precondition (coherent primary message/service presentation) is met at E tier, and its ownership was re-audited rather than inferred: the chat canvas host is `ChatActivity.ChatActivityFragmentView` (used only by `ChatActivity`; `ChannelAdminLogActivity` has its own separate class), the wallpaper is `SizeNotifierFrameLayout.BackgroundView` at child index 0, and the landed `CybergramHeaderDecorationView` is the precedent to copy. Writing the spec authorizes nothing: B7 is optional, needs an explicit user priority decision, and `SizeNotifierFrameLayout` (19 hosts) must not receive the seam. B8 remains deferred.
 
@@ -229,9 +229,13 @@ The owner's design target (`design/DESIGN_TARGET.md` and `design/references/desi
 
 A reader resuming this project should treat the following as **not done and not authorized**:
 
-1. **B0-FIX — confirmed defect, fix not authorized.** The selected dialog filter/folder tab loses its
-   label; the smallest candidate fix is a draw-order change in `FilterTabsView`. Record:
-   `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. Needs an explicit owner go-ahead plus an E + A re-run.
+1. **B0-FIX — landed and independently verified; only the A-matrix remainder is open.** The selected
+   dialog filter/folder tab lost its label; the fix is the draw-order change in `FilterTabsView`
+   (production commit `3911690fe`, ff-only into `dev`). Defect record:
+   `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`; implementation evidence:
+   `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`; independent device verification:
+   `docs/R1_INDEPENDENT_DEVICE_VERIFICATION_2026-09-16.md`. Still open: horizontal overflow/scroll to the
+   last folder, page swipe, long-press/menu, edit/reorder/delete mode and the non-Cybergram control re-run.
 2. **A-tier verification debt.** B1 is `A PARTIAL`; B2, B5 and B6 are untested on an authenticated
    surface. Tranches that open conversations mark messages as read in a live account and therefore need
    an explicit owner decision; checklist: `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md`.
@@ -242,8 +246,18 @@ A reader resuming this project should treat the following as **not done and not 
    `docs/WORK_STATE.md` with an unknown cause and no logcat.
 5. **Release/install issue.** The Redmi Note 10S / MIUI 14.0.4 arm64 install report is unresolved and
    has no `INSTALL_FAILED_*` text; the universal 4-ABI APK is the compatibility probe (track R1).
-6. **R-series code-review follow-ups** (`R-GATE`, `R-D6`, `R-STUB`, `R-PERF`, `R-OVERLAY`) are recorded
-   in `docs/EXECUTION_BACKLOG.md` and are **not authorized**.
+6. **R-series code-review follow-ups** (`R-D6`, `R-STUB`, `R-PERF`, `R-OVERLAY`) are recorded
+   in `docs/EXECUTION_BACKLOG.md` and are **not authorized**. `R-GATE` is no longer one of them: it
+   landed as production commit `4629e98a3` (ff-only into `dev`) and was independently re-verified on the
+   device — evidence `docs/R_GATE_IMPLEMENTATION_2026-09-16.md` and
+   `docs/R1_INDEPENDENT_DEVICE_VERIFICATION_2026-09-16.md`.
+7. **R1 acceptance is recorded but not applied by the harness gate.** The independent reviewer session
+   `b7a79579-8005-4791-bd81-02c6680a31f5` (`deepseek-v4-pro`) returned `APPROVE` on the two R1 edits with
+   file-, build-log- and screenshot-level grounds, but the task stayed `NEEDS_HUMAN`: the review was
+   requested while the task was already outside `RUNNING`, so the gate never moved it to `REVIEWING`, and
+   its verdict digest only visits tasks in that state. Re-running `check` starts a second paid reviewer
+   for the same result. R1 state is therefore `REVIEWED / ACCEPTANCE NOT APPLIED — gate-side fix`. This
+   is harness behaviour, not a Cybergram product or documentation defect.
 
 None of the above is a reason to treat the landed presentation work as unvalidated at E tier; they are
 the open items that remain after the E-tier work.

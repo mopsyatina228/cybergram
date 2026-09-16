@@ -21,8 +21,12 @@ a separate session that rebuilt HEAD and a reverted pre-fix control and ran both
 `docs/R1_INDEPENDENT_DEVICE_VERIFICATION_2026-09-16.md` (both edits confirmed; the R-GATE separation
 required a temporary theme-slot mutation that was backed up and restored). The working tree was clean
 when this note was written. The
-local branch is ahead of `origin/dev` and **nothing could be pushed from this sandbox**: GitHub TLS from
-the executor fails with `SEC_E_NO_CREDENTIALS`, so a host-side push is required.
+local branch was ahead of `origin/dev` at that moment and a plain sandboxed `git push` still fails with
+`SEC_E_NO_CREDENTIALS`; **the seven local commits were pushed on 2026-09-16 from a widened session**
+(`163c2a96b..28b71cb69`), so `dev` and `origin/dev` now agree at `28b71cb69`. The same session obtained
+the harness gate's independent reviewer verdict `APPROVE` on the two R1 edits (reviewer session
+`b7a79579-8005-4791-bd81-02c6680a31f5`, `deepseek-v4-pro`); the gate did not apply that verdict — see
+`docs/CURRENT_STATE.md` §Open blockers item 7.
 
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
 pushed; **that is no longer true.** The remote was checked on 2026-09-16 and reconciled locally the same

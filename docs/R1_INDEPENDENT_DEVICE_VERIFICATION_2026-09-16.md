@@ -190,3 +190,21 @@ Cybergram is active from the night slot; the fixed gate keeps it, matching the b
 - The remaining B0 matrix items (horizontal overflow/last folder, page swipe, long-press/menu,
   edit/reorder/delete, non-Cybergram presentation control) were not exercised.
 - The verification does not authorize a release, a push, or further product changes.
+
+## 10. Independent reviewer verdict (harness gate, 2026-09-16)
+
+The harness gate started a separate reviewer session
+(`b7a79579-8005-4791-bd81-02c6680a31f5`, `deepseek-v4-pro`) against the same facts, with this executor's
+report deliberately withheld from it. It re-derived the substance of this record from the raw artifacts —
+`FilterTabsView.java:1412-1419` and `CybergramTheme.java:110`, `git show <commit> --check` = 0, the
+non-`UP-TO-DATE` `:TMessagesProj:compileDebugJavaWithJavac` runs in
+`.local-artifacts/verify/build_control_reverted*.log` and `build_treatment_final.log`, SHA-256 equality of
+the reverted control with the parents `3911690fe^` / `4629e98a3^`, and the raw captures in
+`.local-artifacts/verify/shots/` — and returned **`ВЕРДИКТ: APPROVE`** with five grounds. It recorded the
+same limitations as §8/§9 above (A1/A2 are source greps rather than device checks, no clean build,
+emulator only, the day-slot half of R-GATE not exercised).
+
+The gate did **not** apply that verdict: the task was already outside `RUNNING` when the review was
+requested, so it never entered `REVIEWING`, and the gate's verdict digest only visits tasks in that state.
+Acceptance is therefore recorded here but not applied; this is gate-side behaviour, unrelated to the
+product change or to this verification. Written up in `docs/CURRENT_STATE.md` §Open blockers item 7.
