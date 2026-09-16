@@ -140,7 +140,7 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 
 | Pass | Status | Outstanding |
 |---|---|---|
-| B0 | `FIX LANDED 2026-09-16 / E PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN` | the selected filter/folder tab drew an empty plate — its label was painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); fixed by B0-FIX (`3911690fe`, E evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`). Still open: A re-run, horizontal overflow/scroll, edit/reorder/delete mode, non-Cybergram control re-run |
+| B0 | `FIX LANDED 2026-09-16 / E PASS / A PARTIAL ON THE FIXED BEHAVIOUR / REMAINING A MATRIX ITEMS OPEN` | the selected filter/folder tab drew an empty plate — its label was painted over (`FilterTabsView.java:1531`, Cybergram alpha 255 vs upstream 31); fixed by B0-FIX (`3911690fe`, evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`), and the fixed selection behaviour is confirmed on the authenticated surface. Still open: horizontal overflow/scroll, page swipe, long-press/menu, edit/reorder/delete mode, non-Cybergram control re-run |
 | B1 | `E PASS / A PARTIAL / P PENDING` | navigation and visual core confirmed on an authenticated surface on 2026-09-15, plus reselect/scroll-to-top, the upstream tab long-press popups and the **non-Cybergram theme control** (`docs/A_TIER_VALIDATION_2026-09-15.md` §7-8); the long-drag selector is unreachable on the phone layout and rotation is `N/A` (portrait-locked); still open: Calls swap, show/hide animation, attach/bot geometry |
 | B2 | `AUDIT COMPLETE` | 15 account-dependent `UNTESTED` rows (reply layout, reaction interaction, metadata, service/date adjacency) |
 | B3 | `CLOSED / NOT REQUIRED` | nothing — do not reopen |
@@ -152,7 +152,8 @@ git-excluded `/.local-artifacts/` (screenshots, APKs, workspace-local Gradle hom
 | R1 | `SEPARATE TRACK` | package/applicationId decision; signing/Firebase/keystore; unresolved Redmi Note 10S / MIUI 14.0.4 install report |
 
 The dominant outstanding item is **A-tier verification debt**: B1 is `A PARTIAL`, B6 is `A PENDING`,
-B0's confirmed defect is now fixed at E tier but still awaits an A re-run, and B2 carries 15 `UNTESTED`
+B0's confirmed defect is now fixed and the fixed selection behaviour is confirmed on the authenticated
+surface (`A PARTIAL`; the rest of the B0 matrix is still open), and B2 carries 15 `UNTESTED`
 rows. The first authenticated run, on 2026-09-15, partially validated
 **B1** — the tab navigation and the Cybergram nav presentation are confirmed on a real account — and
 also reached the B0 filter row, where it **confirmed the selected-chip defect** (fixed on 2026-09-16 at E

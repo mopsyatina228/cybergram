@@ -1,6 +1,7 @@
 # B0-FIX — selected filter-tab label (2026-09-16)
 
-Status: **IMPLEMENTED / E BUILD+INSTALL+RUNTIME+VISUAL PASS / A PENDING / P NOT RUN.**
+Status: **IMPLEMENTED / E BUILD+INSTALL+RUNTIME+VISUAL PASS / A PARTIAL (fixed selection behaviour
+confirmed on the authenticated surface; remaining matrix items not run) / P NOT RUN.**
 
 Fix for the confirmed defect recorded in `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`
 (`CONFIRMED DEFECT / FIX NOT AUTHORIZED`). Authorization basis: the repository owner instructed this
@@ -60,6 +61,29 @@ Reproduction from the defect record, steps 2–4:
 Before the fix the same selection produced an empty plate (`docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`, with
 the preserved before-captures `.local-artifacts/a-tier/b0_sel_a.png`, `b0_sel_b.png`, `crop_sel.png`).
 
+### 3.1 Tier of this evidence
+
+The run used the **authenticated** session on the AVD (the same account and the same production dialogs
+surface on which the defect was first confirmed on 2026-09-15), not a debug fixture. The captures
+therefore carry **A-tier** evidence for the fixed selection behaviour, in addition to the E-tier
+build/install/runtime numbers.
+
+| B0 matrix item (defect-record reproduction) | Result on the authenticated surface |
+|---|---|
+| selected chip renders its title | **confirmed** (`08`, `11`) |
+| unselected chips keep their titles | **confirmed** (`08`, `11`) |
+| switching selection moves the label with the plate | **confirmed** (`11`: `12412412 104` selected and labelled, `All Chats 2` restored) |
+| unread counters still render | **confirmed** (`08`, `11`) |
+| second `FilterTabsView` surface (search tabs) | **confirmed** (`07`) |
+| horizontal overflow / scroll to the last folder | **not run** |
+| page swipe / manual interpolation | **not run** |
+| long-press / menu behaviour | **not run** |
+| edit / reorder / delete mode | **not run** |
+| non-Cybergram theme control | **not run** (needs a persisted theme mutation, deliberately not performed) |
+
+The run was stopped after these items because the emulator became unreliable: repeated input-dispatch
+ANRs on cold start and on chat opening (§4).
+
 ## 4. Disclosures
 
 - **One ANR on the first cold start after install** (16:27:22), before any Cybergram filter-row
@@ -67,8 +91,18 @@ the preserved before-captures `.local-artifacts/a-tier/b0_sel_a.png`, `b0_sel_b.
   5003ms for FocusEvent(hasFocus=false)` (`/.local-artifacts/r3/anr_logcat.txt`). The dialog was dismissed
   with *Wait* → app closed → warm relaunch, after which the app was responsive and the run above was
   captured with `crash_matches=0`. The same cold-start ANR pattern is recorded for earlier rounds
-  (`/.local-artifacts/r2/00-anr-dialog.png`). **No trace-level causation analysis was done**, so this run
-  neither attributes nor exonerates the ANR; it is reported, not explained.
+  (`/.local-artifacts/r2/00-anr-dialog.png`). **Trace pulled and read**
+  (`/data/anr/anr_2026-09-16-16-27-22-879` → `/.local-artifacts/r3/anr_trace_1627.txt`): the main thread
+  was inside `android.text.StaticLayout.generate` → `android.graphics.text.LineBreaker.computeLineBreaks`,
+  i.e. upstream text layout on the main thread. Neither changed line (`FilterTabsView.drawChild` order,
+  `CybergramTheme` guard) appears in the stack; the ANR is main-thread latency in the debug build, not a
+  rendering failure of this fix.
+- **Repeated cold-start ANRs later in the same session** (16:48), same reason string with a 5001 ms
+  focus-event wait. The telegram trace (`/data/anr/trace_04` →
+  `/.local-artifacts/r3/anr_trace_1648_4.txt`) shows the main thread in
+  `android.os.BatteryManager.queryProperty` → `IBatteryPropertiesRegistrar$Stub$Proxy.getProperty`, i.e. a
+  Binder call to the system battery service. These ANRs are why the remaining A-matrix items in §3.1 were
+  not run.
 - **Non-Cybergram control not re-run** this round. It needs a persisted theme mutation (the procedure in
   the defect record), and the repository deliberately stopped the settings-mutation line. The control is
   instead static: the non-Cybergram branch is byte-equivalent in behaviour because the guard reduces to
@@ -79,8 +113,13 @@ the preserved before-captures `.local-artifacts/a-tier/b0_sel_a.png`, `b0_sel_b.
 
 ## 5. Not claimed
 
-- No A-tier re-run of the authenticated matrix yet (the A run in the defect record stopped here).
+- No A-tier coverage of the **remaining** B0 matrix items (see §3.1); the fixed selection behaviour is the
+  part that carries A evidence.
 - No P/OEM evidence; emulator only.
-- B0's remaining matrix items (horizontal overflow/scroll to the last folder, edit/reorder/delete mode)
-  are still not exercised.
+- B0's remaining matrix items (horizontal overflow/scroll to the last folder, page swipe, long-press/menu,
+  edit/reorder/delete mode, non-Cybergram control) are still not exercised.
 - The fix is not proven to be the only possible presentation; it removes the overdraw that hid the label.
+- The AVD's repeated ANRs are an environment observation, not a product verdict: three main-thread stacks
+  were captured (StaticLayout text layout, `ChatActivity.createView`, and a `BatteryManager` binder call to
+  the system battery service), none of them in the changed code, but no claim is made that the debug build
+  has no main-thread latency problems of its own.

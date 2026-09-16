@@ -1,8 +1,8 @@
 # B0 — final FilterTabs authenticated validation
 
-Status: FIX LANDED 2026-09-16 — E BUILD+INSTALL+VISUAL PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN
+Status: FIX LANDED 2026-09-16 — E PASS / A PARTIAL ON THE FIXED BEHAVIOUR / REMAINING A MATRIX ITEMS OPEN
 
-The 2026-09-15 authenticated run was stopped at a confirmed presentation defect: the **selected** filter/folder chip rendered as an empty chamfered plate because the Cybergram selector plate is opaque (alpha 255 vs upstream 31) and was drawn after the labels (`FilterTabsView.java:1531`). Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. The defect is **fixed** by the bounded B0-FIX pass (production commit `3911690fe`, ff-only into `dev`; evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`): the Cybergram plate is drawn before the labels for the Cybergram branch only, and E captures show the selected chip rendered with its label. The remaining authenticated matrix (including the fixed selection behaviour, horizontal overflow/scroll to the last folder, and edit/reorder/delete mode) still has to be re-run on the authenticated surface.
+The 2026-09-15 authenticated run was stopped at a confirmed presentation defect: the **selected** filter/folder chip rendered as an empty chamfered plate because the Cybergram selector plate is opaque (alpha 255 vs upstream 31) and was drawn after the labels (`FilterTabsView.java:1531`). Record: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. The defect is **fixed** by the bounded B0-FIX pass (production commit `3911690fe`, ff-only into `dev`; evidence `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md`): the Cybergram plate is drawn before the labels for the Cybergram branch only, and E captures show the selected chip rendered with its label. The remaining authenticated matrix (horizontal overflow/scroll to the last folder, page swipe, long-press/menu, edit/reorder/delete mode, non-Cybergram control) still has to be run; the fixed selection behaviour itself is confirmed on the authenticated surface (`docs/B0_FIX_IMPLEMENTATION_2026-09-16.md` §3.1).
 
 Type: validation only
 

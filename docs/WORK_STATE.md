@@ -1168,12 +1168,25 @@ re-verified this round; a host-side push is required for everything below.
 - **ANR disclosure:** one ANR occurred on the **first cold start after install**, before any filter-row
   interaction — `Input dispatching timed out … Waited 5003ms for FocusEvent(hasFocus=false)`
   (`/.local-artifacts/r3/anr_logcat.txt`). It was dismissed with *Wait*, the app was closed and relaunched
-  warm, after which the run above was captured. No trace-level causation analysis was done; the event is
-  reported, not explained. A comparable cold-start ANR is already recorded for round 3
-  (`/.local-artifacts/r2/00-anr-dialog.png`).
+  warm, after which the run above was captured. **Trace read**
+  (`/data/anr/anr_2026-09-16-16-27-22-879` → `/.local-artifacts/r3/anr_trace_1627.txt`): the main thread
+  was in `android.text.StaticLayout.generate` → `LineBreaker.computeLineBreaks` (upstream text layout),
+  and no frame of the changed draw-order code appears in it. A comparable cold-start ANR is already
+  recorded for round 3 (`/.local-artifacts/r2/00-anr-dialog.png`).
 - Not done: the non-Cybergram **control** re-run (needs a persisted theme mutation, deliberately not
-  performed; the non-Cybergram branch is statically unchanged) and the A re-run. `uiautomator` does not
-  expose the custom-drawn chips as nodes, so the verification is screenshot-based, as in the defect record.
+  performed; the non-Cybergram branch is statically unchanged) and the remaining authenticated matrix
+  items (horizontal overflow/scroll to the last folder, page swipe, long-press/menu,
+  edit/reorder/delete mode). `uiautomator` does not expose the custom-drawn chips as nodes, so the
+  verification is screenshot-based, as in the defect record.
+- **Tier of the visual evidence: A PARTIAL.** The run used the authenticated session on the AVD (same
+  account and same production dialogs surface on which the defect was first confirmed), so the selected/
+  unselected label behaviour, the selection switch and the counters carry authenticated-surface evidence.
+  The run then stopped because the emulator degraded into repeated input-dispatch ANRs; three
+  main-thread stacks were pulled and are all upstream/system code — 16:27 `StaticLayout.generate` →
+  `LineBreaker.computeLineBreaks`, 16:38 `DialogsActivity.onItemClick` →
+  `ChatActivity.createView` (`ChatActivityEnterView` construction), 16:48
+  `BatteryManager.queryProperty` → `IBatteryPropertiesRegistrar` Binder. None of them contains the
+  changed draw-order line.
 
 ### R-GATE — presentation gate accessor
 
@@ -1194,7 +1207,10 @@ re-verified this round; a host-side push is required for everything below.
 - **ANR disclosure:** the single ANR is the run's own tap on `Saved Messages` —
   `Input dispatching timed out … Waited 5004ms for MotionEvent(… pointers=[0: (544.0, 941.0)])`; the debug
   build exceeded the input-dispatch budget while opening the chat. Dismissed with *Wait*; the chat then
-  rendered normally (capture above). No trace-level analysis; reported, not explained.
+  rendered normally (capture above). **Trace read**
+  (`/data/anr/anr_2026-09-16-16-38-34-730` → `/.local-artifacts/r3/anr_trace_1638.txt`): the main thread
+  was in `DialogsActivity.onItemClick` → `ChatActivity.createView(ChatActivity.java:7814)`
+  (`ChatActivityEnterView` construction), with no frame of the changed gate in it.
 - Not done: the two night-slot scenarios (Cybergram as **night** theme; Cybergram as day with another night
   theme active) — reproducing them requires a persisted theme-slot mutation, and the repository
   deliberately stopped the settings-mutation line. The accessor semantics are verified at source instead.

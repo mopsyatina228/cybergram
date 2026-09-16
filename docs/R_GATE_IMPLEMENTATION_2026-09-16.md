@@ -65,8 +65,12 @@ The APK contains only the `x86_64` ABI (41.2 MB of `lib/`), matching the build f
 - **One ANR, caused by this run's own tap**: `ANR ... Reason: Input dispatching timed out ... Waited
   5004ms for MotionEvent(... pointers=[0: (544.0, 941.0)])` — the tap that opened `Saved Messages`; the
   debug build took longer than the 5 s input-dispatch budget. Dismissed with *Wait*; the app stayed
-  functional and the chat rendered (capture above). No `FATAL EXCEPTION` in the run. No trace-level
-  causation analysis was done.
+  functional and the chat rendered (capture above). No `FATAL EXCEPTION` in the run. **Trace pulled and
+  read** (`/data/anr/anr_2026-09-16-16-38-34-730` → `/.local-artifacts/r3/anr_trace_1638.txt`): the main
+  thread was in `DialogsActivity.onItemClick` → `ChatActivity.createView(ChatActivity.java:7814)` →
+  constructing `ChatActivityEnterView`, i.e. upstream chat-view construction on the main thread. The
+  changed guard (`CybergramTheme.isCybergramPresentation`) does not appear in the stack; this is
+  main-thread latency in the debug build, not a failure of the accessor change.
 - The two user-visible night-slot scenarios (Cybergram as **night** theme; Cybergram as **day** theme with
   another night theme active) were **not** exercised. Reproducing them requires a persisted theme-slot
   mutation, and the repository deliberately stopped the settings-mutation line. The accessor semantics are
@@ -78,4 +82,6 @@ The APK contains only the `x86_64` ABI (41.2 MB of `lib/`), matching the build f
 - Not proven that no other Cybergram surface reads a day-slot theme directly: `isCybergramPresentation()`
   is the single funnel for every call site listed in §1 of the review, and the grep in this round found no
   other Cybergram file reading `Theme.getCurrentTheme()`.
-- The ANR is reported, not explained, and is not attributed to this two-line accessor change.
+- The captured ANR main-thread stack points at upstream chat-view construction
+  (`ChatActivity.createView`), not at the changed guard; that is evidence about *where* the main thread
+  was, not a general claim that the debug build's main-thread latency is unrelated to this change.

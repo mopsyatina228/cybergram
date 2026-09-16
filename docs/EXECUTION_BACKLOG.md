@@ -63,7 +63,7 @@ Never promote E evidence into A or P evidence.
 
 ### B0 — final FilterTabs authenticated validation
 
-Status: `FIX LANDED 2026-09-16 — E BUILD+INSTALL+VISUAL PASS ON THE DEFECT / REMAINING A MATRIX ITEMS OPEN`
+Status: `FIX LANDED 2026-09-16 — E PASS / A PARTIAL ON THE FIXED BEHAVIOUR / REMAINING A MATRIX ITEMS OPEN`
 
 Type: validation only. The 2026-09-15 authenticated run was stopped at a confirmed presentation defect and no fix was attempted; the record is `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. The defect was fixed on 2026-09-16 by a separate bounded change (B0-FIX below), so the remaining B0 work is the authenticated matrix re-run, not the defect.
 
@@ -77,13 +77,13 @@ B0 no longer blocks static design of B1. It blocks only claims that final filter
 
 ### B0-FIX — selected filter-tab label (bounded fix)
 
-Status: `IMPLEMENTED 2026-09-16 / E BUILD+INSTALL+RUNTIME+VISUAL PASS / A PENDING / P NOT RUN`.
+Status: `IMPLEMENTED 2026-09-16 / E BUILD+INSTALL+RUNTIME+VISUAL PASS / A PARTIAL (fixed selection behaviour confirmed on the authenticated surface; remaining matrix items not run) / P NOT RUN`.
 
 Record: `docs/B0_FIX_IMPLEMENTATION_2026-09-16.md` (finding: `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`). Owner: `TMessagesProj/src/main/java/org/telegram/ui/Components/FilterTabsView.java` (`drawChild` 1407-1471, new guard at 1412-1419, `drawSelector` 1473-1543, alpha at 1539).
 
 The selected dialog filter/folder tab lost its title because the Cybergram selector plate is opaque and was drawn after the labels. The applied fix draws the Cybergram plate before the children instead of after `super.drawChild`, keeping the upstream branch untouched (production commit `3911690fe`, ff-only into `dev`). E evidence: build + install + `crash_matches=0`, and captures showing the selected `All Chats` chip and then the selected `12412412 104` chip rendered with their labels, while the previously selected chip returns to its labelled unselected state.
 
-Not done: the non-Cybergram control re-run (needs a persisted theme mutation, deliberately not performed; the branch is statically unchanged) and the A re-run.
+Not done: the non-Cybergram control re-run (needs a persisted theme mutation, deliberately not performed; the branch is statically unchanged) and the remaining authenticated matrix items (horizontal overflow/scroll, page swipe, long-press/menu, edit/reorder/delete mode) — the run stopped because the emulator produced repeated input-dispatch ANRs whose traces sit in upstream/system code (StaticLayout text layout, `ChatActivity.createView`, `BatteryManager` Binder call).
 
 A same-class sweep of every other Cybergram seam is recorded in `docs/CYBERGRAM_PLATE_DRAWORDER_AUDIT_2026-09-15.md`. It found the defect to be **isolated**: every other filled plate (main-tabs selector, `GlassTabView`, search field, FAB, dialog rows, bubbles) is already drawn below the content it frames, so the applied fix follows that existing pattern rather than inventing a new one. The audit also records one latent hazard: the composer frame is likewise drawn after its children and is safe only because its fill is disabled (`ChatActivityEnterView.java:2672-2692`).
 
