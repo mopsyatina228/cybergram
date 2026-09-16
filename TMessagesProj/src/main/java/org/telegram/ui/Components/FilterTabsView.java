@@ -1405,8 +1405,16 @@ public class FilterTabsView extends FrameLayout {
 
     @Override
     protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+        // Cybergram paints an opaque selector plate, so drawing it after the list (which is what the
+        // upstream alpha-31 selector can afford) hides the selected tab's label. Keep the plate behind
+        // the labels for Cybergram only; the non-Cybergram branch keeps the upstream order and alpha.
+        // Defect record: docs/B0_FILTER_TABS_DEFECT_2026-09-15.md
+        final boolean cybergramPlateBehindLabels = child == listView && useCybergramPresentation();
+        if (cybergramPlateBehindLabels) {
+            drawSelector(canvas);
+        }
         boolean result = super.drawChild(canvas, child, drawingTime);
-        if (child == listView) {
+        if (child == listView && !cybergramPlateBehindLabels) {
             drawSelector(canvas);
         }
         long newTime = SystemClock.elapsedRealtime();
