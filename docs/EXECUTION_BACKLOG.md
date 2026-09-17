@@ -139,8 +139,8 @@ E validation passed. A validation is still required before the actual main-tabs 
 Status: `INTEGRATED / AUDIT COMPLETE`.
 
 A follow-up authenticated run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`)
-exercised 10 of the 15 rows: rows 10, 12, 14, 18, 25, 27, 29, 31 PASS and rows 13/19 are PARTIAL; rows
-8, 26, 28, 30 and 35 were not exercised; **0 defects** were found. `E-rich` stays `UNAVAILABLE`.
+exercised 12 of the 15 rows: rows 8, 10, 12, 14, 18, 25, 27, 29, 31 PASS; rows 13, 19, 30 are
+PARTIAL; rows 26, 28 and 35 were not exercised; **0 defects** were found. `E-rich` stays `UNAVAILABLE`.
 
 Spec: `docs/passes/B2_MESSAGE_STATE_AUDIT.md`. Evidence matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
 
