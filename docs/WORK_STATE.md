@@ -1295,6 +1295,24 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
   Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §P. Samsung SM-A256E was not attached, so
   genuine Samsung/OEM confidence remains outstanding.
 
+## 2026-09-17 — round 4 P-tier follow-up: B2 row 26 + B5/B6 date plate on the Redmi
+
+- The owner unlocked the Redmi Note 10S; with the AVD still unusable, the remaining rows were taken as
+  **P-tier** evidence.
+- **B2 row 26 → PARTIAL:** long-pressing a reaction pill opens the reactor's profile popup over a
+  **scrim** (`p-reactors.png`); the particle/bounce animation is not observable in a single still. B2
+  is now **all 15 rows verdicted: 11 PASS / 4 PARTIAL / 0 not exercised / 0 defects**.
+- **B5/B6 ordinary date separator → PASS on P:** `17 сентября` renders on the angular plate beside a
+  pinned-message bar and joined runs (`p-service-rows.png`).
+- Extra P captures in the same run: the forwarded-header post with its link-preview card and cyan
+  links (`p-hishchnik.png`), the Cybergram dialogs with the angular navigation and cyan selected plate
+  (`p-dialogs.png`), and a group reaction pill (`p-group.png`).
+- The in-history ordinary service actions (pin/unpin, join/leave, title/photo/TTL, group call,
+  screenshot, service-message reactions, `SharedMediaLayout` floating date) remain **not exercised**:
+  no such service rows were present in the sampled chats. Rich/special rows stay `UNAVAILABLE`.
+- Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` (round-3 update). Artifacts:
+  `.local-artifacts/run-p-20260917/`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
