@@ -72,8 +72,8 @@ No date separator, ordinary service row or rich/special row was opened in this r
 
 | pass | verdict |
 |---|---|
-| B0 | `PARTIAL` — re-run item PASS; overflow/swipe/menu/edit and non-Cybergram control open |
-| B1 | `PARTIAL` — navigation PASS; interaction/animation/orientation and non-Cybergram control open |
+| B0 | `PARTIAL` — re-run item PASS; non-Cybergram control PASS (P: upstream rounded chips); overflow/swipe/menu/edit open |
+| B1 | `PARTIAL` — navigation PASS; non-Cybergram control PASS (P: upstream rounded nav); interaction/animation/orientation open |
 | B2 | `UNVALIDATED` — 15 rows |
 | B5/B6 | `UNVALIDATED` |
 | P (physical/OEM) | not run — the Samsung/OEM tier remains untouched |
@@ -152,6 +152,17 @@ arm64-v8a — the exact device family from the R1 install report.
 This is P-tier evidence for the round-4 changes and for the R1 install item. It is a smoke, not the
 full P interaction matrix, and the Samsung SM-A256E target was not attached — genuine Samsung/OEM
 confidence is still outstanding.
+
+**Non-Cybergram control (P, unplanned but valid).** On the same device the active theme was
+**non-Cybergram** (light Day theme) during a later part of the session. That supplied the control the
+emulator runs could not produce: the dialogs list renders the **upstream rounded filter chips** and the
+**upstream rounded bottom navigation with no red rails**, the chat bubbles are the **upstream rounded
+bubbles** (no chamfer, no corner spur), and the composer shows the **upstream bright rounded control
+button and rounded field** instead of the Cybergram angular plate
+(`p-noncyber-dialogs.png`, `p-noncyber-mic.png`, `p-nc-composer-zoom.png`). This confirms that the
+round-4 microphone plate/tint changes and the Cybergram chrome are presentation-gated. **No theme
+mutation was performed** — the control was observed because the device's active theme was already
+non-Cybergram.
 
 ### Verdicts after the follow-up
 

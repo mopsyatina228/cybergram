@@ -68,8 +68,10 @@ Status: `FIX LANDED 2026-09-16 — E PASS / A PARTIAL ON THE FIXED BEHAVIOUR / R
 A re-run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`) confirmed on the
 authenticated surface that the selected chip renders **with its label and badge** (tapping `263679`
 and `12412412 108` switches folders with labels intact), closing the B0-FIX re-run item at A tier.
-Still open: horizontal overflow/scroll, page swipe, long-press/menu, edit/reorder/delete mode and the
-non-Cybergram control (the last needs a persisted theme mutation).
+Still open: horizontal overflow/scroll, page swipe, long-press/menu and edit/reorder/delete mode. The
+**non-Cybergram control PASSED at P** on 2026-09-17: the Redmi's active theme was non-Cybergram and the
+dialogs list showed the upstream rounded filter chips with no Cybergram plate
+(`docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §P).
 
 Type: validation only. The 2026-09-15 authenticated run was stopped at a confirmed presentation defect and no fix was attempted; the record is `docs/B0_FILTER_TABS_DEFECT_2026-09-15.md`. The defect was fixed on 2026-09-16 by a separate bounded change (B0-FIX below), so the remaining B0 work is the authenticated matrix re-run, not the defect.
 
@@ -101,8 +103,9 @@ A re-run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`) 
 authenticated navigation Chats → Contacts → Settings → Profile → Chats: the angular dark panel and the
 cyan selected plate track the active tab, the Contacts badge renders, and `crash_matches=0`,
 `anr_matches=0`. Still open: Calls enable/disable and the Settings/Calls swap, reselect/scroll-to-top,
-long-press/long-drag selection, tabs show/hide animation, orientation change, attach/bot tab geometry
-and the non-Cybergram control.
+long-press/long-drag selection, tabs show/hide animation, orientation change and attach/bot tab
+geometry. The **non-Cybergram control PASSED at P** on 2026-09-17 (upstream rounded bottom navigation
+with no red rails).
 
 First authenticated (A) run: 2026-09-15, `docs/A_TIER_VALIDATION_2026-09-15.md`. On a real authenticated
 session the tab navigation (Chats → Contacts → Settings → Profile → Chats), the angular dark outer panel,
