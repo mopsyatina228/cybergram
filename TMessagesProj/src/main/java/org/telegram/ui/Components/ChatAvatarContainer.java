@@ -57,6 +57,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -281,7 +282,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         titleTextView = new SimpleTextConnectedView(context, titleTextLargerCopyView);
         titleTextView.setEllipsizeByGradient(true);
         titleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-        titleTextView.setTextSize(18);
+        titleTextView.setTextSize(CybergramTheme.isCybergramPresentation(resourcesProvider) ? 16 : 18);
         titleTextView.setGravity(Gravity.LEFT);
         titleTextView.setTypeface(chromeTitleTypeface());
         titleTextView.setLeftDrawableTopPadding(-dp(1.3f));
@@ -296,7 +297,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             animatedSubtitleTextView.setEllipsizeByGradient(true);
             animatedSubtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
             animatedSubtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
-            animatedSubtitleTextView.setTextSize(dp(14));
+            animatedSubtitleTextView.setTextSize(CybergramTheme.isCybergramPresentation(resourcesProvider) ? dp(12) : dp(14));
             animatedSubtitleTextView.setGravity(Gravity.LEFT);
             animatedSubtitleTextView.setPadding(0, 0, dp(10), 0);
             animatedSubtitleTextView.setTranslationY(-dp(1));
@@ -307,7 +308,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             subtitleTextView.setEllipsizeByGradient(true);
             subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
             subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
-            subtitleTextView.setTextSize(14);
+            subtitleTextView.setTextSize(CybergramTheme.isCybergramPresentation(resourcesProvider) ? 12 : 14);
             subtitleTextView.setGravity(Gravity.LEFT);
             subtitleTextView.setPadding(0, 0, dp(10), 0);
             subtitleTextView.setTypeface(chromeSubtitleTypeface());
@@ -669,6 +670,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec);
         final int availableWidth = width - dp((avatarImageView.getVisibility() == VISIBLE ? 54 : 0) + 16);
+        // Owner ruling D9.6: lighter, more compact Cybergram identity block.
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            avatarSizeInDp = CybergramTheme.HEADER_AVATAR_DP;
+        }
         avatarImageView.measure(MeasureSpec.makeMeasureSpec(dp(avatarSizeInDp) - 2, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(avatarSizeInDp) - 2, MeasureSpec.EXACTLY));
         titleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24 + 8), MeasureSpec.AT_MOST));
         if (subtitleTextView != null) {

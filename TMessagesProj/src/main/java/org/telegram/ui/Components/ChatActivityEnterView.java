@@ -2628,11 +2628,12 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
             private CybergramHudDrawable cybergramComposerFrame;
+            private final Paint cybergramComposerRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                final int height = Math.max(dp(44), getMeasuredHeight());
+                final int height = Math.max(dp(getComposerHeight()), getMeasuredHeight());
                 if (animatorInputFieldHeight.getFactor() > 0) {
                     animatorInputFieldHeight.animateTo(height);
                 } else {
@@ -2687,12 +2688,24 @@ public class ChatActivityEnterView extends FrameLayout implements
                     cybergramComposerFrame = new CybergramHudDrawable();
                     cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
                 }
-                // Owner ruling 2026-09-15 (docs/OWNER_DECISIONS_2026-09-15.md §2 D7): the frame read
-                // as too dim/weak on device, so the stroke is widened from 1dp to 1.5dp. Stroke-only
-                // by design: a fill would overpaint the field's children (this runs after dispatchDraw).
-                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend), dp(1.5f), true);
+                // Stroke-only by design: a fill would overpaint the field's children (this runs
+                // after dispatchDraw). Owner ruling D9.3/D9.7 (docs/OWNER_DECISIONS_2026-09-17.md):
+                // the frame returns to the thin shared Cybergram stroke; the round-2 D7 1.5dp
+                // widening is superseded.
+                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend),
+                        dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
                 cybergramComposerFrame.setBounds(0, 0, w, h);
                 cybergramComposerFrame.draw(canvas);
+
+                // Owner ruling D9.1/D9.8: thin red structural separator between the message list
+                // and the composer, with a soft neon bloom falling into the composer only. One
+                // device pixel of bright core; the bloom never reaches up over message text.
+                final float ruleH = Math.max(1f, AndroidUtilities.density);
+                cybergramComposerRulePaint.setColor(CybergramTheme.SEPARATOR);
+                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_GLOW_ALPHA);
+                canvas.drawRect(0, 0, w, dp(CybergramTheme.RED_GLOW_RADIUS_DP), cybergramComposerRulePaint);
+                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_RULE_ALPHA);
+                canvas.drawRect(0, 0, w, ruleH, cybergramComposerRulePaint);
             }
         };
         frameLayout.setClipChildren(false);
@@ -2749,7 +2762,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
-        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
+        messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(getComposerHeight(), getComposerHeight(), Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
         setEmojiButtonImage(false, false);
 
         deleteRichDraftButton = new ImageView(context);
@@ -2834,7 +2847,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             attachButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
+            messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(getComposerHeight(), getComposerHeight(), Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
                     return;
@@ -3217,6 +3230,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             private final RectF backgroundRect = new RectF();
+            private CybergramHudDrawable cybergramAudioVideoPlate;
 
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
@@ -3228,11 +3242,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                         }
                     }
 
-                    final float r = dpf2(19);
-                    paint.setColor(getThemedColor(Theme.key_chat_messagePanelSend));
-                    final float margin = dpf2(3);
-                    final float height = dpf2(38);
-                    final float width = dpf2(38);
+                    // Owner ruling D9.7: under Cybergram the microphone plate fills its container,
+                    // so its frame height matches the composer frame height exactly.
+                    final boolean cybergramPlate = CybergramTheme.isCybergramPresentation(resourcesProvider);
+                    final float margin = cybergramPlate ? 0f : dpf2(3);
+                    final float height = cybergramPlate ? getMeasuredHeight() : dpf2(38);
+                    final float width = cybergramPlate ? getMeasuredWidth() : dpf2(38);
                     backgroundRect.set(
                             getMeasuredWidth() - width - margin,
                             getMeasuredHeight() - height - margin,
@@ -3242,14 +3257,34 @@ public class ChatActivityEnterView extends FrameLayout implements
 
                     canvas.save();
                     canvas.scale(s, s, backgroundRect.centerX(), backgroundRect.centerY());
-                    canvas.drawRoundRect(backgroundRect, r, r, paint);
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        // Owner ruling D9.7 (docs/OWNER_DECISIONS_2026-09-17.md): the microphone is
+                        // a dark angular plate with a thin blue outline, never a bright teal fill.
+                        if (cybergramAudioVideoPlate == null) {
+                            cybergramAudioVideoPlate = new CybergramHudDrawable();
+                        }
+                        cybergramAudioVideoPlate.setFillColor(
+                                getThemedColor(Theme.key_chat_messagePanelBackground));
+                        cybergramAudioVideoPlate.setStroke(
+                                getThemedColor(Theme.key_chat_messagePanelSend),
+                                dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+                        cybergramAudioVideoPlate.setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                        cybergramAudioVideoPlate.setBounds(
+                                (int) backgroundRect.left, (int) backgroundRect.top,
+                                (int) backgroundRect.right, (int) backgroundRect.bottom);
+                        cybergramAudioVideoPlate.draw(canvas);
+                    } else {
+                        final float r = dpf2(19);
+                        paint.setColor(getThemedColor(Theme.key_chat_messagePanelSend));
+                        canvas.drawRoundRect(backgroundRect, r, r, paint);
+                    }
                     canvas.restore();
                 }
                 super.dispatchDraw(canvas);
             }
         };
         audioVideoButtonContainer.setSoundEffectsEnabled(false);
-        sendButtonContainer.addView(audioVideoButtonContainer, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
+        sendButtonContainer.addView(audioVideoButtonContainer, LayoutHelper.createFrame(getComposerHeight(), getComposerHeight(), Gravity.RIGHT | Gravity.BOTTOM));
         audioVideoButtonContainer.setFocusable(true);
         audioVideoButtonContainer.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
 
@@ -3493,9 +3528,10 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             @Override
             public boolean isCybergramSendPlateEnabled() {
+                // Owner ruling D9.7: the dark plate + thin blue outline also covers the
+                // voice/recording state, so the microphone is never a bright teal fill.
                 return CybergramTheme.isCybergramPresentation(resourcesProvider)
-                        && ChatActivityEnterView.this.editingMessageObject == null
-                        && !ChatActivityEnterView.this.recordingAudioVideo;
+                        && ChatActivityEnterView.this.editingMessageObject == null;
             }
 
             @Override
@@ -3515,7 +3551,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         sendButton.setScaleX(0.1f);
         sendButton.setScaleY(0.1f);
         sendButton.setAlpha(0.0f);
-        sendButtonContainer.addView(sendButton, LayoutHelper.createFrame(100, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
+        sendButtonContainer.addView(sendButton, LayoutHelper.createFrame(100, getComposerHeight(), Gravity.RIGHT | Gravity.BOTTOM));
         sendButton.setOnClickListener(view -> {
             if ((messageSendPreview != null && messageSendPreview.isShowing()) || (runningAnimationAudio != null && runningAnimationAudio.isRunning()) || moveToSendStateRunnable != null) {
                 return;
@@ -6473,6 +6509,15 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     public static final int DEFAULT_HEIGHT = 44;
+
+    /**
+     * Composer field height for the active presentation (owner ruling D9.7,
+     * docs/OWNER_DECISIONS_2026-09-17.md): Cybergram uses a shorter panel; every other theme keeps
+     * the upstream value.
+     */
+    public static int getComposerHeight() {
+        return CybergramTheme.isCybergramPresentation(null) ? CybergramTheme.COMPOSER_HEIGHT_DP : DEFAULT_HEIGHT;
+    }
 
     private boolean resizeForTopViewLastShow;
     private void resizeForTopView(boolean show) {

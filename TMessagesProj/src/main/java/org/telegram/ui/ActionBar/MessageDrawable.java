@@ -860,7 +860,13 @@ public class MessageDrawable extends Drawable {
             tl = isTopNear ? near : full;
             bl = isBottomNear ? near : full;
         }
-        CybergramBubbleDrawable.buildPath(path, left, top, right, bottom, tl, tr, br, bl);
+        // Owner ruling D9.4 (docs/OWNER_DECISIONS_2026-09-17.md): the outer top corner of the
+        // speaking side grows a small triangular spur (the concept's "выступ"); the other three
+        // corners keep the 45-degree chamfer. The border overlay below reuses this same path.
+        boolean tailLeft = !isOut && currentType == TYPE_TEXT && !isTopNear;
+        boolean tailRight = isOut && currentType == TYPE_TEXT && !isTopNear;
+        CybergramBubbleDrawable.buildTailedPath(path, left, top, right, bottom, tl, tr, br, bl,
+                tailLeft, tailRight, dp(CybergramTheme.BUBBLE_TAIL_DP));
     }
 
     private Paint getBorderPaint() {

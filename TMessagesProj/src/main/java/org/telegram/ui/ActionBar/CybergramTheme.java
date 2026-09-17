@@ -25,27 +25,55 @@ public final class CybergramTheme {
     public static final int TEXT_MUTED = 0xFF6B7A8A;
     public static final int TEXT_ON_AMBER = 0xFF101216;
 
-    /** Stable opaque composites matching restrained translucent-looking message surfaces. */
-    public static final int IN_BUBBLE = 0xFF2B220D;
-    public static final int IN_BUBBLE_SELECTED = 0xFF43330B;
-    public static final int OUT_BUBBLE = 0xFF07252C;
-    public static final int OUT_BUBBLE_SELECTED = 0xFF063A44;
-    public static final int OUT_TEXT = 0xFFD7FCFF;
+    /**
+     * Low-saturation pale blue for header/composer line icons (owner ruling D9.6/D9.8,
+     * docs/OWNER_DECISIONS_2026-09-17.md). The saturated cyan above stays reserved for thin
+     * semantic accents (outgoing outline, checks, cursor), not for large icon masses.
+     */
+    public static final int ICON_PALE = 0xFF8FBFCC;
 
-    public static final int DIVIDER = 0xFF1B2B32;
+    /**
+     * Refined message surfaces (owner ruling D9.2): incoming is a near-black olive, outgoing is a
+     * dark blue-green. The saturated turquoise fill is gone — direction is carried by the thin
+     * outline and the metadata colour, not by an opaque bright surface.
+     */
+    public static final int IN_BUBBLE = 0xFF0B0C07;
+    public static final int IN_BUBBLE_SELECTED = 0xFF16180D;
+    public static final int OUT_BUBBLE = 0xFF0A1B1D;
+    public static final int OUT_BUBBLE_SELECTED = 0xFF0E282B;
+
+    /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
+    public static final int IN_TEXT = 0xFFD3D6CE;
+    public static final int OUT_TEXT = 0xFFCFEAF2;
+
+    /** Time/metadata: smaller and dimmer than the body text on both sides (owner ruling D9.5). */
+    public static final int IN_TIME = 0xFF8F8B78;
+    public static final int OUT_TIME = 0xFF7E9AA3;
+
+    /** Red structural rail for separators and technical framing (owner ruling D9.1). */
+    public static final int SEPARATOR = DANGER;
+
+    public static final int DIVIDER = 0xFF2A0A12;
     public static final int HINT = 0xFF5F6E7C;
 
     /** Built-in Cybergram theme name; used only for the presentation activation gate. */
     public static final String THEME_NAME = "Cybergram";
 
     /** Corner chamfer cut, in dp, for the Cybergram message silhouette (45-degree corners). */
-    public static final float BUBBLE_CORNER_CUT_DP = 6f;
+    public static final float BUBBLE_CORNER_CUT_DP = 5f;
+
+    /**
+     * Length, in dp, of the small angular corner protrusion ("выступ") on the outer top corner of a
+     * Cybergram message bubble (owner ruling D9.4). It is drawn inside the reserved 8dp tail region,
+     * so the polygon stays within the drawable bounds. The other three corners keep the 45° chamfer.
+     */
+    public static final float BUBBLE_TAIL_DP = 4.5f;
 
     /** Chamfer cut, in dp, for the "near" corners of a grouped Cybergram bubble. */
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
 
-    /** Cybergram message outline stroke width, in dp. */
-    public static final float BUBBLE_BORDER_WIDTH_DP = 1f;
+    /** Cybergram message outline stroke width, in dp (reduced by owner ruling D9.3). */
+    public static final float BUBBLE_BORDER_WIDTH_DP = 0.75f;
 
     /**
      * Extra vertical inset, in dp, applied to each *unjoined* vertical edge of a Cybergram
@@ -62,13 +90,38 @@ public final class CybergramTheme {
      * TYPE_MEDIA is deliberately excluded: a lowered media outline would expose the photo,
      * whose y is set independently of the drawable bounds.
      */
-    public static final float BUBBLE_GAP_EXTRA_DP = 2f;
+    public static final float BUBBLE_GAP_EXTRA_DP = 3f;
 
     /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
     public static final int HEADER_RULE_ALPHA = 190;
 
     /** Alpha of secondary cyan header ticks/identity segment. */
     public static final int HEADER_TECH_ALPHA = 180;
+
+    /** Alpha (0..255) of the thin red separator above the composer (owner ruling D9.1). */
+    public static final int COMPOSER_RULE_ALPHA = 170;
+
+    /** Alpha (0..255) of the soft neon bloom under the red rails (owner ruling D9.8). */
+    public static final int HEADER_GLOW_ALPHA = 70;
+    public static final int COMPOSER_GLOW_ALPHA = 80;
+
+    /** Radius, in dp, of the red-rail neon bloom (owner ruling D9.8). */
+    public static final float RED_GLOW_RADIUS_DP = 3f;
+
+    /** Extra vertical inner padding, in dp, for Cybergram text bubbles (owner ruling D9.4). */
+    public static final float BUBBLE_INNER_PAD_DP = 2.5f;
+
+    /** Extra horizontal text inset, in dp, for Cybergram bubbles (owner ruling D9.4). */
+    public static final float BUBBLE_TEXT_INSET_DP = 2f;
+
+    /** Extra leftward shift, in dp, of the outgoing delivery checks toward the time (D9.5). */
+    public static final float CHECK_INSET_DP = 3f;
+
+    /** Cybergram composer field height, in dp (owner ruling D9.7). Upstream is 44. */
+    public static final int COMPOSER_HEIGHT_DP = 40;
+
+    /** Cybergram chat-header avatar size, in dp (owner ruling D9.6). Upstream is 42. */
+    public static final int HEADER_AVATAR_DP = 36;
 
     /** Alpha (0..255) of the thin cyan-dark separator on a dialogs row bottom edge. */
     public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 66;

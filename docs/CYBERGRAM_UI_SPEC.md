@@ -56,6 +56,14 @@ The incoming/outgoing surface colours above are stable opaque composites chosen 
 
 The checked-in `TMessagesProj/src/main/assets/cybergram.attheme` is the executable approximation of this palette.
 
+Amended 2026-09-17 (owner round 3, `docs/OWNER_DECISIONS_2026-09-17.md` §1 D9.2/D9.5/D9.8): the
+message surfaces were refined away from the warm/cyan *tint* toward near-black surfaces. Incoming is
+now a near-black olive; outgoing is a dark blue-green. The bright turquoise fill is gone on both
+sides. Body text is light grey on incoming and pale blue on outgoing; time/metadata is smaller and
+dimmer than the body text. Saturated colour survives only on thin outlines, checks, the cursor and
+discrete controls. Red is promoted to the structural/technical accent (separators, technical markup,
+small decorative accents).
+
 ## Chat screen target
 
 The screen remains a conventional Telegram chat structurally: Android status bar, back affordance, avatar/contact identity, status, search/menu actions, message history and composer.
@@ -72,6 +80,19 @@ Date separators and service messages use compact dark plates with amber/cyan acc
 
 The composer is a dark angular panel with cyan cursor/icons and a cyan-framed send state. Rounded/glass Material backgrounds should not reappear in Cybergram-specific composer presentation. Recording/destructive states may use the red accent.
 
+Amended 2026-09-17 (owner round 3, D9.1/D9.6/D9.7): thin red rules separate the header, the message
+area and the composer. The header background is a single almost-black surface; avatar, name and
+status lose visual weight in a more compact block; header icons are one thin linear low-saturation
+pale-blue style; bright accents and decoration around the avatar are removed (this supersedes the
+short cyan identity segment kept by D8). The composer field is dark and nearly merges with the app
+background; the microphone/voice control is a dark surface with a thin blue outline, never a bright
+teal fill (the state also covers recording); the smiley, paperclip and microphone share one thin
+linear style; panel height and outline are reduced. The Cybergram composer height is
+`COMPOSER_HEIGHT_DP` (40 dp) and the microphone plate fills its container, so its frame height equals
+the composer field height. The chat identity block uses `HEADER_AVATAR_DP` (36 dp) and the smaller
+title/subtitle sizes. The red header rail and composer separator carry a soft neon bloom that stays on
+the chrome side of the boundary and never covers message text.
+
 ## Message geometry
 
 Cybergram replaces rounded Telegram message silhouettes with an angular drawable. Desired properties:
@@ -84,6 +105,19 @@ Cybergram replaces rounded Telegram message silhouettes with an angular drawable
 - grouped messages must still join cleanly;
 - selection/pressed overlays must follow the new path;
 - shadows should be minimal or absent.
+
+Amended 2026-09-17 (owner round 3, D9.3/D9.4): the outline uses the reduced shared stroke. Three
+corners of every bubble keep the crisp 45-degree chamfer; the outer top corner of the speaking side
+carries the concept's small angular protrusion ("выступ") — a short triangular spur, left for
+incoming and right for outgoing. It is produced by the single shared
+`CybergramBubbleDrawable.buildTailedPath(...)` polygon (the plain-chamfer overload is retained for
+non-message callers) and stays inside the reserved tail region. One chamfer value is used on every
+corner; the reduced near-corner cut, and the spur, are suppressed where a bubble is genuinely joined
+to a same-run neighbour. Inner padding is implemented: `ChatMessageCell` grows the measured text
+bubble by `2 * BUBBLE_INNER_PAD_DP` and shifts `textY` by `BUBBLE_INNER_PAD_DP`, while
+`getExtraTextX()` adds a symmetric `BUBBLE_TEXT_INSET_DP` horizontal inset, so the text keeps clear of
+the outline and the layout moves with it. Outgoing delivery checks sit `CHECK_INSET_DP` closer to the
+time.
 
 `MessageDrawable.java` is the primary rendering surface. `ChatMessageCell.java` must be validated for grouped messages, media and message metadata before bubble bounds are changed.
 
@@ -165,6 +199,10 @@ messages moves toward the reference's ~12 px gap. The inset is paint-only inside
 time/check cluster are unchanged, and edges joined to a neighbour of the same run keep the upstream
 inset so grouped bubbles still join cleanly. `TYPE_MEDIA` is excluded because its image position is
 independent of the drawable bounds. Contract and ceiling: `docs/passes/D6_BUBBLE_SPACING.md`.
+
+Amended 2026-09-17 (owner round 3, D9.5): the inter-bubble inset was increased further so distinct
+replies read with a clearly noticeable gap. The paint-only, join-aware `D6` mechanism and its ceiling
+are unchanged.
 
 ## Implementation stages
 

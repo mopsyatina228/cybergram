@@ -31,7 +31,7 @@ windowBackgroundUnchecked=-9733494
 windowBackgroundChecked=-16718337
 windowBackgroundCheckText=-16250353
 progressCircle=-16718337
-divider=-14996686
+divider=-14022126
 graySection=-15656928
 key_graySectionText=-9733494
 listSelectorSDK21=436266495
@@ -69,10 +69,10 @@ dialogFloatingButton=-16718337
 dialogFloatingIcon=-16250353
 
 # Main action bar
-actionBarDefault=-16052974
-actionBarDefaultIcon=-16718337
+actionBarDefault=-16250353
+actionBarDefaultIcon=-7356468
 actionBarDefaultTitle=-1640449
-actionBarDefaultSubtitle=-13379841
+actionBarDefaultSubtitle=-8407870
 actionBarDefaultSelector=436266495
 actionBarWhiteSelector=436266495
 actionBarDefaultSearch=-1640449
@@ -81,8 +81,8 @@ actionBarDefaultSubmenuBackground=-15656928
 actionBarDefaultSubmenuItem=-1640449
 actionBarDefaultSubmenuItemIcon=-16718337
 actionBarDefaultSubmenuSeparator=-14996686
-actionBarActionModeDefault=-16052974
-actionBarActionModeDefaultIcon=-16718337
+actionBarActionModeDefault=-16250353
+actionBarActionModeDefaultIcon=-7356468
 actionBarActionModeDefaultSelector=436266495
 actionBarTabActiveText=-16718337
 actionBarTabUnactiveText=-9733494
@@ -141,24 +141,24 @@ chats_archiveText=-1640449
 
 # Chat canvas and header
 chat_wallpaper=-16250353
-chat_status=-16718337
+chat_status=-8407870
 chat_lockIcon=-16718337
 chat_muteIcon=-9733494
 chat_selectedBackground=436266495
 
-# Incoming message: amber-tinted surface, amber outline, light foreground
-# Stable opaque composite approximating ~14% amber over Cybergram #080A0F; selected ~24%.
-chat_inBubble=-13950451
-chat_inBubbleSelected=-12373237
+# Incoming message (owner ruling D9.2, 2026-09-17): near-black olive surface, thin yellow
+# outline, light-grey foreground. Surface is a stable opaque near-black-olive composite.
+chat_inBubble=-16053241
+chat_inBubbleSelected=-15329267
 chat_inBubbleShadow=0
-chat_messageTextIn=-1381659
+chat_messageTextIn=-2894130
 chat_messageLinkIn=-13379841
-chat_inTimeText=-5854313
-chat_inTimeSelectedText=-3222846
-chat_inViews=-4677774
-chat_inViewsSelected=-2640520
-chat_inMenu=-4677774
-chat_inMenuSelected=-2640520
+chat_inTimeText=-7369864
+chat_inTimeSelectedText=-6054266
+chat_inViews=-7369864
+chat_inViewsSelected=-6054266
+chat_inMenu=-7369864
+chat_inMenuSelected=-6054266
 chat_inForwardedNameText=-19712
 chat_inViaBotNameText=-19712
 chat_inReplyLine=-19712
@@ -174,24 +174,24 @@ chat_inFileInfoText=-5656405
 chat_inAudioTitleText=-1381659
 chat_inAudioDurationText=-5656405
 
-# Outgoing message: cyan-tinted surface, luminous foreground
-# Stable opaque composite approximating ~12% cyan over Cybergram #080A0F; selected ~22%.
-chat_outBubble=-16308948
-chat_outBubbleSelected=-16369084
+# Outgoing message (owner ruling D9.2, 2026-09-17): dark blue-green surface, thin blue outline,
+# pale-blue foreground. The bright turquoise fill is gone; the surface stays dark blue-green.
+chat_outBubble=-16114915
+chat_outBubbleSelected=-15849429
 chat_outBubbleShadow=0
 chat_outBubbleGradientSelectedOverlay=436266495
-chat_messageTextOut=-2622209
+chat_messageTextOut=-3151118
 chat_messageLinkOut=-13379841
-chat_outTimeText=-8987160
-chat_outTimeSelectedText=-13379841
-chat_outViews=-8987160
-chat_outViewsSelected=-13379841
-chat_outMenu=-8987160
-chat_outMenuSelected=-13379841
+chat_outTimeText=-8480093
+chat_outTimeSelectedText=-6308668
+chat_outViews=-8480093
+chat_outViewsSelected=-6308668
+chat_outMenu=-8480093
+chat_outMenuSelected=-6308668
 chat_outForwardedNameText=-13379841
 chat_outViaBotNameText=-13379841
-chat_outReplyLine=-16718337
-chat_outReplyLine2=-13379841
+chat_outReplyLine=-10503991
+chat_outReplyLine2=-7352100
 chat_outReplyNameText=-13379841
 chat_outReplyMessageText=-2622209
 chat_outReplyMediaMessageText=-8987160
@@ -205,24 +205,24 @@ chat_outAudioTitleText=-13379841
 chat_outAudioDurationText=-8987160
 
 # Delivery and errors
-chat_outSentCheck=-16718337
-chat_outSentCheckSelected=-13379841
+chat_outSentCheck=-10503991
+chat_outSentCheckSelected=-7352100
 chat_outSentCheckRead=-16718337
-chat_outSentCheckReadSelected=-13379841
-chat_outSentClock=-8987160
-chat_outSentClockSelected=-13379841
-chat_inSentClock=-4677774
-chat_inSentClockSelected=-2640520
+chat_outSentCheckReadSelected=-7352100
+chat_outSentClock=-8480093
+chat_outSentClockSelected=-6308668
+chat_inSentClock=-7369864
+chat_inSentClockSelected=-6054266
 chat_sentError=-65476
 chat_sentErrorIcon=-1640449
 
 # Composer
-chat_messagePanelBackground=-16052974
-chat_messagePanelText=-1640449
+chat_messagePanelBackground=-16250353
+chat_messagePanelText=-2894130
 chat_messagePanelHint=-10523012
-chat_messagePanelCursor=-16718337
-chat_messagePanelIcons=-13379841
-chat_messagePanelSend=-16718337
+chat_messagePanelCursor=-10503991
+chat_messagePanelIcons=-7356468
+chat_messagePanelSend=-8402474
 chat_messagePanelShadow=0
 chat_replyPanelIcons=-16718337
 chat_replyPanelClose=-13379841

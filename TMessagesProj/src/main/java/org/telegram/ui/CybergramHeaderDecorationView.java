@@ -110,15 +110,18 @@ public class CybergramHeaderDecorationView extends View {
             return;
         }
 
-        // Reference language: a restrained red structural rail under the dark header.
+        // Reference language: a restrained red structural rail under the dark header with a soft
+        // neon bloom (owner ruling D9.8). The bloom rises into the header, so it never covers the
+        // message text below the rail.
         paint.setColor(CybergramTheme.DANGER);
+        paint.setAlpha(CybergramTheme.HEADER_GLOW_ALPHA);
+        canvas.drawRect(ax, ruleTop - dp(CybergramTheme.RED_GLOW_RADIUS_DP), ax + aw, bottom, paint);
         paint.setAlpha(CybergramTheme.HEADER_RULE_ALPHA);
         canvas.drawRect(ax, ruleTop, ax + aw, bottom, paint);
 
-        // Short cyan segment anchors the identity/title zone without turning the full rail neon.
-        paint.setColor(cyanColor());
-        paint.setAlpha(255);
-        canvas.drawRect(ax + dp(52), ruleTop, ax + dp(52) + dp(42), bottom, paint);
+        // Owner ruling D9.6 (docs/OWNER_DECISIONS_2026-09-17.md): the bright cyan identity
+        // segment that used to sit under the avatar was removed — no bright accent or decoration
+        // near the identity block. The thin red rail above is the header's only rule.
 
         // Small red edge rails echo the vertical technical framing in the reference.
         paint.setColor(CybergramTheme.DANGER);

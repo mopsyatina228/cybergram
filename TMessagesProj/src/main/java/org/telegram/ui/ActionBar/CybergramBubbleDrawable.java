@@ -163,6 +163,66 @@ public final class CybergramBubbleDrawable extends Drawable {
         path.close();
     }
 
+    /**
+     * Cybergram message silhouette with the concept's small angular corner protrusion
+     * ("выступ", owner ruling D9.4, docs/OWNER_DECISIONS_2026-09-17.md).
+     *
+     * Three corners keep the 45-degree chamfer; the outer top corner of the speaking side grows a
+     * short triangular spur that points away from the bubble (left for incoming, right for
+     * outgoing), exactly as in design/references/design-target-hex-chat.jpg. The spur is limited to
+     * the reserved tail region, so the polygon still stays inside the drawable bounds.
+     *
+     * When neither tail flag is set this is identical to the plain-chamfer overload, so callers
+     * that do not want a spur are unaffected.
+     *
+     * @param tailLeft  add the spur to the top-left corner (incoming)
+     * @param tailRight add the spur to the top-right corner (outgoing)
+     * @param tailLen   spur length in px, kept inside the reserved tail region by the caller
+     */
+    public static void buildTailedPath(Path path, float left, float top, float right, float bottom,
+                                       float topLeftCut, float topRightCut, float bottomRightCut,
+                                       float bottomLeftCut,
+                                       boolean tailLeft, boolean tailRight, float tailLen) {
+        path.reset();
+        if (right <= left || bottom <= top) {
+            return;
+        }
+        float maxCut = Math.min(right - left, bottom - top) * 0.5f;
+        float tl = Math.min(topLeftCut, maxCut);
+        float tr = Math.min(topRightCut, maxCut);
+        float br = Math.min(bottomRightCut, maxCut);
+        float bl = Math.min(bottomLeftCut, maxCut);
+        float tail = Math.max(0f, tailLen);
+        if (tail <= 0f || (!tailLeft && !tailRight)) {
+            buildPath(path, left, top, right, bottom, tl, tr, br, bl);
+            return;
+        }
+
+        path.moveTo(left + tl, top);
+
+        // Top edge to the top-right corner, adding the outgoing spur when requested.
+        path.lineTo(right - tr, top);
+        if (tailRight) {
+            path.lineTo(right - tr * 0.35f, top);
+            path.lineTo(right + tail, top + tr * 0.25f);
+        }
+        path.lineTo(right, top + tr);
+
+        // Right, bottom and left edges keep the plain 45-degree chamfers.
+        path.lineTo(right, bottom - br);
+        path.lineTo(right - br, bottom);
+        path.lineTo(left + bl, bottom);
+        path.lineTo(left, bottom - bl);
+        path.lineTo(left, top + tl);
+
+        // Close through the top-left corner, adding the incoming spur when requested.
+        if (tailLeft) {
+            path.lineTo(left - tail, top + tl * 0.25f);
+            path.lineTo(left + tl * 0.35f, top);
+        }
+        path.close();
+    }
+
     @Override
     public void draw(@NonNull Canvas canvas) {
         if (path.isEmpty()) {
