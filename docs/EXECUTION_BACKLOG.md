@@ -375,15 +375,20 @@ recorded so they are not lost.
   `drawBackground = false`, so no bubble is painted for it. Recommended: `2.5f` (restores ≥1 px on
   both edges) plus an optional defensive clamp; the javadoc is corrected but the value is left to an
   owner ruling. **Unauthorized.**
-- **R-STUB — D4 grid may decorate the per-chat default-theme stub.** `ChatActivity.java:44139` returns
-  `new ColorDrawable(Color.BLACK)` for the `chatTheme.showAsDefaultStub` branch; with a null global
-  `overrideWallpaper` this can pass `isEligible`, so the faint grid/frame can appear on that stub.
-  Cosmetic only; decide whether a per-chat default theme is "a user wallpaper". **Unauthorized.**
-- **R-PERF — the Cybergram bubble border is rebuilt and stroked uncached every frame.** Per-bubble,
-  per-frame cost only; no correctness impact. **Unauthorized.**
+- **R-STUB — D4 grid may decorate the per-chat default-theme stub.** **FIXED 2026-09-17**:
+  `ChatActivityFragmentView.getNewDrawable()` skips the backdrop when
+  `themeDelegate.chatTheme.showAsDefaultStub` is true, so the grid/frame can no longer paint on the
+  `ColorDrawable(Color.BLACK)` stub. Record: `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`.
+- **R-PERF — the Cybergram bubble border is rebuilt and stroked uncached every frame.** **FIXED
+  2026-09-17**: `MessageDrawable` now caches the outline path and rebuilds it only when the bounds or
+  the `isTopNear`/`isBottomNear`/`isOut`/`currentType` flags change. Record:
+  `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`.
 - **R-OVERLAY — every `ChatActivity`, including non-Cybergram, now carries a full-size inert overlay
-  view** (`CybergramHeaderDecorationView`) with a per-draw gate call. No functional change (the view is
-  non-interactive); a minor always-on cost. **Unauthorized.**
+  view** (`CybergramHeaderDecorationView`) with a per-draw gate call. **FIXED 2026-09-17**: the view now
+  drives its own visibility from the Cybergram gate and re-evaluates on attach and on the global
+  `didSetNewTheme`, so it is `GONE` (skipped by the traversal) when Cybergram is not active while
+  runtime theme switching still needs no activity recreation. Record:
+  `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`.
 
 R-D6, R-STUB, R-PERF and R-OVERLAY are recorded findings only. Acting on any of them still requires an
 explicit owner authorization; B0-FIX and R-GATE were the two exceptions, authorized by the owner's

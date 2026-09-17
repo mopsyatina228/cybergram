@@ -105,6 +105,15 @@ public class MessageDrawable extends Drawable {
     public boolean forceInvalidatePath;
     private Paint borderPaint;
     private final Path cybergramBorderPath = new Path();
+    // R-PERF (owner goal 2026-09-17): the Cybergram outline path depends only on the drawable bounds
+    // and the four bubble state flags, so it is cached and rebuilt only when one of those changes
+    // instead of being re-walked and re-stroked from scratch on every frame.
+    private final Rect cybergramBorderCacheBounds = new Rect();
+    private boolean cybergramBorderCacheFilled;
+    private boolean cybergramBorderCacheTopNear;
+    private boolean cybergramBorderCacheBottomNear;
+    private boolean cybergramBorderCacheOut;
+    private int cybergramBorderCacheType = -1;
 
     public MessageDrawable(int type, boolean out, boolean selected) {
         this(type, out, selected, null);
@@ -908,7 +917,21 @@ public class MessageDrawable extends Drawable {
             return;
         }
         int padding = dp(2);
-        generateCybergramPath(cybergramBorderPath, bounds, padding);
+        // R-PERF: rebuild the cached outline path only when its inputs changed.
+        if (!cybergramBorderCacheFilled
+                || !cybergramBorderCacheBounds.equals(bounds)
+                || cybergramBorderCacheTopNear != isTopNear
+                || cybergramBorderCacheBottomNear != isBottomNear
+                || cybergramBorderCacheOut != isOut
+                || cybergramBorderCacheType != currentType) {
+            generateCybergramPath(cybergramBorderPath, bounds, padding);
+            cybergramBorderCacheBounds.set(bounds);
+            cybergramBorderCacheTopNear = isTopNear;
+            cybergramBorderCacheBottomNear = isBottomNear;
+            cybergramBorderCacheOut = isOut;
+            cybergramBorderCacheType = currentType;
+            cybergramBorderCacheFilled = true;
+        }
         Paint bp = getBorderPaint();
         bp.setColor(getCybergramBorderColor());
         bp.setAlpha(alpha);

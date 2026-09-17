@@ -18688,7 +18688,12 @@ public class ChatActivity extends BaseFragment implements
             // wallpaper of their own — isEligible() returns false otherwise, so a user
             // wallpaper is handed back untouched. The cached instance keeps BackgroundView's
             // identity check (SizeNotifierFrameLayout.BackgroundView.onDraw) stable.
-            if (CybergramBackdropDrawable.isEligible(ChatActivity.this.getResourceProvider(), drawable)) {
+            // R-STUB (owner goal 2026-09-17): the per-chat default-theme stub
+            // (chatTheme.showAsDefaultStub) is a theme placeholder, not the user's chat surface, so
+            // the D4 grid must not decorate it.
+            boolean cybergramThemeStub = themeDelegate.chatTheme != null && themeDelegate.chatTheme.showAsDefaultStub;
+            if (!cybergramThemeStub
+                    && CybergramBackdropDrawable.isEligible(ChatActivity.this.getResourceProvider(), drawable)) {
                 int color = ((ColorDrawable) drawable).getColor();
                 if (cybergramBackdrop == null || cybergramBackdropColor != color) {
                     cybergramBackdrop = new CybergramBackdropDrawable(color, AndroidUtilities.density);

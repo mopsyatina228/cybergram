@@ -1313,6 +1313,27 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
 - Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` (round-3 update). Artifacts:
   `.local-artifacts/run-p-20260917/`.
 
+## 2026-09-17 — R-series implementation (R-PERF, R-STUB, R-OVERLAY)
+
+- All three recorded code-review findings are implemented on `dev`, each Cybergram-gated or neutral:
+  - **R-PERF** — `MessageDrawable` caches the Cybergram outline path (`cybergramBorderPath`) and
+    rebuilds it only when the bounds or the `isTopNear` / `isBottomNear` / `isOut` / `currentType`
+    flags change, instead of re-walking the shared polygon on every frame.
+  - **R-STUB** — `ChatActivityFragmentView.getNewDrawable()` skips the D4 backdrop when
+    `themeDelegate.chatTheme.showAsDefaultStub` is true, so the grid/frame no longer decorates the
+    `ColorDrawable(Color.BLACK)` per-chat default-theme stub.
+  - **R-OVERLAY** — `CybergramHeaderDecorationView` now drives its own visibility from the Cybergram
+    gate and re-evaluates it on attach and on the global `didSetNewTheme`; it is `GONE` (skipped by
+    the traversal) when Cybergram is not active, while the `onDraw` gate stays as a safety net, so a
+    Day ↔ Cybergram switch still needs no activity recreation.
+- Evidence: arm64 `:TMessagesProj_App:assembleAfatDebug` → `BUILD SUCCESSFUL in 4m 11s`; APK
+  73,396,975 B, SHA-256 `4691E66B5A8DFC35706912CADA4D76CDD9D97AC6FA974418D674A3C9125AA179`; Redmi
+  Note 10S install `Success`, `FATAL=0`; under Cybergram the angular bubble outlines and the red header
+  rail are intact (`rs-chat2.png`); an in-app theme round trip Cybergram → Day → Cybergram completed
+  with no crash and no activity recreation (`rs-day.png`, `rs-cybergram-back.png`).
+- Record: `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`. Artifacts:
+  `.local-artifacts/run-rseries-20260917/`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
