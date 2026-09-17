@@ -85,22 +85,28 @@ public final class CybergramTheme {
      * upstream inset, so grouped joins are preserved. Distinct bubbles therefore gain
      * {@code 2 * BUBBLE_GAP_EXTRA_DP} of clear space between them.
      *
-     * Measured clearance (R-D6 re-measurement, 2026-09-17; density 420, outline stroke
-     * dp(0.75) with {@code Paint.Style.STROKE}): the drawable padding is dp(2)
-     * (MessageDrawable.java:564/630/907) and {@code bounds.top} is dp(1)
-     * (ChatMessageCell.java:20560/20643), so the painted top is dp(3) + E, not dp(2) + E.
-     *   - top edge: plain text starts at dp(10.5) → ~10 px clear at E = 3f (never binding);
-     *   - bottom edge (binding): the time Layout bottom is {@code layoutHeight - dp(6.5)}
-     *     ({@code - dp(7.5)} when grouped, ChatMessageCell.java:24505-24509), so E = 3f leaves
-     *     exactly 0 px standalone and -1 px inside the time box when grouped; dp(2.5f) restores
-     *     >= 1 px on both. R-D6 is open pending an owner ruling on whether to lower E.
-     * The former "emoji-only body starts at dp(6)" ceiling does not bind: TYPE_EMOJIS sets
-     * {@code drawBackground = false} (ChatMessageCell.java:9622-9623), so no Cybergram path or
-     * border is painted for an emoji-only message.
+     * Owner ruling D10.2 (round 4c) resolved R-D6 by lowering this from 3f to
+     * {@link #BUBBLE_GAP_MAX_DP}: the measured clearance showed 3f left exactly 0 px at the
+     * binding bottom edge. Measured geometry (density 420, outline stroke dp(0.75) with
+     * {@code Paint.Style.STROKE}): the drawable padding is dp(2) (MessageDrawable.java:564/630/907)
+     * and {@code bounds.top} is dp(1) (ChatMessageCell.java:20560/20643), so the painted top is
+     * dp(3) + E. The top edge never binds (plain text starts at dp(10.5)); the binding edge is the
+     * time cluster at {@code layoutHeight - dp(6.5)} ({@code - dp(7.5)} when grouped,
+     * ChatMessageCell.java:24505-24509), which needs E at or below {@link #BUBBLE_GAP_MAX_DP} to
+     * keep a clear margin. {@code MessageDrawable} clamps to that maximum, so a future raise cannot
+     * silently reintroduce the collision.
      * TYPE_MEDIA is deliberately excluded: a lowered media outline would expose the photo,
      * whose y is set independently of the drawable bounds.
      */
-    public static final float BUBBLE_GAP_EXTRA_DP = 3f;
+    public static final float BUBBLE_GAP_EXTRA_DP = 2.5f;
+
+    /**
+     * Largest safe value of {@link #BUBBLE_GAP_EXTRA_DP}, in dp (owner ruling D10.2, R-D6). At this
+     * value the painted bottom edge still clears the time cluster; above it the outline intrudes
+     * into the time box (measured at density 420: 3f gave 0 px standalone and -1 px grouped).
+     * {@code MessageDrawable.generateCybergramPath(...)} clamps to it defensively.
+     */
+    public static final float BUBBLE_GAP_MAX_DP = 2.5f;
 
     /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
     public static final int HEADER_RULE_ALPHA = 190;
