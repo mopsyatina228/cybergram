@@ -205,12 +205,17 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = a
 ### Round-4 validation update (2026-09-17)
 
 - **B0 (filter tabs)** — an authenticated re-run confirmed the selected chip renders **with its label
-  and badge** (B0-FIX verified at A); horizontal overflow/scroll, page swipe, long-press/menu,
-  edit/reorder/delete and the non-Cybergram control remain open.
+  and badge** (B0-FIX verified at A). A further interaction follow-up on the physical Redmi closed
+  **page swipe, long-press/menu and edit/reorder/delete mode**, plus labels, unread counters and
+  tap-between-tabs; **horizontal overflow/scroll is not testable** with only four folders. The
+  non-Cybergram control PASSED at P (upstream rounded chips).
 - **B1 (main tabs)** — an authenticated re-run exercised Chats → Contacts → Settings → Profile →
   Chats with the angular panel and the cyan selected plate tracking the active tab
-  (`FATAL=0`, `ANR=0`); interaction/animation/orientation, attach/bot geometry and the non-Cybergram
-  control remain open.
+  (`FATAL=0`, `ANR=0`). A further follow-up on the physical Redmi closed **reselect/scroll-to-top, tab
+  long-press (quick-actions menu over a scrim) and orientation change**, and confirmed the search tab
+  row renders with the Cybergram angular plate; still open: Calls enable/disable and the
+  Settings/Calls swap, long-drag selection, tabs show/hide animation and attach/bot tab geometry. The
+  non-Cybergram control PASSED at P (upstream rounded navigation).
 - **B2 (15 account-dependent rows)** — all 15 verdicted: 11 **PASS** (8 group slicing, 10 incoming
   media, 12 caption/time-on-media, 14 cell multi-select overlay, 18 reply layout, 25 reaction glyphs,
   27 time/checks/views, 28 forwarded header, 29 links + metadata incl. link-preview cards, 31
@@ -227,6 +232,12 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = a
   (`adb install -r` → `Success`, resolving the R1 install item), launched with `FATAL=0` / `ANR=0`,
   and renders the Cybergram chrome with the microphone glyph centred and pale blue (`8FBFCC`). The
   Samsung SM-A256E target was not attached, so genuine Samsung/OEM confidence is still outstanding.
+- **R-series implemented (2026-09-17)** — the three recorded findings are fixed on `dev` as bounded,
+  Cybergram-gated/neutral changes: **R-PERF** caches the Cybergram outline path instead of rebuilding
+  it every frame; **R-STUB** stops the D4 grid decorating the per-chat default-theme stub;
+  **R-OVERLAY** drives the inert header view's visibility from the gate (`GONE` when non-Cybergram)
+  with an attach/theme-change re-evaluation, so runtime Day ↔ Cybergram switching still needs no
+  activity recreation. Record: `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`.
 - Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`; journal: `docs/WORK_STATE.md`.
 
 ## Remaining architecture / next work
