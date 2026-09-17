@@ -105,15 +105,15 @@ launcher exiting, only the adb connection was lost — and (c) running the AVD h
 | 18 | reply name/text layout | PASS | reply quote bars with name + cyan link (`b2-meta.png`, `b2-cellselect2.png`) |
 | 19 | quote/code/link/contact lines | PARTIAL | reply/quote lines, links and an in-bubble **link-preview card** (OpenAI Help Center) render (`b2-reactionlist.png`); code/contact/fact-check absent from the sampled chats |
 | 25 | reaction emoji glyph rendering | PASS | 👍😱 and a rich row (⭐57 👍24 ❤️12 👎12 🔥2 🤬2) render correctly |
-| 26 | reaction touch/bounce/scrim/particles | NOT EXERCISED | the reaction pill renders and is reachable, but the animation itself is not observable in a still and the reactor list was not reached |
+| 26 | reaction touch/bounce/scrim/particles | NOT EXERCISED | the reaction pill renders and is reachable, but the animation itself is not observable in a still; the reactor-list attempt aborted when the emulator died |
 | 27 | time / checks / views metadata | PASS | times, delivery checks and views (25.1K, 7.8K, 3110) readable |
-| 28 | forwarded header/state | NOT EXERCISED | no forwarded message in the sampled chats |
+| 28 | forwarded header/state | PASS | `Forwarded from / Блокировки Рунета \| Новости` header legible inside the angular bubble, with a link-preview card beneath (`r2-hishchnik.png`) |
 | 29 | links plus metadata | PASS | links render cyan with adjacent metadata (`b2-bfm.png`), and a link-preview card (`b2-reactionlist.png`) |
 | 30 | bot buttons bottom / body | PARTIAL | the bot chat (Harness) shows the composer **Menu** button and a channel message shows a bottom **comments** button (71 comments), but no inline bot keyboard was present (`b2-harness.png`, `b2-kirill.png`) |
 | 31 | service/date cell adjacent | PASS | `April 13` plate and `Unread Messages` divider adjacent to ordinary messages (`b2-uvoleno.png`) |
-| 35 | `TYPE_PREVIEW` on a live client | NOT EXERCISED | the navigation to the theme preview aborted (the back-tap sequence left Telegram) |
+| 35 | `TYPE_PREVIEW` on a live client | PASS | the Cybergram tile in Chat Settings → Color theme renders the **Cybergram palette** (near-black canvas, olive incoming, blue-green outgoing, no wallpaper); the rounded preview silhouettes are the documented B3 `TYPE_PREVIEW` exclusion, not a defect (`r2-themepreview-zoom.png`) |
 
-Tally: **9 PASS / 3 PARTIAL / 3 NOT EXERCISED / 0 defects.**
+Tally: **11 PASS / 3 PARTIAL / 1 NOT EXERCISED / 0 defects.**
 
 ### B5/B6
 
@@ -164,11 +164,23 @@ round-4 microphone plate/tint changes and the Cybergram chrome are presentation-
 mutation was performed** — the control was observed because the device's active theme was already
 non-Cybergram.
 
+### Round-2 runner note — AVD became unusable
+
+After the round-1 pass the AVD stopped being viable for further interactive work: it exited repeatedly
+within about a minute of boot (the host-GPU renderer crashed `qemu-system-x86_64`; the software
+renderer booted but the app raised `ANR in org.telegram.messenger.beta` during cold start and the
+emulator then exited). Four restart attempts — headless, stale locks cleared, Gradle daemon stopped —
+all failed the same way. Rows 28 and 35 were captured before the instability; **B2 row 26** (reaction
+touch/bounce/scrim/particles) and the remaining **B5/B6 ordinary service actions** (pin/unpin,
+join/leave, title/photo/TTL change, group call, screenshot actions, service-message reactions and the
+`SharedMediaLayout` floating date) could therefore not be exercised. They stay *unexercised* rather
+than guessed, and the rich/special rows stay `UNAVAILABLE`.
+
 ### Verdicts after the follow-up
 
 | pass | verdict |
 |---|---|
-| B2 | `PARTIAL` — 9 PASS / 3 PARTIAL / 3 not exercised / 0 defects |
+| B2 | `PARTIAL` — 11 PASS / 3 PARTIAL / 1 not exercised / 0 defects |
 | B5/B6 | `PARTIAL` — ordinary date plate PASS; ordinary service actions and reactions not exercised; rich `UNAVAILABLE` |
 | P | `PASS` (Redmi Note 10S smoke: install + launch + chrome + microphone colour/centring); Samsung/OEM target not attached |
 

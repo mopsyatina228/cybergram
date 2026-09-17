@@ -211,12 +211,13 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = a
   Chats with the angular panel and the cyan selected plate tracking the active tab
   (`FATAL=0`, `ANR=0`); interaction/animation/orientation, attach/bot geometry and the non-Cybergram
   control remain open.
-- **B2 (15 account-dependent rows)** — 9 **PASS** (8 group slicing, 10 incoming media, 12
+- **B2 (15 account-dependent rows)** — 11 **PASS** (8 group slicing, 10 incoming media, 12
   caption/time-on-media, 14 cell multi-select overlay, 18 reply layout, 25 reaction glyphs, 27
-  time/checks/views, 29 links + metadata, 31 service/date adjacency), 3 **PARTIAL** (13 media
-  clipping/touch targets, 19 quote/code/link/contact lines incl. an in-bubble link-preview card, 30
-  bot buttons — composer Menu and a bottom comments button seen, no inline keyboard), 3 **not
-  exercised** (26 reaction touch/particles, 28 forwarded header, 35 `TYPE_PREVIEW`), **0 defects**.
+  time/checks/views, 28 forwarded header, 29 links + metadata incl. link-preview cards, 31
+  service/date adjacency, 35 Cybergram theme preview), 3 **PARTIAL** (13 media clipping/touch targets,
+  19 quote/code/link/contact lines, 30 bot buttons — composer Menu and a bottom comments button seen,
+  no inline keyboard), 1 **not exercised** (26 reaction touch/particles — not observable in a still),
+  **0 defects**.
 - **B5/B6** — the ordinary `April 13` date separator renders as a compact dark **angular** plate with
   chamfered corners (A PASS); ordinary service actions, service-message reactions and the
   `SharedMediaLayout` floating date were not exercised; rich/special rows remain `UNAVAILABLE` (not
