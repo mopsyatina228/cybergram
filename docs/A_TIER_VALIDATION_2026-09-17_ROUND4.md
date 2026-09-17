@@ -235,6 +235,6 @@ AVD remained unstable. Artifacts: `.local-artifacts/run-a2-20260917/`.
 | long press + long-drag selection across tabs | NOT EXERCISED | the press-and-drag re-opened the long-press menu instead of starting a drag selection (`b1-longdrag.png`) |
 | tabs show/hide animation | NOT EXERCISED | a show/hide transition cannot be evidenced by single stills |
 | Calls enable/disable and the Settings/Calls swap | NOT EXERCISED | the calls-tab configuration was not reached in this build/session |
-| attach/bot tab geometry | NOT EXERCISED | the attachment panel was not reached (taps landed on the search field) |
+| attach/bot tab geometry | PASS | the attach panel opens and its tabs Галерея / Кошелёк / Файл / Геопозиция / Статья keep the **upstream** selector geometry — the Cybergram angular plate does not leak into them (`at-attach-tabs-clean2.png`) |
 
 No defect was observed in the exercised B0/B1 cases, and nothing was fixed opportunistically.
