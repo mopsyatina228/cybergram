@@ -28,6 +28,15 @@ the harness gate's independent reviewer verdict `APPROVE` on the two R1 edits (r
 `b7a79579-8005-4791-bd81-02c6680a31f5`, `deepseek-v4-pro`); the gate did not apply that verdict — see
 `docs/CURRENT_STATE.md` §Open blockers item 7.
 
+Update (2026-09-17, morning): the first prerelease that carries **B0-FIX and R-GATE** was published as
+`dev-20260917-d8f70bd5f` — a universal debug APK built from `d8f70bd5f` (arm64-v8a/armeabi-v7a/x86/x86_64,
+113,631,589 bytes, SHA-256 `2c784cad2d5586903a3a5d914c2c839803fd7dac48a2d2bcf85186e4e6298506`). Emulator
+install/start smoke: `adb install -r` Success, normal launch to the authenticated dialogs list,
+FATAL/ANR/process-death matches = 0, screenshot evidence in `.local-artifacts/publish/`. The release notes
+also record that this debug artifact carries the developer's **compiled-in Telegram API credentials**; the
+already-published universal asset `dev-20260914-23882dbf0` was checked byte-for-byte and the same is true of
+it, so all five prereleases expose them. Rotating `api_id`/`api_hash` is an open owner decision.
+
 State movement: the 2026-09-15 snapshot recorded `dev` as 4 commits ahead of `origin/dev` with nothing
 pushed; **that is no longer true.** The remote was checked on 2026-09-16 and reconciled locally the same
 day; at snapshot time the live (`api.github.com/repos/mopsyatina228/cybergram/commits/dev`) value, the
@@ -53,7 +62,7 @@ with any of them, they win. Nothing here authorizes a pass, a build, an agent ru
 | Working tree | clean at snapshot time; the round-3 product commit `22dfacce0` and the docs commits `375482a2e` / `937bbb8c5` are all pushed |
 | Local vs remote `dev` | **in sync at snapshot time** — `dev` == `origin/dev`, verified locally with `git rev-list --left-right --count`; nothing unpushed. Re-check for later commits |
 | Open pull requests | none; repository issues are disabled |
-| Published prereleases | 4 (`dev-20260914-23882dbf0` newest, then `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
+| Published prereleases | 5 (`dev-20260917-d8f70bd5f` newest — universal debug APK from HEAD `d8f70bd5f`, SHA-256 `2c784cad…`; then `dev-20260914-23882dbf0`, `dev-b6-20260914-53dd1368e`, `dev-b6-20260913-f86ef812b`, `dev-b6-20260913-1f31cfa91`) |
 
 Retained side refs: `feature/cybergram-main-tabs-flat` (`6802e0010`),
 `feature/cybergram-service-date-angular` (`0c4172346`), `audit/cybergram-message-states` (`2db3b48e7`),
