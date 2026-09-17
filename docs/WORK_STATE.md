@@ -1221,6 +1221,34 @@ Footprint after both changes: **12 files, +489/−148** over `TMessagesProj/src/
 cut `52b8e219…` (11 files, +390/−49 excluding the `.attheme` asset). This supersedes the round-3 note that
 declined to act on the filter-tab defect and the R-series entry that listed R-GATE as unauthorized.
 
+## 2026-09-17 — round 4: microphone glyph centring + tint, R-D6 gap, A-tier re-run
+
+- Round-4 owner instruction ("Центрируй иконку микрофона относительно её рамки. Наметь дальнейший план
+  задач и пускай воркеров в работу") implemented and committed on `dev` (no push): `85972926e` centres
+  the 24 dp microphone glyph in its 40 dp plate (`ChatActivityEnterView`, `Gravity.CENTER`);
+  `5bd19147b` makes the enabled microphone use the ruled pale blue under Cybergram
+  (`key_glass_defaultIcon` → `chat_messagePanelIcons` = `0xFF8FBFCC` = `CybergramTheme.ICON_PALE`).
+- **R-D6 re-measured.** The drawable padding is `dp(2)` (`MessageDrawable.java:564/630/907`) and
+  `bounds.top` is `dp(1)` (`ChatMessageCell.java:20560/20643`), so the painted top is `dp(3)+E`; `3f`
+  left exactly 0 px at the binding bottom time cluster (`layoutHeight − dp(6.5)`, `− dp(7.5)` grouped).
+  Owner ruling D10.2 lowered `BUBBLE_GAP_EXTRA_DP` to `2.5f` with a `BUBBLE_GAP_MAX_DP = 2.5f` clamp
+  (`9cf90ab9d`); D10.3 accepted D9.6 item 16 / D9.7 item 21 as PARTIAL; D10.5 deferred R4-7. Record:
+  `docs/OWNER_DECISIONS_2026-09-17_ROUND4.md`.
+- **E verification.** `BUILD SUCCESSFUL in 3m 55s`; APK SHA-256
+  `5095D727C22720466962BCF8254CAF3A445823EC9A371ECBCF5E8C07A1D3CCD0`; `adb install -r` Success;
+  `FATAL=0`. Controlled before/after pixel evidence in `.local-artifacts/run-r4-20260917/`: the
+  microphone glyph moves as a rigid −5.00 px translation with a bit-identical plate, its colour changes
+  from exactly `FFFFFF` to exactly `8FBFCC` on the same 676 pixels, and the reply-gap change is confined
+  to two bubble bottom outlines shifting by exactly 1 px (`dp(3)=8 px → dp(2.5)=7 px`) with no text
+  movement.
+- **A-tier re-run** (owner consent D10.4; tested revision `cd4a4c3a8`, tree clean, product footprint vs
+  the preserved cut `52b8e219…` = 15 files, +776/−218): B0 selected/unselected chip labels PASS
+  (B0-FIX confirmed at A); B1 Chats → Contacts → Settings → Profile → Chats navigation PASS; B2 (15
+  rows) and B5/B6 UNVALIDATED; `FATAL=0`, `ANR=0`. Record:
+  `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`.
+- **Not done:** the non-Cybergram control screenshots and the Day ↔ Cybergram theme switch (both need a
+  persisted theme mutation, deliberately not performed), and the P (physical/OEM) tier.
+
 ## Explicitly deferred
 
 - package/application ID rename;
