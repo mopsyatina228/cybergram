@@ -325,10 +325,17 @@ recorded so they are not lost.
   now reads `Theme.getActiveTheme()`, so both sites agree. E regression PASS (dialog chrome and the D4 grid
   in-chat); the two night-slot scenarios are **not** exercised (they need a persisted theme-slot mutation,
   deliberately not performed) and A/P remain open.
-- **R-D6 — the `E < dp(3)` ceiling of `BUBBLE_GAP_EXTRA_DP` is documented but unenforced.** The value is
-  `2f` and the invariant lives only in javadoc; raising it (e.g. `4f`) would move the painted top past
-  the body/metadata inset and collide. Either clamp/assert the constant or leave it as a documented
-  caveat. **Unauthorized.**
+- **R-D6 — the `E < dp(3)` ceiling of `BUBBLE_GAP_EXTRA_DP` is documented but unenforced.** The value
+  was raised from `2f` to `3f` in round 3, i.e. to exactly the documented ceiling. Re-measured on
+  2026-09-17 (round 4; `docs/OWNER_DECISIONS_2026-09-17_ROUND4.md` §8): the painted top is
+  `dp(3) + E` (drawable padding `dp(2)` at `MessageDrawable.java:564/630/907`, `bounds.top` `dp(1)`
+  at `ChatMessageCell.java:20560/20643`). The top edge keeps 10 px, but the binding bottom edge — the
+  time cluster at `layoutHeight − dp(6.5)`, or `− dp(7.5)` when grouped —
+  (`ChatMessageCell.java:24505-24509`) has exactly 0 px standalone and −1 px inside the time box when
+  grouped at E = 3f. The old emoji-only rationale does not bind: `TYPE_EMOJIS` sets
+  `drawBackground = false`, so no bubble is painted for it. Recommended: `2.5f` (restores ≥1 px on
+  both edges) plus an optional defensive clamp; the javadoc is corrected but the value is left to an
+  owner ruling. **Unauthorized.**
 - **R-STUB — D4 grid may decorate the per-chat default-theme stub.** `ChatActivity.java:44139` returns
   `new ColorDrawable(Color.BLACK)` for the `chatTheme.showAsDefaultStub` branch; with a null global
   `overrideWallpaper` this can pass `isEligible`, so the faint grid/frame can appear on that stub.
