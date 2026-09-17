@@ -204,3 +204,34 @@ declaration), so the required colour is enforced only because the `.attheme` val
 it; a future edit of one without the other would silently violate item 21. Wiring the constant or
 adding a test asserting `Theme.getColor(key_glass_defaultIcon, cybergramProvider) == ICON_PALE` is a
 candidate follow-up.
+
+## 8. R4-5 / R-D6 — measured bubble-gap clearance (value change left to the owner)
+
+`BUBBLE_GAP_EXTRA_DP` (`CybergramTheme.java:93`) was re-measured because the recorded `R-D6` finding
+described the wrong binding edge. The javadoc is corrected in this commit; the **value is left at
+`3f`** because it is an owner-tuned visual (D9.5 item 13) and `R-D6` is recorded as unauthorized in
+`docs/EXECUTION_BACKLOG.md`.
+
+Measured facts (density 420, outline stroke `dp(0.75)` with `Paint.Style.STROKE`):
+
+- the drawable padding is **dp(2)** (`MessageDrawable.java:564/630/907`) and `bounds.top` is
+  **dp(1)** (`ChatMessageCell.java:20560/20643`), so the painted top is `dp(3) + E` — the old
+  javadoc's arithmetic was right but its label ("padding dp(3)") was wrong;
+- the **top edge never binds**: plain text starts at `dp(10.5)`, i.e. 10 px clear at E = 3f;
+- the **bottom edge binds**: the time Layout bottom is `layoutHeight − dp(6.5)` standalone and
+  `− dp(7.5)` when grouped (`ChatMessageCell.java:24505-24509`), so E = 3f leaves exactly **0 px**
+  standalone and **−1 px** (inside the time box) grouped; the outgoing check drawable keeps 3 px
+  because real glyph ink sits above its box bottom by the font descent;
+- the old "emoji-only body starts at dp(6)" ceiling does **not** bind: `TYPE_EMOJIS` sets
+  `drawBackground = false` (`ChatMessageCell.java:9622-9623`), so no Cybergram path or border is
+  painted for an emoji-only message;
+- joined edges zero the gap (`isTopNear`/`isBottomNear`), and `TYPE_MEDIA` is excluded by
+  construction — both unchanged.
+
+Verdict: **`3f TOUCHES`** — no true ink overlap at 420 dpi today, but zero box margin at the bottom
+with no headroom for another density or a thinner font descent.
+
+**Open decision (owner).** Either lower `BUBBLE_GAP_EXTRA_DP` to `2.5f` (restores ≥1 px on both edges
+and keeps a 5 dp inter-bubble gap, still "a clear gap" per D9.5 item 13) plus an optional defensive
+clamp in `MessageDrawable.generateCybergramPath` so a future raise cannot silently eat the time-row
+inset, or keep `3f` and accept the measured boundary. Not implemented in this round.

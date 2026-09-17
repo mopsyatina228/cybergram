@@ -85,8 +85,18 @@ public final class CybergramTheme {
      * upstream inset, so grouped joins are preserved. Distinct bubbles therefore gain
      * {@code 2 * BUBBLE_GAP_EXTRA_DP} of clear space between them.
      *
-     * Ceiling before the bubble's own text collides with the outline: the emoji-only body
-     * starts at dp(6) against a painted top of dp(3)+E, so E must stay below dp(3).
+     * Measured clearance (R-D6 re-measurement, 2026-09-17; density 420, outline stroke
+     * dp(0.75) with {@code Paint.Style.STROKE}): the drawable padding is dp(2)
+     * (MessageDrawable.java:564/630/907) and {@code bounds.top} is dp(1)
+     * (ChatMessageCell.java:20560/20643), so the painted top is dp(3) + E, not dp(2) + E.
+     *   - top edge: plain text starts at dp(10.5) → ~10 px clear at E = 3f (never binding);
+     *   - bottom edge (binding): the time Layout bottom is {@code layoutHeight - dp(6.5)}
+     *     ({@code - dp(7.5)} when grouped, ChatMessageCell.java:24505-24509), so E = 3f leaves
+     *     exactly 0 px standalone and -1 px inside the time box when grouped; dp(2.5f) restores
+     *     >= 1 px on both. R-D6 is open pending an owner ruling on whether to lower E.
+     * The former "emoji-only body starts at dp(6)" ceiling does not bind: TYPE_EMOJIS sets
+     * {@code drawBackground = false} (ChatMessageCell.java:9622-9623), so no Cybergram path or
+     * border is painted for an emoji-only message.
      * TYPE_MEDIA is deliberately excluded: a lowered media outline would expose the photo,
      * whose y is set independently of the drawable bounds.
      */
