@@ -3482,7 +3482,11 @@ public class ChatActivityEnterView extends FrameLayout implements
 //        audioVideoSendButton.setAccessibilityDelegate(mediaMessageButtonsDelegate);
         padding = dp(10f);
         audioVideoSendButton.setPadding(padding, padding, padding, padding);
-        audioVideoButtonContainer.addView(audioVideoSendButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
+        // Owner ruling (round 4): center the microphone glyph in its plate frame. Under Cybergram the
+        // control container is COMPOSER_HEIGHT_DP (40 dp) while this icon view stays DEFAULT_HEIGHT
+        // (44 dp); the default TOP|START placement therefore put the 24 dp glyph 2 dp right and down of
+        // the plate centre. Gravity.CENTER is a no-op for every other theme (container == 44 dp).
+        audioVideoButtonContainer.addView(audioVideoSendButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.CENTER));
 
         cancelBotButton = new ImageView(context);
         cancelBotButton.setVisibility(INVISIBLE);
