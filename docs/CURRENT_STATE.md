@@ -202,6 +202,30 @@ and performs no push, no product-code change and no release-asset change.
 
 Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = authenticated production UI, P = physical-device/OEM confidence.
 
+### Round-4 validation update (2026-09-17)
+
+- **B0 (filter tabs)** — an authenticated re-run confirmed the selected chip renders **with its label
+  and badge** (B0-FIX verified at A); horizontal overflow/scroll, page swipe, long-press/menu,
+  edit/reorder/delete and the non-Cybergram control remain open.
+- **B1 (main tabs)** — an authenticated re-run exercised Chats → Contacts → Settings → Profile →
+  Chats with the angular panel and the cyan selected plate tracking the active tab
+  (`FATAL=0`, `ANR=0`); interaction/animation/orientation, attach/bot geometry and the non-Cybergram
+  control remain open.
+- **B2 (15 account-dependent rows)** — 8 **PASS** (10 incoming media, 12 caption/time-on-media, 14
+  cell multi-select overlay, 18 reply layout, 25 reaction glyphs, 27 time/checks/views, 29 links +
+  metadata, 31 service/date adjacency), 2 **PARTIAL** (13 media clipping/touch targets, 19
+  quote/code/link/contact lines), 5 **not exercised** (8, 26, 28, 30, 35), **0 defects**.
+- **B5/B6** — the ordinary `April 13` date separator renders as a compact dark **angular** plate with
+  chamfered corners (A PASS); ordinary service actions, service-message reactions and the
+  `SharedMediaLayout` floating date were not exercised; rich/special rows remain `UNAVAILABLE` (not
+  faked).
+- **P (physical/OEM)** — a **Redmi Note 10S** (`4H8L598LAME6CEX4`, `M2101K7BNY`, Android 13, MIUI
+  `V140`, arm64-v8a) became reachable during the run: the arm64 build installed
+  (`adb install -r` → `Success`, resolving the R1 install item), launched with `FATAL=0` / `ANR=0`,
+  and renders the Cybergram chrome with the microphone glyph centred and pale blue (`8FBFCC`). The
+  Samsung SM-A256E target was not attached, so genuine Samsung/OEM confidence is still outstanding.
+- Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`; journal: `docs/WORK_STATE.md`.
+
 ## Remaining architecture / next work
 
 B1 (flat/angular main bottom navigation) is implemented and integrated; see the validation boundary above for its open A/P tiers. What fresh static reconciliation established remains true and is now a corrected architecture fact:

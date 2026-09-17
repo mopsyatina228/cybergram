@@ -1272,6 +1272,29 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
 - Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` (follow-up section); backlog B2 and B6
   statuses updated.
 
+## 2026-09-17 — round 4 P-tier: Redmi Note 10S smoke + R1 install closure
+
+- A **physical device** became reachable during the run: `4H8L598LAME6CEX4`, `rosemary_ru` /
+  `M2101K7BNY` (Redmi Note 10S), Android 13 / SDK 33, MIUI `V140`, arm64-v8a — the exact device family
+  from the R1 install report.
+- arm64 build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a --offline` →
+  `BUILD SUCCESSFUL in 1m 49s`; APK 68,455,859 bytes, SHA-256
+  `D115E38692D51F096E507D754FF3CE591DCDF820971BAAA76B5E72A6EDC60622`; **`adb install -r` →
+  `Success`**. This **resolves the R1 arm64 install item** for this device: the earlier failure was a
+  signature/package conflict with the already-installed `org.telegram.messenger.beta`, not an ABI
+  defect (that package was present and the in-place update succeeded).
+- **P smoke PASS:** launch focused `DefaultIcon`, `FATAL EXCEPTION` = 0,
+  `ANR in org.telegram.messenger.beta` = 0. The Cybergram chrome renders on real hardware: angular
+  bottom navigation with the cyan selected plate, red header rail and composer separator, dark dialogs
+  list, angular bubbles with the corner spur, the joined reply run and the shorter composer; the device
+  locale is Russian, so the chrome also survives localization.
+- **Microphone on the physical device:** the plate is a dark angular frame with a thin outline and the
+  glyph's dominant pixel colour is exactly `8FBFCC` (`CybergramTheme.ICON_PALE`); the zoom shows the
+  glyph centred in its frame, and the paperclip shares the colour.
+- Artifacts: `.local-artifacts/run-p-20260917/` (`p-launch.png`, `p-chat.png`, `p-mic-zoom.png`).
+  Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §P. Samsung SM-A256E was not attached, so
+  genuine Samsung/OEM confidence remains outstanding.
+
 ## Explicitly deferred
 
 - package/application ID rename;

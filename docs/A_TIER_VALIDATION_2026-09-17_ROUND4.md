@@ -128,10 +128,30 @@ Tally: **8 PASS / 2 PARTIAL / 5 NOT EXERCISED / 0 defects.**
 
 ### P (physical / OEM)
 
-**BLOCKED — no physical or OEM device is reachable.** `adb devices` listed only `emulator-5554`
-throughout; no Samsung/OEM target was attached and the Redmi Note 10S / MIUI device recorded in R1 is
-still unreachable. P evidence cannot be produced from this environment, and emulator evidence must
-never be promoted to P.
+**PASS (Redmi Note 10S).** A physical device became reachable during the run:
+`4H8L598LAME6CEX4`, `rosemary_ru` / `M2101K7BNY` (Redmi Note 10S), Android 13 (SDK 33), MIUI `V140`,
+arm64-v8a — the exact device family from the R1 install report.
+
+- build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a --offline` → `BUILD SUCCESSFUL
+  in 1m 49s`; APK 68,455,859 bytes, SHA-256
+  `D115E38692D51F096E507D754FF3CE591DCDF820971BAAA76B5E72A6EDC60622`;
+- **`adb install -r` → `Success`** on MIUI V140 — this closes the R1 arm64 install-compatibility item
+  for this device: the arm64 APK does install. The likely original cause was a signature/package
+  conflict with an already-installed `org.telegram.messenger.beta`, since that debug package was
+  already present and the in-place update succeeded;
+- launch → focused `DefaultIcon`, `FATAL EXCEPTION` = 0, `ANR in org.telegram.messenger.beta` = 0;
+- the Cybergram chrome renders on the physical device: angular bottom navigation with the cyan selected
+  plate, red header rail and composer separator, dark dialogs list, angular bubbles with the corner
+  spur, the joined reply run, and the shorter composer;
+- the microphone plate is a dark angular frame with a thin outline and the glyph is **pale blue**: its
+  dominant pixel colour is exactly `8FBFCC` (`CybergramTheme.ICON_PALE`), and the zoom shows the glyph
+  centred in its frame (`p-mic-zoom.png`); the paperclip shares the same colour;
+- the device locale is Russian, so the chrome also survives localization;
+- artifacts: `.local-artifacts/run-p-20260917/` (`p-launch.png`, `p-chat.png`, `p-mic-zoom.png`).
+
+This is P-tier evidence for the round-4 changes and for the R1 install item. It is a smoke, not the
+full P interaction matrix, and the Samsung SM-A256E target was not attached — genuine Samsung/OEM
+confidence is still outstanding.
 
 ### Verdicts after the follow-up
 
@@ -139,6 +159,6 @@ never be promoted to P.
 |---|---|
 | B2 | `PARTIAL` — 8 PASS / 2 PARTIAL / 5 not exercised / 0 defects |
 | B5/B6 | `PARTIAL` — ordinary date plate PASS; ordinary service actions and reactions not exercised; rich `UNAVAILABLE` |
-| P | `BLOCKED` — no physical/OEM device reachable |
+| P | `PASS` (Redmi Note 10S smoke: install + launch + chrome + microphone colour/centring); Samsung/OEM target not attached |
 
 No defect was observed in the exercised rows, and nothing was fixed opportunistically.

@@ -193,7 +193,7 @@ E validation passed on the real host via Remote Desktop Commander (not the DSH s
 
 ### B6 — ordinary angular plain service/date plate
 
-Status: `INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / RELEASE INSTALL COMPATIBILITY OPEN FOR REDMI MIUI`.
+Status: `INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A DATE SEPARATOR PASS (2026-09-17) / P REDMI SMOKE PASS (2026-09-17) / RELEASE INSTALL COMPATIBILITY RESOLVED FOR THE REDMI MIUI DEVICE`.
 
 A follow-up authenticated run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`)
 confirmed the ordinary **date separator** (`April 13`) renders on the compact dark **angular** plate
@@ -312,7 +312,16 @@ Status: `SEPARATE RELEASE TRACK`.
 
 Do not mix with UI cleanup. Real credentials remain local/secret; package/application ID, signing and Firebase decisions require explicit release work.
 
-Open install-compatibility item (B6 prerelease, non-rendering): a Redmi Note 10S / MIUI 14.0.4 user reports the arm64 APK did not install. The exact `INSTALL_FAILED_*` code is unavailable because the device is not currently reachable through `adb`, so **no ABI root cause is claimed**. The universal 4-ABI APK (`0c781a6b...`, §B6) is the explicit compatibility probe and has not been run on that device; because the package is `org.telegram.messenger.beta`, a signature/package conflict with an already-installed Telegram Beta remains a plausible unresolved cause. Closure requires the exact package-installer / `adb install` error text. This is a release/install issue, not a B6 rendering defect.
+Install-compatibility item (B6 prerelease, non-rendering) — **RESOLVED for this device on
+2026-09-17**. A Redmi Note 10S / MIUI 14.0.4 user had reported that the arm64 APK did not install,
+with no `INSTALL_FAILED_*` code available because the device was unreachable. That device
+(`4H8L598LAME6CEX4`, `rosemary_ru` / `M2101K7BNY`, Android 13 / MIUI `V140`, arm64-v8a) became
+reachable during the round-4 P run: the current arm64 debug build (68,455,859 bytes, SHA-256
+`D115E386...A6EDC60622`) installed with **`adb install -r` → `Success`**, launched with `FATAL=0` /
+`ANR=0`, and rendered the Cybergram chrome. This confirms the leading hypothesis — the earlier failure
+was a signature/package conflict with an already-installed `org.telegram.messenger.beta` (that package
+was present, and the in-place update succeeded), not an ABI/rendering defect; the universal 4-ABI APK
+was not needed as a probe. Evidence: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §P.
 
 ## Dependency order
 
