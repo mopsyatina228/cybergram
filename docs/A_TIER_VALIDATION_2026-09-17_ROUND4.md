@@ -232,9 +232,9 @@ AVD remained unstable. Artifacts: `.local-artifacts/run-a2-20260917/`.
 | long press on a tab | PASS | long-pressing `Контакты` opened its quick-actions menu (Новый контакт / Недавние звонки) over a blurred scrim (`b1-tab-longpress.png`) |
 | orientation change | PASS | a forced rotation to landscape rendered the app and its scrim without a crash; portrait was restored (`b1-landscape.png`, `b1-portrait-restored.png`) |
 | search tab row (bonus) | PASS | the search tabs Чаты / Каналы / Приложения / Посты render with the Cybergram angular selected plate (`b1-attach-tabs2.png`) |
-| long press + long-drag selection across tabs | NOT EXERCISED | the press-and-drag re-opened the long-press menu instead of starting a drag selection (`b1-longdrag.png`) |
-| tabs show/hide animation | NOT EXERCISED | a show/hide transition cannot be evidenced by single stills |
-| Calls enable/disable and the Settings/Calls swap | NOT EXERCISED | the calls-tab configuration was not reached in this build/session |
+| long press + long-drag selection across tabs | PARTIAL | the long-press selector opens; a real press-and-drag (`input motionevent` DOWN → MOVE across the tabs → UP) re-opens that same selector and produces **no separate drag-selection state** in this build (`b1-longdrag.png`, `h1-drag.png`) |
+| tabs show/hide animation | PARTIAL | the Calls tab toggles through the animated path (`checkUi_callTabVisible(..., animated = true)`); both end states were captured, but the transition frames are not observable in single stills |
+| Calls enable/disable and the Settings/Calls swap | PASS | enabling via CallLogActivity → «Отображать вкладку «Звонки»» turns the bar into Чаты / Контакты / **Звонки** / Профиль (Settings swaps out); hiding via the overflow «Скрыть вкладку «Звонки»» restores Чаты / Контакты / Настройки / Профиль (`g2-tabs-with-calls.png`, `g7-restored-tabs.png`) |
 | attach/bot tab geometry | PASS | the attach panel opens and its tabs Галерея / Кошелёк / Файл / Геопозиция / Статья keep the **upstream** selector geometry — the Cybergram angular plate does not leak into them (`at-attach-tabs-clean2.png`) |
 
 No defect was observed in the exercised B0/B1 cases, and nothing was fixed opportunistically.

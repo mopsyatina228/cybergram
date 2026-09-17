@@ -213,9 +213,14 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = a
   Chats with the angular panel and the cyan selected plate tracking the active tab
   (`FATAL=0`, `ANR=0`). A further follow-up on the physical Redmi closed **reselect/scroll-to-top, tab
   long-press (quick-actions menu over a scrim) and orientation change**, and confirmed the search tab
-  row renders with the Cybergram angular plate; still open: Calls enable/disable and the
-  Settings/Calls swap, long-drag selection, tabs show/hide animation and attach/bot tab geometry. The
-  non-Cybergram control PASSED at P (upstream rounded navigation).
+  row renders with the Cybergram angular plate. The follow-up also closed **attach/bot tab geometry**
+  (the attach tabs keep the upstream selector geometry) and the **Calls enable/disable +
+  Settings/Calls swap** (enabling the tab turns the bar into Чаты/Контакты/Звонки/Профиль and swaps
+  Settings out; hiding restores the original bar). Two cases remain `PARTIAL`: the **tabs show/hide
+  animation** (animated path used, both end states captured, transition not observable in stills) and
+  **long-drag selection across tabs** (a real press-and-drag re-opens the long-press selector; no
+  separate drag-selection state manifests). The non-Cybergram control PASSED at P (upstream rounded
+  navigation).
 - **B2 (15 account-dependent rows)** — all 15 verdicted: 11 **PASS** (8 group slicing, 10 incoming
   media, 12 caption/time-on-media, 14 cell multi-select overlay, 18 reply layout, 25 reaction glyphs,
   27 time/checks/views, 28 forwarded header, 29 links + metadata incl. link-preview cards, 31

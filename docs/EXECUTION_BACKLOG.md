@@ -104,11 +104,14 @@ A re-run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`) 
 authenticated navigation Chats → Contacts → Settings → Profile → Chats: the angular dark panel and the
 cyan selected plate track the active tab, the Contacts badge renders, and `crash_matches=0`,
 `anr_matches=0`. A 2026-09-17 follow-up on the physically unlocked Redmi closed **reselect/scroll-to-top, tab
-long-press, orientation change and attach/bot tab geometry** at P (the attach panel's tabs keep the
-upstream selector geometry — the Cybergram plate does not leak; the search tab row renders with the
-Cybergram angular selected plate). Still open: Calls enable/disable and the Settings/Calls swap,
-long-drag selection and tabs show/hide animation. The non-Cybergram control PASSED at P (upstream
-rounded bottom navigation).
+long-press, orientation change, attach/bot tab geometry and the Calls enable/disable + Settings/Calls
+swap** at P (enabling the tab via CallLogActivity turns the bar into Чаты/Контакты/Звонки/Профиль and
+swaps Settings out; hiding it restores Чаты/Контакты/Настройки/Профиль; the attach panel's tabs keep
+the upstream selector geometry). The **tabs show/hide animation** is `PARTIAL` — the animated path was
+used and both end states captured, but the transition frames are not observable in stills; the
+**long-drag selection across tabs** is `PARTIAL` — a real press-and-drag re-opens the long-press
+selector and no separate drag-selection state manifests in this build. The non-Cybergram control
+PASSED at P (upstream rounded bottom navigation).
 Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §Round 4b.
 
 First authenticated (A) run: 2026-09-15, `docs/A_TIER_VALIDATION_2026-09-15.md`. On a real authenticated
