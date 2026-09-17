@@ -93,6 +93,20 @@ the composer field height. The chat identity block uses `HEADER_AVATAR_DP` (36 d
 title/subtitle sizes. The red header rail and composer separator carry a soft neon bloom that stays on
 the chrome side of the boundary and never covers message text.
 
+Amended 2026-09-17 (owner round 4, D10.1–D10.3): the 24 dp microphone glyph is centred in its plate
+frame (the plate fills the 40 dp container per D9.7; the glyph view is centred inside it, so the glyph
+centre coincides with the frame centre up to the 0.5 px density-rounding floor). The enabled
+microphone — and the video-mode camera, which shares the same view — uses the same low-saturation
+pale-blue key as the smiley and paperclip (`key_glass_defaultIcon` → `chat_messagePanelIcons`, i.e.
+`CybergramTheme.ICON_PALE` `#8FBFCC`) instead of the upstream white; outside Cybergram all of this is
+a provable no-op. Items 16/21 are accepted as **PARTIAL**: colour and thin-stroke intent are met and
+the microphone now shares the smiley/paperclip colour, but the header back/overflow glyphs and the
+paperclip remain upstream raster assets and the search glyph is a filled-path vector, so asset
+provenance is deliberately not unified (a Cybergram-only icon redraw is not authorized). The clear
+gap between distinct replies uses `BUBBLE_GAP_EXTRA_DP` (2.5 dp, defensively clamped by
+`BUBBLE_GAP_MAX_DP` in `MessageDrawable`) so the outline keeps a clear margin at the binding bottom
+edge (R-D6 resolved).
+
 ## Message geometry
 
 Cybergram replaces rounded Telegram message silhouettes with an angular drawable. Desired properties:

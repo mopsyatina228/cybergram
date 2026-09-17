@@ -235,3 +235,27 @@ with no headroom for another density or a thinner font descent.
 and keeps a 5 dp inter-bubble gap, still "a clear gap" per D9.5 item 13) plus an optional defensive
 clamp in `MessageDrawable.generateCybergramPath` so a future raise cannot silently eat the time-row
 inset, or keep `3f` and accept the measured boundary. Not implemented in this round.
+
+## 9. Owner rulings (round 4c, 2026-09-17)
+
+The owner reviewed the round-4 plan and ruled:
+
+- **D10.2 — R-D6 resolved by lowering the gap.** `BUBBLE_GAP_EXTRA_DP` is lowered from `3f` to `2.5f`
+  and a defensive ceiling `BUBBLE_GAP_MAX_DP = 2.5f` is added; `MessageDrawable` clamps to it, so the
+  0 px bottom margin measured in §8 cannot recur by accident. D9.5 item 13's "clear gap between
+  distinct replies" is preserved at `2 × 2.5 = 5 dp`.
+- **D10.3 — items 16/21 accepted as PARTIAL.** The icon style is accepted on colour, thin-stroke
+  intent and the now-shared microphone/smiley/paperclip colour; asset provenance is deliberately not
+  unified (the header back/overflow glyphs and the paperclip stay upstream rasters, the search glyph
+  stays a filled-path vector). No Cybergram-only icon redraw (R4-4) is authorized.
+  `CybergramTheme.ICON_PALE` stays as the documented canonical value of the ruled pale blue; the tint
+  keeps using the theme key (`key_glass_defaultIcon`) so per-chat theme delegation still works. The
+  spec is updated (`docs/CYBERGRAM_UI_SPEC.md`).
+- **D10.4 — A-tier validation consent granted (R4-6).** The owner accepted the read-marking side
+  effect of opening conversations, so the authenticated matrix in
+  `docs/runbooks/CYBERGRAM_A_TIER_VALIDATION.md` may be run on the authenticated AVD.
+- **D10.5 — R4-7 deferred at the executor's discretion.** `getComposerHeight()` is static and reads
+  only the global active theme, so it ignores a per-view `GeometryProvider`. That interface has no
+  implementations in the repository, so this affects only the debug showcase path; it is recorded here
+  rather than changed, because reworking a static method used by five composer call sites carries
+  layout risk for no production benefit.
