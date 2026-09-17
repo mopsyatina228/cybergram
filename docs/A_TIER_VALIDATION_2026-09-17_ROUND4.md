@@ -105,7 +105,7 @@ launcher exiting, only the adb connection was lost — and (c) running the AVD h
 | 18 | reply name/text layout | PASS | reply quote bars with name + cyan link (`b2-meta.png`, `b2-cellselect2.png`) |
 | 19 | quote/code/link/contact lines | PARTIAL | reply/quote lines, links and an in-bubble **link-preview card** (OpenAI Help Center) render (`b2-reactionlist.png`); code/contact/fact-check absent from the sampled chats |
 | 25 | reaction emoji glyph rendering | PASS | 👍😱 and a rich row (⭐57 👍24 ❤️12 👎12 🔥2 🤬2) render correctly |
-| 26 | reaction touch/bounce/scrim/particles | NOT EXERCISED | the reaction pill renders and is reachable, but the animation itself is not observable in a still; the reactor-list attempt aborted when the emulator died |
+| 26 | reaction touch/bounce/scrim/particles | PARTIAL | long-pressing a reaction pill on the physical phone opens the reactor's profile popup over a **scrim** (`p-reactors.png`); the bounce/particle animation itself is not observable in a single still |
 | 27 | time / checks / views metadata | PASS | times, delivery checks and views (25.1K, 7.8K, 3110) readable |
 | 28 | forwarded header/state | PASS | `Forwarded from / Блокировки Рунета \| Новости` header legible inside the angular bubble, with a link-preview card beneath (`r2-hishchnik.png`) |
 | 29 | links plus metadata | PASS | links render cyan with adjacent metadata (`b2-bfm.png`), and a link-preview card (`b2-reactionlist.png`) |
@@ -113,15 +113,19 @@ launcher exiting, only the adb connection was lost — and (c) running the AVD h
 | 31 | service/date cell adjacent | PASS | `April 13` plate and `Unread Messages` divider adjacent to ordinary messages (`b2-uvoleno.png`) |
 | 35 | `TYPE_PREVIEW` on a live client | PASS | the Cybergram tile in Chat Settings → Color theme renders the **Cybergram palette** (near-black canvas, olive incoming, blue-green outgoing, no wallpaper); the rounded preview silhouettes are the documented B3 `TYPE_PREVIEW` exclusion, not a defect (`r2-themepreview-zoom.png`) |
 
-Tally: **11 PASS / 3 PARTIAL / 1 NOT EXERCISED / 0 defects.**
+Tally: **11 PASS / 4 PARTIAL / 0 NOT EXERCISED / 0 defects.**
 
 ### B5/B6
 
 - ordinary date separator: **PASS** — `April 13` renders as a compact dark **angular** plate with
   chamfered corners and amber text (`b56-datesep.png`, 4x nearest-neighbour crop);
+- ordinary date separator on the **physical Redmi** (P): **PASS** — `17 сентября` renders on the same
+  angular plate in a group, next to a pinned-message bar and joined runs (`p-service-rows.png`); the
+  red rail, angular composer and date plate are all present on real hardware;
 - ordinary service actions (pin/unpin, join/leave, title/photo/TTL change, group call, screenshot),
-  service-message reactions, and the `SharedMediaLayout` floating date: **NOT EXERCISED** — none
-  appeared in the sampled chats;
+  service-message reactions, and the `SharedMediaLayout` floating date: **NOT EXERCISED** — none of
+  those service rows was present in the sampled chats on either device (a pinned-message *bar* was
+  seen, but not the in-history "pinned a message" service row);
 - rich/special rows (gift, star/offer, community, wallpaper, birthday, story, `TYPE_ACTION_PHOTO`):
   **UNAVAILABLE** — no such message was present; not faked, so `E-rich` stays `UNAVAILABLE`;
 - latent preview caveat (a foreign-theme preview row instantiating a `ChatActionCell`): not observed.
@@ -176,11 +180,27 @@ join/leave, title/photo/TTL change, group call, screenshot actions, service-mess
 `SharedMediaLayout` floating date) could therefore not be exercised. They stay *unexercised* rather
 than guessed, and the rich/special rows stay `UNAVAILABLE`.
 
+### Round-3 update — phone unlocked, P-tier rows added
+
+The owner unlocked the Redmi Note 10S; it was then used for the remaining B2 row and the B5/B6
+date-plate check as **P-tier** evidence (the AVD stayed unusable):
+
+- **B2 row 26 → PARTIAL:** long-pressing a reaction pill opens the reactor's profile popup over a
+  **scrim** (`p-reactors.png`); the bounce/particle animation itself is not capturable in a still.
+- **B5/B6 ordinary date separator → PASS on P:** `17 сентября` renders on the angular plate beside a
+  pinned-message bar and joined runs (`p-service-rows.png`).
+- Additional P evidence from the same run: the forwarded-header post with its link-preview card and
+  cyan links (`p-hishchnik.png`), the Cybergram dialogs with the angular navigation and cyan selected
+  plate (`p-dialogs.png`), and a group reaction pill (`p-group.png`).
+- These rows are recorded as **P tier**, not A; emulator and physical evidence are kept separate.
+- The in-history ordinary service actions remain **not exercised** because no such service rows were
+  present in the sampled chats on either device.
+
 ### Verdicts after the follow-up
 
 | pass | verdict |
 |---|---|
-| B2 | `PARTIAL` — 11 PASS / 3 PARTIAL / 1 not exercised / 0 defects |
+| B2 | `PARTIAL` — 11 PASS / 4 PARTIAL / 0 not exercised / 0 defects |
 | B5/B6 | `PARTIAL` — ordinary date plate PASS; ordinary service actions and reactions not exercised; rich `UNAVAILABLE` |
 | P | `PASS` (Redmi Note 10S smoke: install + launch + chrome + microphone colour/centring); Samsung/OEM target not attached |
 
