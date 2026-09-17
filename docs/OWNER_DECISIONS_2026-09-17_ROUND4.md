@@ -163,3 +163,44 @@ established**: the paperclip and the header back/overflow drawables are raster `
 the smiley and microphone are Lottie compositions of different sizes, and the enabled microphone
 glyph is tinted white rather than the ruled pale blue. This imprecision is what R4-3/R4-4 exist to
 resolve; no claim in the round-3 record is retracted here.
+
+## 7. Round 4b — microphone glyph tint (R4-2, D9.7 item 21)
+
+Ruling: D9.7 item 21 requires the smiley, paperclip and microphone glyphs to share one thin linear
+style. The microphone was the outlier: its enabled state was tinted `Color.WHITE`, while the smiley
+and paperclip already use the pale blue key.
+
+Change (same file, two tint sites — `ChatActivityEnterView.java:6635` and `:10469`):
+
+```java
+audioVideoSendButton.setColorFilter(new PorterDuffColorFilter(
+    audioVideoButtonContainerForbidden || CybergramTheme.isCybergramPresentation(resourcesProvider) ?
+        getThemedColor(Theme.key_glass_defaultIcon) : Color.WHITE, PorterDuff.Mode.SRC_IN));
+```
+
+`key_glass_defaultIcon` resolves under Cybergram through `key_chat_messagePanelIcons`
+(`cybergram.attheme:224 = 0xFF8FBFCC`), which is exactly `CybergramTheme.ICON_PALE`, and it is the
+same key the smiley (`:10470`) and the paperclip (`:2847`) already use — so item 21's "one style" now
+holds for the enabled microphone. Outside Cybergram the expression reduces to the previous boolean
+(`forbidden || false`) and the glyph stays white; the disabled (`audioVideoButtonContainerForbidden`)
+branch is unchanged. The video-mode camera glyph shares the view and also becomes pale, which is
+consistent with item 16's general pale low-saturation icon rule.
+
+Evidence (E tier):
+
+- build `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64 --offline` → `BUILD SUCCESSFUL
+  in 5m 7s`; APK 72,920,430 bytes, SHA-256
+  `60C66C2E4D9CC778F1A1C4DBC48038E09FA3D424927193B0DAAB25BEE3A5CF3B`; `adb install -r` → `Success`;
+  crash buffer FATAL/ANR = 0;
+- pixel probe on `emulator-5554` (`.local-artifacts/run-r4-20260917/after2-chat.png`): the glyph's
+  dominant colour changes from exactly `FFFFFF` (676 px) to exactly `8FBFCC` (676 px) — same pixels,
+  same count, i.e. a colour-only change. The plate bbox is unchanged and the ink bbox moves only
+  38×52 → 38×51 (a 1 px anti-aliasing edge on the now-dimmed glyph);
+- independent adversarial review: `SAFE` — resolved ARGB under Cybergram proven `0xFF8FBFCC`, no
+  competing tint on the view, non-Cybergram behaviour provably identical.
+
+Recorded non-blocking concern: `CybergramTheme.ICON_PALE` is dead code (referenced only at its
+declaration), so the required colour is enforced only because the `.attheme` value happens to match
+it; a future edit of one without the other would silently violate item 21. Wiring the constant or
+adding a test asserting `Theme.getColor(key_glass_defaultIcon, cybergramProvider) == ICON_PALE` is a
+candidate follow-up.
