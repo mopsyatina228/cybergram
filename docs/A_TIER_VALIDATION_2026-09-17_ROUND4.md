@@ -205,3 +205,36 @@ date-plate check as **P-tier** evidence (the AVD stayed unusable):
 | P | `PASS` (Redmi Note 10S smoke: install + launch + chrome + microphone colour/centring); Samsung/OEM target not attached |
 
 No defect was observed in the exercised rows, and nothing was fixed opportunistically.
+
+## Round 4b — B0/B1 interaction matrix on the physical Redmi (2026-09-17)
+
+Runner: the owner unlocked the Redmi Note 10S, which was used for the interaction cases because the
+AVD remained unstable. Artifacts: `.local-artifacts/run-a2-20260917/`.
+
+### B0 — filter tabs
+
+| case | verdict | evidence |
+|---|---|---|
+| tapping between tabs / selected vs unselected labels | PASS | chip switch changes the list; labels stay visible (`a0-dialogs.png`) |
+| unread counters | PASS | badges `102`, `0`, `1` render on the chips |
+| long-press / menu | PASS | folder context menu in the Cybergram style: Изменить порядок / Настроить папку / Выкл. уведомления / Поделиться / Удалить папку (`a1-chipmenu.png`) |
+| edit / reorder / delete mode | PASS | `ГОТОВО` header and per-chip `✕` delete affordances, `Все чаты` not deletable (`a2-reorder.png`); the mode was exited via `Готово` without committing changes (`a4-exit-reorder.png`) |
+| page swipe | PASS | a horizontal swipe over the list switched the selected folder to `12412412` and changed the content (`a5-pageswipe.png`) |
+| horizontal overflow / scroll | NOT TESTABLE | the account has only four folders (Все чаты / 263679 / 12412412 / 0) and they all fit on screen |
+| non-Cybergram control | PASS | P tier (upstream rounded chips) — see §P |
+
+### B1 — main bottom navigation
+
+| case | verdict | evidence |
+|---|---|---|
+| Chats → Contacts → Settings → Profile navigation | PASS | already recorded; the Cybergram angular panel and cyan selected plate track the active tab |
+| reselect / scroll-to-top | PASS | tapping the active `Чаты` tab returned the list to the top (`b1-reselect-top.png`) |
+| long press on a tab | PASS | long-pressing `Контакты` opened its quick-actions menu (Новый контакт / Недавние звонки) over a blurred scrim (`b1-tab-longpress.png`) |
+| orientation change | PASS | a forced rotation to landscape rendered the app and its scrim without a crash; portrait was restored (`b1-landscape.png`, `b1-portrait-restored.png`) |
+| search tab row (bonus) | PASS | the search tabs Чаты / Каналы / Приложения / Посты render with the Cybergram angular selected plate (`b1-attach-tabs2.png`) |
+| long press + long-drag selection across tabs | NOT EXERCISED | the press-and-drag re-opened the long-press menu instead of starting a drag selection (`b1-longdrag.png`) |
+| tabs show/hide animation | NOT EXERCISED | a show/hide transition cannot be evidenced by single stills |
+| Calls enable/disable and the Settings/Calls swap | NOT EXERCISED | the calls-tab configuration was not reached in this build/session |
+| attach/bot tab geometry | NOT EXERCISED | the attachment panel was not reached (taps landed on the search field) |
+
+No defect was observed in the exercised B0/B1 cases, and nothing was fixed opportunistically.
