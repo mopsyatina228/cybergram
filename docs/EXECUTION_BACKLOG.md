@@ -138,6 +138,10 @@ E validation passed. A validation is still required before the actual main-tabs 
 
 Status: `INTEGRATED / AUDIT COMPLETE`.
 
+A follow-up authenticated run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`)
+exercised 10 of the 15 rows: rows 10, 12, 14, 18, 25, 27, 29, 31 PASS and rows 13/19 are PARTIAL; rows
+8, 26, 28, 30 and 35 were not exercised; **0 defects** were found. `E-rich` stays `UNAVAILABLE`.
+
 Spec: `docs/passes/B2_MESSAGE_STATE_AUDIT.md`. Evidence matrix: `docs/B2_MESSAGE_STATE_AUDIT_2026-09-12.md`.
 
 Tested revision `e000ef8286a406fc27fc55889c286ebbffef2890`. Integrated into `dev` by fast-forward from `audit/cybergram-message-states`, commits kept separate: DEBUG-only fixture `b2bfdd4180377563ff1cc53a8deb3abaf8fa7dea`, audit/docs `6c682e15385c07dd4cf28cf1bd69567e0e2692c1`, semantic correction docs-only `2e9a6a1d066975727cbb4b3888c490a8acbf798a`. Result after semantic correction: **14 PASS / 0 CONFIRMED DEFECT / 6 DESIGN-OPEN / 15 UNTESTED** across 35 cases; A/P tiers open.
@@ -190,6 +194,12 @@ E validation passed on the real host via Remote Desktop Commander (not the DSH s
 ### B6 — ordinary angular plain service/date plate
 
 Status: `INTEGRATED ON dev / BOUNDED PRODUCTION SEAM (ChatActionCell.java ONLY) / INDEPENDENT REVIEW SAFE_MINIMAL_SEAM / E BUILD+INSTALL+RUNTIME+VISUAL PASS / E-CONTROL PASS / E-RICH UNAVAILABLE PRE-AUTH / A PENDING / P NOT REQUIRED / RELEASE INSTALL COMPATIBILITY OPEN FOR REDMI MIUI`.
+
+A follow-up authenticated run on 2026-09-17 (round 4, `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md`)
+confirmed the ordinary **date separator** (`April 13`) renders on the compact dark **angular** plate
+with chamfered corners and amber text. Ordinary service actions (pin/unpin, join/leave, title/photo/TTL,
+group call, screenshot), service-message reactions and the `SharedMediaLayout` floating date were not
+exercised; the rich/special rows stay `UNAVAILABLE` (not faked).
 
 Spec source: `docs/B5_SERVICE_DATE_AUDIT_2026-09-13.md` §5 (Strategy B, one compact enclosing `CybergramBubbleDrawable.buildPath(...)` plate). Evidence and reconciliation record: `docs/B6_SERVICE_DATE_IMPLEMENTATION_2026-09-14.md`.
 

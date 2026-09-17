@@ -1249,6 +1249,29 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
 - **Not done:** the non-Cybergram control screenshots and the Day ↔ Cybergram theme switch (both need a
   persisted theme mutation, deliberately not performed), and the P (physical/OEM) tier.
 
+## 2026-09-17 — round 4 follow-up: B2 rows, B5/B6 plate, P reachability
+
+- **Environment.** The AVD was unstable on this host: the host-GPU renderer (`-gpu auto`) crashed
+  `qemu-system-x86_64` within about a minute of boot, and `swiftshader_indirect` was stable but slow
+  enough to raise `ANR in com.android.systemui`. The run resumed after stopping a 6.4 GB Gradle
+  daemon, restarting the adb server (the qemu process had actually survived its launcher exiting —
+  only the adb link was lost) and running headless (`-no-window -gpu swiftshader_indirect`). Evidence
+  in `.local-artifacts/run-b256/`.
+- **B2** (owner consent D10.4): 8 rows **PASS** — 10 incoming media, 12 caption/time-on-media, 14
+  cell multi-select overlay, 18 reply layout, 25 reaction glyphs, 27 time/checks/views, 29 links +
+  metadata, 31 service/date adjacency; 2 **PARTIAL** — 13 media clipping/touch targets, 19
+  quote/code/link/contact lines; 5 **NOT EXERCISED** — 8 group slicing, 26 reaction touch/particles,
+  28 forwarded header, 30 bot buttons, 35 `TYPE_PREVIEW`; **0 defects**.
+- **B5/B6:** the ordinary `April 13` date separator **PASSes** as a compact dark **angular** plate
+  with chamfered corners and amber text (`b56-datesep.png`). Ordinary service actions, service-message
+  reactions and the `SharedMediaLayout` floating date were not exercised; rich/special rows remain
+  `UNAVAILABLE` (not faked).
+- **P: BLOCKED.** `adb devices` listed only `emulator-5554` for the whole run; no physical or OEM
+  device is reachable, so the Samsung/OEM and Redmi MIUI tiers cannot be produced here and emulator
+  evidence must not be promoted to P.
+- Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` (follow-up section); backlog B2 and B6
+  statuses updated.
+
 ## Explicitly deferred
 
 - package/application ID rename;

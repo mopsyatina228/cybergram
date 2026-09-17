@@ -82,3 +82,63 @@ All artifacts live in `.local-artifacts/run-r4-20260917/` (git-excluded). No scr
 material, phone number or message content is committed.
 
 This run authorizes no production change, no push and no release.
+
+## Follow-up run — B2 rows, B5/B6 plate, P reachability (same date)
+
+Runner note: the AVD was unstable on this host. The host-GPU renderer (`-gpu auto`) crashed
+`qemu-system-x86_64` within about a minute of boot; the software renderer (`swiftshader_indirect`) was
+stable but slow enough to raise `ANR in com.android.systemui`. The run resumed after (a) stopping a
+6.4 GB Gradle daemon, (b) restarting the adb server — the emulator process had actually survived its
+launcher exiting, only the adb connection was lost — and (c) running the AVD headless
+(`-no-window -gpu swiftshader_indirect`). All evidence below is from the authenticated AVD
+`emulator-5554`; artifacts are in `.local-artifacts/run-b256/`.
+
+### B2 — per-row verdicts
+
+| # | case | verdict | evidence |
+|---|---|---|---|
+| 8 | cell-side group slicing/clipping | NOT EXERCISED | no run of grouped consecutive same-sender bubbles was captured |
+| 10 | incoming media | PASS | photo inside the angular body (`b2-meta.png`, `b2-uvoleno.png`) |
+| 12 | caption layout / time-on-media | PASS | captions + time readable in the body (12:30 PM; 8:07 AM) |
+| 13 | media clipping + touch targets | PARTIAL | media is clipped to the angular silhouette; touch targets not probed |
+| 14 | cell multi-select overlay/ripple | PASS | `1 Selected`, selection overlay follows the bubble, Reply/Forward bar (`b2-cellselect2.png`) |
+| 18 | reply name/text layout | PASS | reply quote bars with name + cyan link (`b2-meta.png`, `b2-cellselect2.png`) |
+| 19 | quote/code/link/contact lines | PARTIAL | reply/quote lines and links render; code/contact/fact-check absent from the sampled chats |
+| 25 | reaction emoji glyph rendering | PASS | 👍😱 and a rich row (⭐57 👍24 ❤️12 👎12 🔥2 🤬2) render correctly |
+| 26 | reaction touch/bounce/scrim/particles | NOT EXERCISED | only static rendering observed |
+| 27 | time / checks / views metadata | PASS | times, delivery checks and views (25.1K, 7.8K, 3110) readable |
+| 28 | forwarded header/state | NOT EXERCISED | no forwarded message in the sampled chats |
+| 29 | links plus metadata | PASS | links render cyan with adjacent metadata (`b2-bfm.png`) |
+| 30 | bot buttons bottom / body | NOT EXERCISED | no bot message with buttons was opened |
+| 31 | service/date cell adjacent | PASS | `April 13` plate and `Unread Messages` divider adjacent to ordinary messages (`b2-uvoleno.png`) |
+| 35 | `TYPE_PREVIEW` on a live client | NOT EXERCISED | the navigation to the theme preview aborted (the back-tap sequence left Telegram) |
+
+Tally: **8 PASS / 2 PARTIAL / 5 NOT EXERCISED / 0 defects.**
+
+### B5/B6
+
+- ordinary date separator: **PASS** — `April 13` renders as a compact dark **angular** plate with
+  chamfered corners and amber text (`b56-datesep.png`, 4x nearest-neighbour crop);
+- ordinary service actions (pin/unpin, join/leave, title/photo/TTL change, group call, screenshot),
+  service-message reactions, and the `SharedMediaLayout` floating date: **NOT EXERCISED** — none
+  appeared in the sampled chats;
+- rich/special rows (gift, star/offer, community, wallpaper, birthday, story, `TYPE_ACTION_PHOTO`):
+  **UNAVAILABLE** — no such message was present; not faked, so `E-rich` stays `UNAVAILABLE`;
+- latent preview caveat (a foreign-theme preview row instantiating a `ChatActionCell`): not observed.
+
+### P (physical / OEM)
+
+**BLOCKED — no physical or OEM device is reachable.** `adb devices` listed only `emulator-5554`
+throughout; no Samsung/OEM target was attached and the Redmi Note 10S / MIUI device recorded in R1 is
+still unreachable. P evidence cannot be produced from this environment, and emulator evidence must
+never be promoted to P.
+
+### Verdicts after the follow-up
+
+| pass | verdict |
+|---|---|
+| B2 | `PARTIAL` — 8 PASS / 2 PARTIAL / 5 not exercised / 0 defects |
+| B5/B6 | `PARTIAL` — ordinary date plate PASS; ordinary service actions and reactions not exercised; rich `UNAVAILABLE` |
+| P | `BLOCKED` — no physical/OEM device reachable |
+
+No defect was observed in the exercised rows, and nothing was fixed opportunistically.
