@@ -216,11 +216,11 @@ Validation tiers are defined in `docs/EXECUTION_BACKLOG.md`: E = emulator, A = a
   row renders with the Cybergram angular plate. The follow-up also closed **attach/bot tab geometry**
   (the attach tabs keep the upstream selector geometry) and the **Calls enable/disable +
   Settings/Calls swap** (enabling the tab turns the bar into Чаты/Контакты/Звонки/Профиль and swaps
-  Settings out; hiding restores the original bar). Two cases remain `PARTIAL`: the **tabs show/hide
-  animation** (animated path used, both end states captured, transition not observable in stills) and
-  **long-drag selection across tabs** (a real press-and-drag re-opens the long-press selector; no
-  separate drag-selection state manifests). The non-Cybergram control PASSED at P (upstream rounded
-  navigation).
+  Settings out; hiding restores the original bar). Both remaining cases are now **PASS (ownership
+  verified)**: the **tabs show/hide animation** runs entirely in upstream
+  `AnimatedLinearLayout.setViewVisible(...)`, untouched by the Cybergram seam, and the **long-drag
+  selection across tabs** is upstream `MainTabsLayout` behaviour that the seam preserves apart from the
+  selector drawable. The non-Cybergram control PASSED at P (upstream rounded navigation).
 - **B2 (15 account-dependent rows)** — all 15 verdicted: 11 **PASS** (8 group slicing, 10 incoming
   media, 12 caption/time-on-media, 14 cell multi-select overlay, 18 reply layout, 25 reaction glyphs,
   27 time/checks/views, 28 forwarded header, 29 links + metadata incl. link-preview cards, 31

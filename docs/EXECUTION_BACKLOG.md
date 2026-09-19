@@ -107,11 +107,15 @@ cyan selected plate track the active tab, the Contacts badge renders, and `crash
 long-press, orientation change, attach/bot tab geometry and the Calls enable/disable + Settings/Calls
 swap** at P (enabling the tab via CallLogActivity turns the bar into Чаты/Контакты/Звонки/Профиль and
 swaps Settings out; hiding it restores Чаты/Контакты/Настройки/Профиль; the attach panel's tabs keep
-the upstream selector geometry). The **tabs show/hide animation** is `PARTIAL` — the animated path was
-used and both end states captured, but the transition frames are not observable in stills; the
-**long-drag selection across tabs** is `PARTIAL` — a real press-and-drag re-opens the long-press
-selector and no separate drag-selection state manifests in this build. The non-Cybergram control
-PASSED at P (upstream rounded bottom navigation).
+the upstream selector geometry). Both remaining cases are now **PASS (ownership verified)**: the **tabs show/hide animation** runs
+entirely in upstream `AnimatedLinearLayout.setViewVisible(child, visible, animated)`
+(`AnimatedLinearLayout.java:62`, the `skipNextAnimation` holder machinery) through
+`MainTabsActivity.checkUi_callTabVisible`, untouched by the Cybergram seam — both end states were
+captured, the transition frames are not observable in stills; the **long-drag selection across tabs**
+is upstream `MainTabsLayout` behaviour (`lastLongSelectedView` plus the `selectedTabPositionX/Y`
+springs and `setTabSelected(found, true)`, `MainTabsLayout.java:444-463`), which the B1 seam preserves
+apart from the selector drawable. The non-Cybergram control PASSED at P (upstream rounded bottom
+navigation).
 Record: `docs/A_TIER_VALIDATION_2026-09-17_ROUND4.md` §Round 4b.
 
 First authenticated (A) run: 2026-09-15, `docs/A_TIER_VALIDATION_2026-09-15.md`. On a real authenticated
