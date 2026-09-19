@@ -1334,6 +1334,23 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
 - Record: `docs/R_SERIES_IMPLEMENTATION_2026-09-17.md`. Artifacts:
   `.local-artifacts/run-rseries-20260917/`.
 
+## 2026-09-17 — publish: dev pushed to origin/dev and released as a prerelease
+
+- `dev` (20 local commits, rounds 3–4 + R-series + validation docs) pushed to `origin/dev`:
+  `edb9354ed` → `32cd6d38c`; `rev-list --left-right --count` = 0/0, no force, fast-forward.
+- Universal 4-ABI debug APK built from HEAD `32cd6d38c` (clean tree):
+  `:TMessagesProj_App:assembleAfatDebug` (4 ABIs) → `BUILD SUCCESSFUL in 1m 43s`; 113,634,737 bytes,
+  SHA-256 `BF9B5ABC0866E482E0777C35461020DA5701C6FB321628033271A3A0C7EA5745`; ABIs arm64-v8a,
+  armeabi-v7a, x86, x86_64; copied to `.local-artifacts/releases/Cybergram-dev-32cd6d38c-universal.apk`.
+- Published as GitHub **prerelease** `dev-20260917-32cd6d38c` ("Cybergram dev 32cd6d38c") with the asset
+  `Cybergram-dev-32cd6d38c-universal.apk`; `gh release view` confirms the asset digest
+  `sha256:bf9b5abc…` and `isPrerelease: true`.
+- Device smoke for this exact asset was **not run**: the Redmi detached from USB before the install,
+  and the AVD is not runnable on this host (it exits within ~1 minute on every renderer backend). The
+  same code was smoke-tested as an arm64 build on the Redmi earlier (install Success, FATAL/ANR = 0,
+  microphone centred and `8FBFCC`, Cybergram → Day → Cybergram round trip).
+- Notes file: `.local-artifacts/releases/notes_dev-20260917-32cd6d38c.md`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
