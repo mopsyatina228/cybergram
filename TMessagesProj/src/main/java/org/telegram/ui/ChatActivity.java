@@ -18254,6 +18254,10 @@ public class ChatActivity extends BaseFragment implements
                 || child == blurredView || child == searchViewPager
                 || child == fireworksOverlay || child == chatActivityFadeView
                 || child == messagesSearchListContainer
+                // B7: the chat-canvas HUD is a full-size layer. Without this it would take the
+                // TOP|LEFT onLayout branch, which adds the action-bar height and pushes its bottom
+                // brackets off-screen.
+                || child == cybergramChatCanvasHudView
             );
         }
 

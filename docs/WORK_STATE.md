@@ -1415,6 +1415,43 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
   starts (`docs/EMULATOR_DIAGNOSIS_2026-09-19.md`), so the E matrix (chat screenshot, non-Cybergram
   control, wallpaper sweep, blur/scrim checks, touch/accessibility pass) is not produced yet.
 
+## 2026-09-19 — publish: dev-20260919-90e4b84a6 (B4 + B7)
+
+- Universal 4-ABI debug APK built from HEAD `90e4b84a6` (clean tree):
+  `:TMessagesProj_App:assembleAfatDebug` (4 ABIs) → `BUILD SUCCESSFUL in 2m 11s`; 113,636,039 bytes,
+  SHA-256 `C45032D2203BD10194124F94C139E84627D723002A7FB7428B2BB54ABFFCC4A8`; ABIs arm64-v8a,
+  armeabi-v7a, x86, x86_64. Static checks: `git diff --check` clean;
+  `Tools/validate_cybergram_theme.py` → `unknown=0 duplicates=0 malformed=0`.
+- Published as the GitHub **prerelease** `dev-20260919-90e4b84a6` ("Cybergram dev 90e4b84a6 (B4 + B7)")
+  with the asset `Cybergram-dev-90e4b84a6-universal.apk`; `gh release view` confirms the digest
+  `sha256:c45032d2…` and `isPrerelease: true`. Notes:
+  `.local-artifacts/releases/notes_dev-20260919-90e4b84a6.md`.
+- Contents: B4 (D11.1, angular reply plate/reaction pill behind per-instance opt-ins) and B7 (D11.2,
+  the chat-canvas HUD plus the child-index compensation) on top of the previously published rounds 3–4
+  and the R-series. **B4/B7 device evidence is still pending**; the one-shot checklist is
+  `docs/B4_B7_DEVICE_EVIDENCE_PROCEDURE.md`.
+
+## 2026-09-19 — independent review of B4/B7 and the fixes it produced
+
+- An adversarial read-only review of the two seams returned: `ReplyMessageLine` **SAFE** (opt-in false
+  by default, only the two message `replyLine` sites, upstream byte-identical when off);
+  `ReactionsLayoutInBubble`/`ReactionButton` **SAFE on ownership** with two consistency issues; HUD
+  gating/non-interactivity **SAFE**; the index compensation **SAFE** (provably restores the intended
+  sibling; no other fixed index needs it; `videoPlayerContainer` is self-compensating); blur capture
+  **SAFE**; and **one real defect** — the HUD was not a full-size layer, so `onLayout` took the
+  `TOP|LEFT` branch and added the action-bar height, pushing its bottom brackets off-screen.
+- Fixes applied: `child == cybergramChatCanvasHudView` added to `isFullSizeIgnoreInsersChild(...)`
+  (full-screen measure, `childLeft = childTop = 0`); the reaction-scrim backing now goes through the
+  chamfer-aware `drawRoundRect(...)` helper; the selected-state particle clip uses
+  `CybergramBubbleDrawable.buildPath(...)` with the same cut; the HUD now mirrors
+  `CybergramHeaderDecorationView` (`GONE` when non-Cybergram, restored on `didSetNewTheme`, `onDraw`
+  gate kept as a safety net).
+- Reviewed nit **not** actioned, with the reason recorded: the reaction-scrim suppression list does not
+  need the HUD, because the HUD sits below `chatListView` while the scrim is drawn by the cells inside
+  it, so the scrim already dims the HUD.
+- Compile evidence: `:TMessagesProj:compileDebugJavaWithJavac` → `BUILD SUCCESSFUL in 1m 58s`.
+- Record: `docs/B4_B7_INDEPENDENT_REVIEW_2026-09-19.md`. The four device checks it lists remain pending.
+
 ## Explicitly deferred
 
 - package/application ID rename;

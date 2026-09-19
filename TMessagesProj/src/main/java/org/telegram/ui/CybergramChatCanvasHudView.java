@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -26,7 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
  * node, {@code onTouchEvent} returns false, and it is installed as a full-size sibling. Message
  * readability is preserved because every mark sits within {@link #EDGE_INSET_DP} of an edge.
  */
-public class CybergramChatCanvasHudView extends View {
+public class CybergramChatCanvasHudView extends View implements NotificationCenter.NotificationCenterDelegate {
 
     /** Distance of the bracket line from the canvas edges, in dp — the reserved edge band. */
     private static final float EDGE_INSET_DP = 7f;
@@ -46,6 +47,38 @@ public class CybergramChatCanvasHudView extends View {
         setFocusable(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         setWillNotDraw(false);
+        updateVisibilityForTheme();
+    }
+
+    /**
+     * Matches {@link CybergramHeaderDecorationView}: when Cybergram presentation is not active the
+     * layer is {@link #GONE}, so it is skipped by the measure/draw traversal instead of being drawn
+     * only to be gated away. It is restored on the global {@code didSetNewTheme} notification, so a
+     * Day &lt;-&gt; Cybergram switch still needs no activity recreation; the {@link #onDraw} gate
+     * stays as a safety net.
+     */
+    private void updateVisibilityForTheme() {
+        setVisibility(CybergramTheme.isCybergramPresentation(resourcesProvider) ? VISIBLE : GONE);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        updateVisibilityForTheme();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.didSetNewTheme) {
+            updateVisibilityForTheme();
+        }
     }
 
     @Override

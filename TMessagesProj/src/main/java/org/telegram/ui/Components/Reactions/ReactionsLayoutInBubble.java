@@ -1036,7 +1036,16 @@ public class ReactionsLayoutInBubble {
 
             if (isSelected) {
                 tagPath.rewind();
-                tagPath.addRoundRect(AndroidUtilities.rectTmp, rad, rad, Path.Direction.CW);
+                if (cybergramAngularCut > 0) {
+                    // B4b follow-up: clip the selected-state particles to the same chamfer as the pill,
+                    // so they cannot spill into the cut corners.
+                    CybergramBubbleDrawable.buildPath(tagPath, AndroidUtilities.rectTmp.left,
+                            AndroidUtilities.rectTmp.top, AndroidUtilities.rectTmp.right,
+                            AndroidUtilities.rectTmp.bottom, cybergramAngularCut, cybergramAngularCut,
+                            cybergramAngularCut, cybergramAngularCut);
+                } else {
+                    tagPath.addRoundRect(AndroidUtilities.rectTmp, rad, rad, Path.Direction.CW);
+                }
 
                 canvas.save();
                 canvas.clipPath(tagPath);
@@ -1157,7 +1166,9 @@ public class ReactionsLayoutInBubble {
             if (drawOverlayScrim && getDrawServiceShaderBackground() < 1 && parentView instanceof ChatMessageCell) {
                 MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
                 if (messageBackground != null && !isTag) {
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, messageBackground.getPaint());
+                    // B4b follow-up: route the scrim backing through the same helper as the pill, so its
+                    // corners follow the Cybergram chamfer instead of poking out round.
+                    drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, messageBackground.getPaint());
                 }
             }
             if (cutTagCircle) {
