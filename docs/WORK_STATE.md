@@ -1452,6 +1452,23 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
 - Compile evidence: `:TMessagesProj:compileDebugJavaWithJavac` → `BUILD SUCCESSFUL in 1m 58s`.
 - Record: `docs/B4_B7_INDEPENDENT_REVIEW_2026-09-19.md`. The four device checks it lists remain pending.
 
+## 2026-09-19 — publish: dev-20260919-6b9dd982c (B4 + B7 + review fixes)
+
+- Universal 4-ABI debug APK built from HEAD `6b9dd982c` (clean tree): `BUILD SUCCESSFUL in 2m 33s`;
+  114,123,735 bytes; SHA-256
+  `B730F16B1BA3DE6092302D2BF52EE5315AC39E023A4EEF0942FA88F1A1D244A4`; ABIs arm64-v8a, armeabi-v7a,
+  x86, x86_64. Artifact sanity: `aapt2 dump badging` → package `org.telegram.messenger.beta`,
+  versionCode 70389, targetSdk 36; the archive holds 12 `classes*.dex` files and `AndroidManifest.xml`.
+- Published as the GitHub **prerelease** `dev-20260919-6b9dd982c`
+  ("Cybergram dev 6b9dd982c (B4 + B7 + review fixes)"); `gh release view` confirms the digest
+  `sha256:b730f16b…` and `isPrerelease: true`. Notes:
+  `.local-artifacts/releases/notes_dev-20260919-6b9dd982c.md`.
+- Supersedes `dev-20260919-90e4b84a6`: it adds the B7 layout fix (the HUD is now a full-size
+  ignore-insets child, so all four brackets render), the B4b scrim/particle chamfer consistency and the
+  HUD theme observer.
+- Device evidence for B4/B7 remains pending; the one-shot checklist is
+  `docs/B4_B7_DEVICE_EVIDENCE_PROCEDURE.md`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
