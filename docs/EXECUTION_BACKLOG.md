@@ -179,13 +179,18 @@ Therefore the deliberate `TYPE_PREVIEW` exclusion in `MessageDrawable` stays, an
 
 ### B4 — reply/reaction styling
 
-Status: `DESIGN-OPEN / NOT AUTHORIZED`.
+Status: `IMPLEMENTED ON dev / E BUILD PASS / DEVICE VERIFICATION PENDING` (owner ruling D11.1,
+2026-09-19; record `docs/B4_ANGULAR_REPLY_REACTION_2026-09-17.md`).
 
 Owner-proven and measured: `ReplyMessageLine.drawBackground` plates and `ReactionsLayoutInBubble.ReactionButton.drawRoundRect` pills are circular while the message bodies are 45-degree chamfered. Classified as `DESIGN-OPEN`, **not** as a confirmed defect: `docs/CYBERGRAM_UI_SPEC.md` requires angular **outer** message silhouettes and the survival of replies/reactions, and names *large* rounded/glass Material capsules as the anti-target — it does not require compact internal semantic controls (reply plate/bar, reaction pill) to become angular.
 
 No production implementation spec is written. `ReplyMessageLine.java` and `ReactionsLayoutInBubble.java` must not be modified on this basis. If a design ruling later requires angularity, split the work by actual owner (reply plate and reaction pill are separate bounded passes unless one seam is proven), and require an explicit per-instance opt-in in addition to the central gate, because both classes are shared well beyond the message flow (`StoryCaptionView`, rich-text editors, `ChatActionCell`, `ActionBarMenuItem`/`SearchTagsList`). Closure of the authenticated matrix items in B2 (reply layout, reaction interaction, metadata, service/date adjacency) would also be required before such work could be validated.
 
-B4 remains `DESIGN-OPEN / NOT AUTHORIZED` after the 2026-09-14 B6 integration reconciliation; nothing in the B6 integration changes B4's status, and next product work must not silently start B4.
+B4 remained `DESIGN-OPEN / NOT AUTHORIZED` after the 2026-09-14 B6 integration reconciliation. **The
+owner authorized it on 2026-09-19** ("B4 (reply/reaction) — бери в работу"): ruling D11.1 makes the
+in-bubble reply plate and reaction pill use the shared Cybergram chamfer behind explicit per-instance
+opt-ins, implemented in `ReplyMessageLine`, `ReactionsLayoutInBubble`/`ReactionButton` and wired from
+`ChatMessageCell` only. Device verification is still pending.
 
 ### B5 — service/date ownership and geometry audit
 

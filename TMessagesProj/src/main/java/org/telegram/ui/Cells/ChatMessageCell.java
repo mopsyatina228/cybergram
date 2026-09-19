@@ -7211,6 +7211,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (messageIdChanged || messageObject.reactionsChanged || wasPlayingRound != isPlayingRound) {
                 messageObject.reactionsChanged = false;
                 boolean isTag = messageObject.messageOwner != null && messageObject.messageOwner.reactions != null && messageObject.messageOwner.reactions.reactions_as_tags;
+                // B4b (owner ruling D11.1): only the in-bubble message reactions follow the Cybergram
+                // angular pill; service and other reaction rows keep their upstream capsule.
+                reactionsLayoutInBubble.setCybergramAngular(CybergramTheme.useAngularMessageGeometry(resourcesProvider));
                 if (messageObject.shouldDrawReactions() && !messageObject.isExpiredStory() && (currentPosition == null || ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0))) {
                     boolean isSmall = !messageObject.shouldDrawReactionsInLayout();
                     if (currentPosition != null) {
@@ -19579,6 +19582,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (replyLine == null) {
                         replyLine = new ReplyMessageLine(this);
                     }
+                    // B4a (owner ruling D11.1): only the message reply plate follows the Cybergram
+                    // angular geometry; every other ReplyMessageLine user stays untouched.
+                    replyLine.setCybergramAngular(CybergramTheme.useAngularMessageGeometry(resourcesProvider));
                     replyLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_REPLY);
                     if (replyLine.hasSticker()) {
                         maxWidth -= dp(38);
@@ -22665,6 +22671,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (replyLine == null) {
                 replyLine = new ReplyMessageLine(this);
             }
+            // B4a (owner ruling D11.1): only the message reply plate follows the Cybergram angular
+            // geometry; every other ReplyMessageLine user stays untouched.
+            replyLine.setCybergramAngular(CybergramTheme.useAngularMessageGeometry(resourcesProvider));
             Theme.chat_replyNamePaint.setColor(replyLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_REPLY));
 
             int rippleColor = ColorUtils.setAlphaComponent(replyLine.getColor(), 0x1e);

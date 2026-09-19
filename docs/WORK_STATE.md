@@ -1351,6 +1351,24 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
   microphone centred and `8FBFCC`, Cybergram → Day → Cybergram round trip).
 - Notes file: `.local-artifacts/releases/notes_dev-20260917-32cd6d38c.md`.
 
+## 2026-09-17 — B4 implemented: angular reply plate and reaction pill (D11.1)
+
+- Owner authorized B4; ruling **D11.1**: the in-bubble reply plate and the in-bubble reaction pill use
+  the shared 45-degree Cybergram chamfer (`CybergramBubbleDrawable.buildPath`), behind explicit
+  per-instance opt-ins because both owning classes are shared far beyond the message flow.
+- `ReplyMessageLine.setCybergramAngular(...)` + a chamfer branch in `drawBackground(...)`;
+  `ChatMessageCell` opts in **only** the message `replyLine`, in both layout paths.
+- `ReactionsLayoutInBubble.setCybergramAngular(...)` propagated to every `ReactionButton` it creates;
+  `ReactionButton.drawRoundRect(...)` draws the chamfer for the opted-in instance (pill, its scrim
+  overlay and its service-shader background). `ChatMessageCell` opts in **only** its own
+  `reactionsLayoutInBubble`.
+- Untouched: quote/link/contact/fact-check/summary lines, rich-text editors, story captions, article
+  views, `ChatActionCell` service reactions, and every non-Cybergram path.
+- Evidence: arm64 `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a --offline` →
+  `BUILD SUCCESSFUL in 3m 58s`; APK 68,456,889 bytes. **Device verification pending** — no physical
+  device attached and the AVD is not runnable on this host.
+- Record: `docs/B4_ANGULAR_REPLY_REACTION_2026-09-17.md`.
+
 ## Explicitly deferred
 
 - package/application ID rename;

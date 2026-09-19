@@ -31,6 +31,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.RadiiUtils;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 
@@ -46,6 +48,18 @@ public class ReplyMessageLine {
     public final float[] radii = new float[8];
     private final Path backgroundPath = new Path();
     public final Paint backgroundPaint = new Paint();
+    /**
+     * Owner ruling D11.1 (B4): when set by the owning caller, the plate is drawn with the shared
+     * Cybergram 45-degree chamfer instead of round radii. This class is shared well beyond the message
+     * flow (rich-text editors, story captions, article views), so this is an explicit per-instance
+     * opt-in on top of the central presentation gate — never a class-wide branch.
+     */
+    private boolean cybergramAngular;
+    private final Path cybergramAngularPath = new Path();
+
+    public void setCybergramAngular(boolean cybergramAngular) {
+        this.cybergramAngular = cybergramAngular;
+    }
     private LoadingDrawable backgroundLoadingDrawable;
 
     public boolean hasColor2, hasColor3;
@@ -654,7 +668,15 @@ public class ReplyMessageLine {
     public void drawBackground(Canvas canvas, RectF rect, float alpha, boolean hasQuote, boolean emojiOnly) {
         if (!emojiOnly) {
             backgroundPaint.setColor(Theme.multAlpha(backgroundColorAnimated.set(backgroundColor), alpha));
-            if (RadiiUtils.radiiAreSame(radii)) {
+            if (cybergramAngular) {
+                // Owner ruling D11.1: the reply plate uses the same shared chamfer polygon as the
+                // Cybergram message bodies (no second geometry implementation).
+                final float cut = dp(CybergramTheme.BUBBLE_CORNER_CUT_DP);
+                cybergramAngularPath.rewind();
+                CybergramBubbleDrawable.buildPath(cybergramAngularPath, rect.left, rect.top, rect.right,
+                        rect.bottom, cut, cut, cut, cut);
+                canvas.drawPath(cybergramAngularPath, backgroundPaint);
+            } else if (RadiiUtils.radiiAreSame(radii)) {
                 canvas.drawRoundRect(rect, radii[0], radii[0], backgroundPaint);
             } else {
                 backgroundPath.rewind();

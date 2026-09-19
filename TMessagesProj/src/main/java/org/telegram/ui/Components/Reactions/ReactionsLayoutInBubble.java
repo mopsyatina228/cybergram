@@ -45,6 +45,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramBubbleDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -114,6 +116,17 @@ public class ReactionsLayoutInBubble {
     View parentView;
     MessageObject messageObject;
     Theme.ResourcesProvider resourcesProvider;
+    /**
+     * Owner ruling D11.1 (B4): explicit per-instance opt-in for the angular reaction pill. This
+     * reaction row is shared with service messages, the admin log and story captions, so the owning
+     * caller (ChatMessageCell) must ask for it on top of the central presentation gate.
+     */
+    private boolean cybergramAngular;
+
+    public void setCybergramAngular(boolean cybergramAngular) {
+        this.cybergramAngular = cybergramAngular;
+    }
+
     private Integer scrimViewReaction;
     private float scrimProgress;
     private boolean scrimDirection;
@@ -248,6 +261,7 @@ public class ReactionsLayoutInBubble {
                         }
                     }
                     ReactionButton button = new ReactionLayoutButton(old, reactionCount, isSmall, isTag);
+                    button.setCybergramAngular(cybergramAngular);
                     button.inGroup = messageObject.hasValidGroupId();
                     reactionButtons.add(button);
                     hasPaidReaction = hasPaidReaction || button.paid;
@@ -303,6 +317,7 @@ public class ReactionsLayoutInBubble {
                     }
                     if (isSmall && reactionCount.count > 1 && reactionCount.chosen) {
                         ReactionButton button2 = new ReactionLayoutButton(null, reactionCount, isSmall, isTag);
+                        button2.setCybergramAngular(cybergramAngular);
                         button2.inGroup = messageObject.hasValidGroupId();
                         reactionButtons.add(button2);
                         reactionButtons.get(0).isSelected = false;
@@ -841,6 +856,14 @@ public class ReactionsLayoutInBubble {
         private final View parentView;
         private final Theme.ResourcesProvider resourcesProvider;
 
+        /** B4b (owner ruling D11.1): > 0 when this pill is drawn with the shared Cybergram chamfer. */
+        private float cybergramAngularCut = -1f;
+        private final Path cybergramPillPath = new Path();
+
+        public void setCybergramAngular(boolean cybergramAngular) {
+            cybergramAngularCut = cybergramAngular ? AndroidUtilities.dp(CybergramTheme.BUBBLE_CORNER_CUT_DP) : -1f;
+        }
+
         public final ButtonBounce bounce;
         private StarsReactionsSheet.Particles particles;
 
@@ -973,6 +996,14 @@ public class ReactionsLayoutInBubble {
                     fillTagPath(bounds, rect2, tagPath);
                 }
                 canvas.drawPath(tagPath, paint);
+            } else if (cybergramAngularCut > 0) {
+                // B4b (owner ruling D11.1): the reaction pill uses the same shared chamfer polygon as
+                // the Cybergram message bodies (no second geometry implementation).
+                cybergramPillPath.rewind();
+                CybergramBubbleDrawable.buildPath(cybergramPillPath, rectF.left, rectF.top, rectF.right,
+                        rectF.bottom, cybergramAngularCut, cybergramAngularCut, cybergramAngularCut,
+                        cybergramAngularCut);
+                canvas.drawPath(cybergramPillPath, paint);
             } else {
                 canvas.drawRoundRect(rectF, r, r, paint);
             }
