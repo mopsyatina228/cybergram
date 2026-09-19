@@ -1391,6 +1391,30 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
   survives indefinitely. Freeing host physical memory (or adding RAM) is required to go further.
 - Record: `docs/EMULATOR_DIAGNOSIS_2026-09-19.md`; screenshot `.local-artifacts/emu-diag-20260919/`.
 
+## 2026-09-19 — B7 implemented: chat-canvas HUD layer
+
+- Owner authorized B7. The mandatory ownership re-reconnaissance was re-run first and holds:
+  `class ChatActivityFragmentView` at `ChatActivity.java:17086`, `contentView.addView(chatListView, ...)`
+  at 6980, the `CybergramHeaderDecorationView` insert at 8987, and the `indexOfChild(chatListView)`
+  precedent at 8085 / 44400 / 46988.
+- New `TMessagesProj/src/main/java/org/telegram/ui/CybergramChatCanvasHudView.java`: non-interactive
+  (`setClickable(false)`, `setFocusable(false)`, no accessibility node, `onTouchEvent` returns false),
+  gated in `onDraw` on `CybergramTheme.isCybergramPresentation(...)`, drawing four **sparse chamfered
+  corner brackets** in the canvas edge band (inset 7 dp, arm 13 dp, the shared
+  `BUBBLE_CORNER_CUT_DP` cut and `BUBBLE_BORDER_WIDTH_DP` stroke, red at alpha 44). No surface, no
+  microtext, no security/network claims; every mark sits inside 7 dp of an edge.
+- Wiring: **one** edit in `ChatActivity.createView` — the view is inserted at
+  `contentView.indexOfChild(chatListView)`, so it lands directly below `chatListView` (above the
+  wallpaper, behind the message list) independently of the lazily created `backgroundView`. The header
+  decoration insert is unchanged.
+- Footprint is exactly the contract's: the new component plus one `ChatActivity` wiring line;
+  `SizeNotifierFrameLayout`, `MessageDrawable`, `ChatMessageCell`, `ChatActionCell`,
+  `ReplyMessageLine` and `ReactionsLayoutInBubble` are untouched.
+- Evidence: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64 --offline` →
+  `BUILD SUCCESSFUL in 4m 11s`. **Device verification pending** — the host kills the AVD while the app
+  starts (`docs/EMULATOR_DIAGNOSIS_2026-09-19.md`), so the E matrix (chat screenshot, non-Cybergram
+  control, wallpaper sweep, blur/scrim checks, touch/accessibility pass) is not produced yet.
+
 ## Explicitly deferred
 
 - package/application ID rename;

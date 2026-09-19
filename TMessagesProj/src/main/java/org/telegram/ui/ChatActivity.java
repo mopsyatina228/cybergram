@@ -8981,6 +8981,16 @@ public class ChatActivity extends BaseFragment implements
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         Timer.finish(t);
 
+        // B7 (owner-authorized 2026-09-19, docs/passes/B7_CHAT_CANVAS_HUD.md): the dedicated
+        // non-interactive chat-canvas HUD layer. It is inserted directly below chatListView, i.e.
+        // above the wallpaper and behind the message list, and draws nothing unless Cybergram
+        // presentation is active (runtime gate in onDraw). The index is anchored on chatListView and
+        // not on backgroundView, because the wallpaper child is created lazily by setBackgroundImage
+        // and may not exist yet.
+        contentView.addView(new CybergramChatCanvasHudView(context, getResourceProvider()),
+                contentView.indexOfChild(chatListView),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         // Cybergram header structural decoration: an always-present non-interactive overlay.
         // It draws nothing unless Cybergram presentation is active (runtime gate in onDraw),
         // so a Day <-> Cybergram theme switch is reflected without recreating the activity.

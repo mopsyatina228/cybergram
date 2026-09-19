@@ -1,6 +1,7 @@
 # B7 — chat-canvas HUD decoration layer
 
-Status: `SPEC PREPARED / NOT AUTHORIZED`
+Status: `IMPLEMENTED ON dev / E BUILD PASS / DEVICE VERIFICATION PENDING` (owner authorized 2026-09-19:
+"B7 — спека готова, NOT AUTHORIZED – бери в работу").
 
 Type: bounded implementation contract (prepared, **not** authorized for execution)
 

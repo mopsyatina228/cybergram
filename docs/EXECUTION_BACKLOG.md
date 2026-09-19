@@ -236,7 +236,7 @@ Open items: **A tier pending** (authenticated ordinary service/date rows and all
 
 ### B7 — optional chat-canvas HUD/background layer
 
-Status: `SPEC PREPARED / NOT AUTHORIZED`.
+Status: `IMPLEMENTED ON dev / E BUILD PASS / DEVICE VERIFICATION PENDING` (owner authorized 2026-09-19).
 
 Spec: `docs/passes/B7_CHAT_CANVAS_HUD.md` (prepared 2026-09-14; writing it grants nothing).
 
