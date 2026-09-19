@@ -1369,6 +1369,28 @@ declined to act on the filter-tab defect and the R-series entry that listed R-GA
   device attached and the AVD is not runnable on this host.
 - Record: `docs/B4_ANGULAR_REPLY_REACTION_2026-09-17.md`.
 
+## 2026-09-19 — emulator diagnosis and restoration attempt
+
+- Diagnosed why the AVD had been exiting within ~1 minute of every launch:
+  (1) a **5.7 GB Gradle daemon** was resident and had to be stopped before booting; a build started
+  while the AVD is up kills it (observed twice);
+  (2) the AVD carried `hw.ramSize = 1536M` and `hw.gpu.enabled = no`, and its snapshot could not load
+  ("different renderer configured"), so every boot was a cold boot of a memory-starved guest;
+  (3) the host is under memory pressure (`Memory Compression` ~1.5 GB; perf counters unavailable);
+  (4) the emulator launcher exits after starting qemu, so harness jobs report "finished" while
+  `qemu-system-x86_64-headless` keeps running — the AVD is not crashed at that point, and `adb`
+  separately loses the device (recovers with `adb kill-server/start-server`).
+- **Working recipe (verified):** stop the Gradle daemon(s) → clear the AVD locks → launch **detached**
+  (`Start-Process`, not a harness job) with `-no-window -gpu auto -memory 3072 -no-snapshot-load
+  -no-snapshot-save -no-boot-anim -no-audio` → do not build while it is up. With it the AVD booted,
+  survived a 150 s idle stability window, started Telegram, rendered the Cybergram dialogs, accepted
+  `adb install -r` of the x86_64 B4 build and launched it with FATAL/ANR = 0.
+- **Remaining host limit:** across four configurations (`auto` at 4/3/2 GB and `swiftshader_indirect`
+  at 4 GB) the AVD dies while the Telegram app starts inside it, with empty emulator logs and no
+  crashpad dump — an external termination consistent with host OOM under the combined load. Idle it
+  survives indefinitely. Freeing host physical memory (or adding RAM) is required to go further.
+- Record: `docs/EMULATOR_DIAGNOSIS_2026-09-19.md`; screenshot `.local-artifacts/emu-diag-20260919/`.
+
 ## Explicitly deferred
 
 - package/application ID rename;
