@@ -617,6 +617,19 @@ public class ChatActivity extends BaseFragment implements
     private int hideDateDelay = 500;
     public InstantCameraView instantCameraView;
     private View overlayView;
+
+    /** B7: the chat-canvas HUD child, used to compensate the fixed sibling indices it shifts. */
+    private CybergramChatCanvasHudView cybergramChatCanvasHudView;
+
+    /**
+     * B7: the chat-canvas HUD is added as one extra child above the wallpaper, so every fixed child
+     * index used later in this activity would otherwise point one sibling too low. Adding this offset
+     * points at exactly the same sibling the upstream index denoted, with or without the HUD.
+     */
+    private int cybergramHudIndexOffset() {
+        return cybergramChatCanvasHudView != null && contentView != null
+                && contentView.indexOfChild(cybergramChatCanvasHudView) >= 0 ? 1 : 0;
+    }
     private boolean currentFloatingDateOnScreen;
     private boolean currentFloatingTopicOnScreen;
     private boolean currentFloatingTopIsNotMessage;
@@ -8987,7 +9000,8 @@ public class ChatActivity extends BaseFragment implements
         // presentation is active (runtime gate in onDraw). The index is anchored on chatListView and
         // not on backgroundView, because the wallpaper child is created lazily by setBackgroundImage
         // and may not exist yet.
-        contentView.addView(new CybergramChatCanvasHudView(context, getResourceProvider()),
+        cybergramChatCanvasHudView = new CybergramChatCanvasHudView(context, getResourceProvider());
+        contentView.addView(cybergramChatCanvasHudView,
                 contentView.indexOfChild(chatListView),
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -11356,7 +11370,7 @@ public class ChatActivity extends BaseFragment implements
                 super.showWithAction(did, action, infoObject, infoObject2, actionRunnable, cancelRunnable);
             }
         };
-        contentView.addView(topUndoView, 17, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 8, 8, 8, 0));
+        contentView.addView(topUndoView, 17 + cybergramHudIndexOffset(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 8, 8, 8, 0));
     }
 
     private void createPinnedMessageView() {
@@ -32555,7 +32569,7 @@ public class ChatActivity extends BaseFragment implements
             emptyViewContainer = new FrameLayout(getContext());
 //            emptyViewContainer.setOnTouchListener((v, event) -> true);
             emptyViewContainer.setVisibility(View.INVISIBLE);
-            contentView.addView(emptyViewContainer, 3, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            contentView.addView(emptyViewContainer, 3 + cybergramHudIndexOffset(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         } else {
             emptyViewContainer.removeAllViews();
         }

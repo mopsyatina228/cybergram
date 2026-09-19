@@ -384,3 +384,38 @@ Recorded here so a future executor does not mistake this prepared contract for t
   exact installer error text and is unrelated to B7.
 
 The user chooses which of these is executed first; this document authorizes none of them.
+
+## Execution record (2026-09-19)
+
+Owner authorized B7 ("B7 — спека готова, NOT AUTHORIZED – бери в работу"). The mandatory re-reconnaissance
+was re-run first and every anchor held (`ChatActivityFragmentView` at `ChatActivity.java:17086`,
+`contentView.addView(chatListView, …)` at 6980, the header-decoration insert at 8987, the
+`indexOfChild(chatListView)` precedent at 8085 / 44400 / 46988). Option A was implemented:
+
+- new `CybergramChatCanvasHudView` — non-interactive (`onTouchEvent` false, not clickable/focusable,
+  no accessibility node), gated in `onDraw` on `CybergramTheme.isCybergramPresentation(...)`, drawing
+  four sparse chamfered corner brackets inside a 7 dp edge band with the shared
+  `BUBBLE_CORNER_CUT_DP` cut and `BUBBLE_BORDER_WIDTH_DP` stroke (red, alpha 44); no surface, no text;
+- wired in `ChatActivity.createView` by inserting it at `contentView.indexOfChild(chatListView)`, i.e.
+  directly below the message list and above the wallpaper, independent of the lazily created
+  `backgroundView`.
+
+**Index-shift hazard found and compensated.** Adding one child above the wallpaper shifts every later
+fixed child index by one. Two sites in `ChatActivity` were affected:
+
+- `emptyViewContainer`, inserted at index `3` — with the HUD that slot is `chatListView` itself, so the
+  empty-chat view would have been drawn **behind** the message list;
+- `topUndoView`, inserted at index `17` — with the HUD it lands one layer lower, below `overlayView`.
+
+Both now use `3 + cybergramHudIndexOffset()` and `17 + cybergramHudIndexOffset()`
+(`ChatActivity.cybergramHudIndexOffset()`, 1 exactly when the HUD child is attached). This is provably
+the same sibling the upstream index denoted: absent the HUD the index is unchanged (upstream
+behaviour), present it is shifted by the same +1 the target sibling received. `videoPlayerContainer`
+at index 1 is not affected (its target sits directly above the wallpaper, which does not move relative
+to index 1), and `thanosEffect`'s `1 + indexOfChild(chatListView)` is relative and self-compensating.
+
+Compile evidence: `:TMessagesProj:compileDebugJavaWithJavac` → `BUILD SUCCESSFUL in 2m 58s`
+(the x86_64 APK assembly was `BUILD SUCCESSFUL in 4m 11s` before the compensation).
+
+The device E matrix below is still pending: the host cannot run the app inside the AVD
+(`docs/EMULATOR_DIAGNOSIS_2026-09-19.md`), and the physical Redmi is unplugged.
