@@ -13,13 +13,13 @@ public final class CybergramTheme {
     public static final int PANEL = 0xFF0B0D12;
     public static final int PANEL_RAISED = 0xFF111820;
 
-    public static final int CYAN = 0xFF00E5FF;
-    public static final int CYAN_SECONDARY = 0xFF33D6FF;
+    public static final int CYAN = 0xFF6FD9E8;
+    public static final int CYAN_SECONDARY = 0xFF8EEAF2;
     /** Ruled 2026-09-15: reference amber (was #E8D93A). See docs/OWNER_DECISIONS_2026-09-15.md. */
-    public static final int AMBER = 0xFFFFB300;
-    public static final int AMBER_HIGHLIGHT = 0xFFFFC94D;
+    public static final int AMBER = 0xFFE6C955;
+    public static final int AMBER_HIGHLIGHT = 0xFFF0DB7A;
     /** Ruled 2026-09-15: reference service red (was #FF2E46). */
-    public static final int DANGER = 0xFFFF003C;
+    public static final int DANGER = 0xFFE01C47;
 
     public static final int TEXT = 0xFFE6F7FF;
     public static final int TEXT_MUTED = 0xFF6B7A8A;
@@ -30,25 +30,25 @@ public final class CybergramTheme {
      * docs/OWNER_DECISIONS_2026-09-17.md). The saturated cyan above stays reserved for thin
      * semantic accents (outgoing outline, checks, cursor), not for large icon masses.
      */
-    public static final int ICON_PALE = 0xFF8FBFCC;
+    public static final int ICON_PALE = 0xFF91BCC6;
 
     /**
      * Refined message surfaces (owner ruling D9.2): incoming is a near-black olive, outgoing is a
      * dark blue-green. The saturated turquoise fill is gone — direction is carried by the thin
      * outline and the metadata colour, not by an opaque bright surface.
      */
-    public static final int IN_BUBBLE = 0xE817170D;
+    public static final int IN_BUBBLE = 0xE814140B;
     public static final int IN_BUBBLE_SELECTED = 0xF0202113;
-    public static final int OUT_BUBBLE = 0xE8031820;
+    public static final int OUT_BUBBLE = 0xE804151A;
     public static final int OUT_BUBBLE_SELECTED = 0xF0082730;
 
     /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
-    public static final int IN_TEXT = 0xFFD3D6CE;
-    public static final int OUT_TEXT = 0xFFCFEAF2;
+    public static final int IN_TEXT = 0xFFDDD7BF;
+    public static final int OUT_TEXT = 0xFFD2EBEF;
 
     /** Time/metadata: smaller and dimmer than the body text on both sides (owner ruling D9.5). */
-    public static final int IN_TIME = 0xFF8F8B78;
-    public static final int OUT_TIME = 0xFF7E9AA3;
+    public static final int IN_TIME = 0xFFB1A76F;
+    public static final int OUT_TIME = 0xFF86AAB2;
 
     /** Red structural rail for separators and technical framing (owner ruling D9.1). */
     public static final int SEPARATOR = DANGER;
@@ -73,17 +73,24 @@ public final class CybergramTheme {
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
 
     /** Cybergram message outline stroke width, in dp (the bright neon core). */
-    public static final float BUBBLE_BORDER_WIDTH_DP = 0.75f;
+    public static final float BUBBLE_BORDER_WIDTH_DP = 0.6f;
     /** Wider low-alpha pass drawn below the core to create a restrained neon halo. */
-    public static final float BUBBLE_GLOW_WIDTH_DP = 2.5f;
-    public static final int BUBBLE_GLOW_ALPHA = 48;
-    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 66;
+    public static final float BUBBLE_GLOW_WIDTH_DP = 4f;
+    public static final int BUBBLE_GLOW_ALPHA = 34;
+    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 48;
 
-    public static final int CANVAS_GRID_ALPHA = 10;
-    public static final int CANVAS_RAIL_ALPHA = 62;
-    public static final int CANVAS_RAIL_GLOW_ALPHA = 22;
+    public static final int CANVAS_GRID_ALPHA = 7;
+    public static final int CANVAS_RAIL_ALPHA = 38;
+    public static final int CANVAS_RAIL_GLOW_ALPHA = 12;
     public static final float CANVAS_GRID_X_DP = 48f;
     public static final float CANVAS_GRID_Y_DP = 36f;
+
+    /** Physical-pass spacing: visual row clearance without changing bubble/time geometry. */
+    public static final float MESSAGE_ROW_GAP_DP = 4f;
+    /** Pull bubbles away from the red HUD rails while preserving their measured width. */
+    public static final float MESSAGE_SIDE_INSET_DP = 6f;
+    /** Reply plates should read as glass/tint, not as a second opaque card. */
+    public static final float REPLY_PLATE_ALPHA_SCALE = 0.55f;
 
     /**
      * Extra vertical inset, in dp, applied to each *unjoined* vertical edge of a Cybergram
@@ -119,17 +126,17 @@ public final class CybergramTheme {
     public static final float BUBBLE_GAP_MAX_DP = 2.5f;
 
     /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
-    public static final int HEADER_RULE_ALPHA = 190;
+    public static final int HEADER_RULE_ALPHA = 145;
 
     /** Alpha of secondary cyan header ticks/identity segment. */
     public static final int HEADER_TECH_ALPHA = 180;
 
     /** Alpha (0..255) of the thin red separator above the composer (owner ruling D9.1). */
-    public static final int COMPOSER_RULE_ALPHA = 170;
+    public static final int COMPOSER_RULE_ALPHA = 105;
 
     /** Alpha (0..255) of the soft neon bloom under the red rails (owner ruling D9.8). */
-    public static final int HEADER_GLOW_ALPHA = 70;
-    public static final int COMPOSER_GLOW_ALPHA = 80;
+    public static final int HEADER_GLOW_ALPHA = 42;
+    public static final int COMPOSER_GLOW_ALPHA = 38;
 
     /** Radius, in dp, of the red-rail neon bloom (owner ruling D9.8). */
     public static final float RED_GLOW_RADIUS_DP = 3f;

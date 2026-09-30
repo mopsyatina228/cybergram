@@ -1710,8 +1710,13 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             && !isMessageActionSuggestedPostApproval();
     }
 
+    private boolean isCybergramDatePlate() {
+        return customDateMode && customDate != 0
+                || currentMessageObject != null && currentMessageObject.isDateObject;
+    }
+
     private void drawCybergramDateOutline(Canvas canvas) {
-        if (!customDateMode || customDate == 0 || currentMessageObject != null || !useCybergramOrdinaryServicePlate()) {
+        if (!isCybergramDatePlate() || !useCybergramOrdinaryServicePlate()) {
             return;
         }
         if (cybergramDateGlowPaint == null) {
@@ -3512,7 +3517,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 final float bottom = top + textHeight + dp(6);
                 final float left = centerX - maxLineWidth / 2f - dp(8);
                 final float right = centerX + maxLineWidth / 2f + dp(8);
-                CybergramBubbleDrawable.buildPath(backgroundPath, left, top, right, bottom, dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                CybergramBubbleDrawable.buildPath(backgroundPath, left, top, right, bottom, dp(isCybergramDatePlate() ? 7f : CybergramTheme.BUBBLE_CORNER_CUT_DP));
                 backgroundLeft = (int) Math.floor(left);
                 backgroundRight = (int) Math.ceil(right);
             } else if (isMessageActionSuggestedPostApproval() && !isNewStyleButtonLayout()) {

@@ -24,9 +24,11 @@ public final class CybergramTypography {
     /** Android system family used for Cybergram chrome. Not bundled, not proprietary. */
     private static final String CHROME_FAMILY = "sans-serif-condensed";
     private static final String CHROME_MEDIUM_FAMILY = "sans-serif-condensed-medium";
+    private static final String MESSAGE_LIGHT_FAMILY = "sans-serif-condensed-light";
 
     private static Typeface chromeRegular;
     private static Typeface chromeBold;
+    private static Typeface messageLight;
 
     /** Condensed chrome typeface, normal weight. Created once, then cached. */
     public static Typeface chromeRegular() {
@@ -44,9 +46,12 @@ public final class CybergramTypography {
         return chromeBold;
     }
 
-    /** Message body face used by Cybergram chat layouts. */
+    /** Lighter condensed body face used by Cybergram chat layouts. */
     public static Typeface messageRegular() {
-        return chromeRegular();
+        if (messageLight == null) {
+            messageLight = Typeface.create(MESSAGE_LIGHT_FAMILY, Typeface.NORMAL);
+        }
+        return messageLight;
     }
 
     /** Message metadata/name face used by Cybergram chat layouts. */
@@ -62,6 +67,11 @@ public final class CybergramTypography {
     /** {@link #chromeRegular()} under Cybergram, {@code upstream} unchanged otherwise. */
     public static Typeface chromeRegular(Theme.ResourcesProvider provider, Typeface upstream) {
         return isChrome(provider) ? chromeRegular() : upstream;
+    }
+
+    /** {@link #messageRegular()} under Cybergram, {@code upstream} unchanged otherwise. */
+    public static Typeface messageRegular(Theme.ResourcesProvider provider, Typeface upstream) {
+        return isChrome(provider) ? messageRegular() : upstream;
     }
 
     /** {@link #chromeBold()} under Cybergram, {@code upstream} unchanged otherwise. */

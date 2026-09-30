@@ -125,17 +125,27 @@ public class CybergramChatCanvasHudView extends View implements NotificationCent
             canvas.drawLine(l, y, r, y, paint);
         }
 
-        // Continuous red edge rails with a dim halo echo the reference's technical frame.
+        // Segmented red rails: the reference uses structural fragments, not two continuous bars.
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(CybergramTheme.DANGER);
-        paint.setAlpha(CybergramTheme.CANVAS_RAIL_GLOW_ALPHA);
         final float railGlow = Math.max(1f, dp(1.5f));
-        canvas.drawRect(l - railGlow, t, l + railGlow, b, paint);
-        canvas.drawRect(r - railGlow, t, r + railGlow, b, paint);
-        paint.setAlpha(CybergramTheme.CANVAS_RAIL_ALPHA);
         final float railCore = Math.max(1f, dp(0.5f));
-        canvas.drawRect(l, t, l + railCore, b, paint);
-        canvas.drawRect(r - railCore, t, r, b, paint);
+        final float railStep = dp(82f);
+        final float railSegment = dp(46f);
+        for (float y = t; y < b; y += railStep) {
+            final float y2 = Math.min(b, y + railSegment);
+            paint.setAlpha(CybergramTheme.CANVAS_RAIL_GLOW_ALPHA);
+            canvas.drawRect(l - railGlow, y, l + railGlow, y2, paint);
+            paint.setAlpha(CybergramTheme.CANVAS_RAIL_ALPHA);
+            canvas.drawRect(l, y, l + railCore, y2, paint);
+        }
+        for (float y = t + dp(29f); y < b; y += railStep) {
+            final float y2 = Math.min(b, y + railSegment);
+            paint.setAlpha(CybergramTheme.CANVAS_RAIL_GLOW_ALPHA);
+            canvas.drawRect(r - railGlow, y, r + railGlow, y2, paint);
+            paint.setAlpha(CybergramTheme.CANVAS_RAIL_ALPHA);
+            canvas.drawRect(r - railCore, y, r, y2, paint);
+        }
 
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(Math.max(1f, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP)));

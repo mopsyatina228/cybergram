@@ -554,6 +554,7 @@ public class ReplyMessageLine {
     public void drawLine(Canvas canvas, RectF rect, float alpha) {
         final int rad = (int) Math.floor(SharedConfig.bubbleRadius / (sponsored ? 2f : 3f));
         final float lineRight = rect.left + Math.max(dp(3), dp(2 * rad));
+        final float lineClipWidth = cybergramAngular ? dp(2f) : dp(3);
 
         final int c1 = color1Animated.set(color1);
         color1Paint.setColor(Theme.multAlpha(c1, alpha));
@@ -568,7 +569,7 @@ public class ReplyMessageLine {
             color1Paint.setAlpha((int) (wasAlpha * .3f));
             rectF.set(rect.left, rect.top, lineRight, rect.bottom);
             canvas.save();
-            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + lineClipWidth, rectF.bottom);
             canvas.drawRoundRect(rectF, dp(rad), dp(rad), color1Paint);
             color1Paint.setAlpha(wasAlpha);
 
@@ -595,7 +596,7 @@ public class ReplyMessageLine {
             // single color
             rectF.set(rect.left, rect.top, lineRight, rect.bottom);
             canvas.save();
-            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + lineClipWidth, rectF.bottom);
             canvas.drawRoundRect(rectF, dp(rad), dp(rad), color1Paint);
             canvas.restore();
         } else {
@@ -618,7 +619,7 @@ public class ReplyMessageLine {
             patternPaint.getShader().setLocalMatrix(shaderMatrix);
             patternPaint.setAlpha(0xFF);
             rectF.set(0, 0, lineRight - rect.left, rect.bottom - rect.top);
-            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + lineClipWidth, rectF.bottom);
             canvas.drawRoundRect(rectF, dp(rad), dp(rad), patternPaint);
 
             canvas.restore();
@@ -667,7 +668,7 @@ public class ReplyMessageLine {
 
     public void drawBackground(Canvas canvas, RectF rect, float alpha, boolean hasQuote, boolean emojiOnly) {
         if (!emojiOnly) {
-            backgroundPaint.setColor(Theme.multAlpha(backgroundColorAnimated.set(backgroundColor), alpha));
+            backgroundPaint.setColor(Theme.multAlpha(backgroundColorAnimated.set(backgroundColor), alpha * (cybergramAngular ? CybergramTheme.REPLY_PLATE_ALPHA_SCALE : 1f)));
             if (cybergramAngular) {
                 // Owner ruling D11.1: the reply plate uses the same shared chamfer polygon as the
                 // Cybergram message bodies (no second geometry implementation).

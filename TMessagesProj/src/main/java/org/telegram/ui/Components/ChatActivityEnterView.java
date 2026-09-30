@@ -2696,15 +2696,16 @@ public class ChatActivityEnterView extends FrameLayout implements
                 // Two-pass edge light: a dim wide halo first, then the thin bright core. Both use
                 // the same shared chamfer geometry, so the neon effect cannot drift from the frame.
                 final int frameColor = getThemedColor(Theme.key_chat_messagePanelSend);
+                final int frameTop = dp(2.5f);
                 cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP), true);
                 cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_GLOW_ALPHA);
-                cybergramComposerGlow.setBounds(0, 0, w, h);
+                cybergramComposerGlow.setBounds(0, frameTop, w, h);
                 cybergramComposerGlow.draw(canvas);
 
                 cybergramComposerFrame.setStroke(frameColor,
                         dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
                 cybergramComposerFrame.setAlpha(255);
-                cybergramComposerFrame.setBounds(0, 0, w, h);
+                cybergramComposerFrame.setBounds(0, frameTop, w, h);
                 cybergramComposerFrame.draw(canvas);
 
                 // Owner ruling D9.1/D9.8: thin red structural separator between the message list
@@ -2719,7 +2720,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         frameLayout.setClipChildren(false);
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
+        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : DEFAULT_HEIGHT, 0));
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
             @Override
@@ -3244,6 +3245,10 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    super.dispatchDraw(canvas);
+                    return;
+                }
                 if (!audioVideoButtonContainerForbidden) {
                     float s = 1;
                     if (expandStickersButton != null) {
@@ -5865,7 +5870,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(6);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        messageEditText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
+        messageEditText.setTypeface(CybergramTypography.messageRegular(resourcesProvider, Typeface.DEFAULT));
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, dp(9), 0, dp(10));
         messageEditText.setBackgroundDrawable(null);
@@ -10439,7 +10444,15 @@ public class ChatActivityEnterView extends FrameLayout implements
     @Override
     public void updateColors() {
         if (messageEditText != null) {
-            messageEditText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
+            messageEditText.setTypeface(CybergramTypography.messageRegular(resourcesProvider, Typeface.DEFAULT));
+        }
+        if (messageEditTextContainer != null && messageEditTextContainer.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) messageEditTextContainer.getLayoutParams();
+            final int targetRight = CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : dp(DEFAULT_HEIGHT);
+            if (lp.rightMargin != targetRight) {
+                lp.rightMargin = targetRight;
+                messageEditTextContainer.setLayoutParams(lp);
+            }
         }
         if (messageSendPreview != null) {
             messageSendPreview.updateColors();
@@ -15180,7 +15193,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             updateColors();
             checkBackgroundRect();
-            if (isNewDesignSendButton) {
+            if (isNewDesignSendButton && !CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                 if (isCybergramSendPlateEnabled()) {
                     drawCybergramSendPlate(canvas);
                 } else {

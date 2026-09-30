@@ -19,6 +19,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
@@ -96,6 +97,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     private ChatActivity parentFragment;
     private StatusDrawable[] statusDrawables = new StatusDrawable[6];
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
+    private final Paint cybergramAvatarRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int currentAccount = UserConfig.selectedAccount;
     private boolean occupyStatusBar = true;
     private int leftPadding = dp(8);
@@ -427,6 +429,17 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         final float s = bounce.getScale(.02f);
         canvas.scale(s, s, getPivotX(), getHeight() - ActionBar.getCurrentActionBarHeight() / 2f);
         super.dispatchDraw(canvas);
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)
+                && avatarImageView != null && avatarImageView.getVisibility() == VISIBLE) {
+            cybergramAvatarRingPaint.setStyle(Paint.Style.STROKE);
+            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(0.75f)));
+            cybergramAvatarRingPaint.setColor(CybergramTheme.CYAN);
+            cybergramAvatarRingPaint.setAlpha(190);
+            final float cx = avatarImageView.getX() + avatarImageView.getWidth() / 2f;
+            final float cy = avatarImageView.getY() + avatarImageView.getHeight() / 2f;
+            final float radius = Math.min(avatarImageView.getWidth(), avatarImageView.getHeight()) / 2f + dpf2(1f);
+            canvas.drawCircle(cx, cy, radius, cybergramAvatarRingPaint);
+        }
         canvas.restore();
     }
 
@@ -1719,7 +1732,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
      * it from the paint in onMeasure, so a runtime change also requests a layout pass.
      */
     private Typeface chromeTitleTypeface() {
-        return CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold());
+        return CybergramTypography.chromeRegular(resourcesProvider, AndroidUtilities.bold());
     }
 
     private Typeface chromeSubtitleTypeface() {

@@ -13691,7 +13691,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             resultHeight = botDraftHeightController.getOverrideMeasureHeight(currentMessageObject, normHeight);
         }
 
-        additionalPaddingHeight = Math.max(0, resultHeight - normHeight);
+        final int cybergramRowGap = CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                && currentMessageObject != null
+                && currentMessageObject.type == MessageObject.TYPE_TEXT
+                ? dp(CybergramTheme.MESSAGE_ROW_GAP_DP) : 0;
+        // Keep the bubble/time layout height untouched and add the physical-pass rhythm as blank
+        // row space below the cell. This avoids repeating the old D6 collision with the time cluster.
+        additionalPaddingHeight = Math.max(0, resultHeight - normHeight) + cybergramRowGap;
+        resultHeight += cybergramRowGap;
 
         setMeasuredDimension(
             isWidthAdaptive() ? getBoundsRight() - getBoundsLeft() : MeasureSpec.getSize(widthMeasureSpec),
@@ -13751,7 +13758,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     /** Extra leftward shift, in dp, of the outgoing delivery checks toward the time (D9.5). */
     private float cybergramCheckInset() {
         return CybergramTheme.useAngularMessageGeometry(resourcesProvider)
-                ? CybergramTheme.CHECK_INSET_DP : 0f;
+                ? CybergramTheme.CHECK_INSET_DP + CybergramTheme.MESSAGE_SIDE_INSET_DP : 0f;
     }
 
     private int getExtraTimeX() {
@@ -13829,6 +13836,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         timeX -= dp(7);
                     }
                 }
+            }
+            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+                timeX += dp(currentMessageObject.isOutOwner()
+                        ? -CybergramTheme.MESSAGE_SIDE_INSET_DP : CybergramTheme.MESSAGE_SIDE_INSET_DP);
             }
             timeX -= getExtraTimeX();
             if (effectId != 0) {
@@ -20555,6 +20566,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     additionalBottom += dp(SharedConfig.bubbleRadius + 3);
                 }
             }
+            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+                final int sideInset = dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
+                backgroundLeft -= sideInset;
+                backgroundDrawableLeft -= sideInset;
+            }
             int offsetBottom;
             if (drawPinnedBottom && drawPinnedTop) {
                 offsetBottom = 0;
@@ -20637,6 +20653,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0) {
                     additionalBottom += dp(SharedConfig.bubbleRadius + 4);
                 }
+            }
+            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+                backgroundDrawableLeft += dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
             }
             int offsetBottom;
             if (drawPinnedBottom && drawPinnedTop) {
