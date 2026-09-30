@@ -24534,7 +24534,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (shouldDrawTimeOnMedia() && documentAttachType != DOCUMENT_ATTACH_TYPE_ROUND) {
             return getPhotoBottom() + additionalTimeOffsetY - dp(7.3f) - timeLayout.getHeight();
         }
-        float timeY = layoutHeight - dp(pinnedBottom || pinnedTop ? 7.5f : 6.5f) - timeLayout.getHeight() + timeYOffset;
+        float timeBottomInset = pinnedBottom || pinnedTop ? 7.5f : 6.5f;
+        if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !shouldDrawTimeOnMedia()) {
+            timeBottomInset += CybergramTheme.MESSAGE_TIME_BOTTOM_INSET_DP;
+        }
+        float timeY = layoutHeight - dp(timeBottomInset) - timeLayout.getHeight() + timeYOffset;
         if (isRoundVideo) {
             timeY -= (dp(drawPinnedBottom ? 4 : 5) + reactionsLayoutInBubble.getCurrentTotalHeight(transitionParams.animateChangeProgress)) * (1f - getVideoTranscriptionProgress());
         }

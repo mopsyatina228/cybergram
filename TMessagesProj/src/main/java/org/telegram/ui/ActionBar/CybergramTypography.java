@@ -2,13 +2,15 @@ package org.telegram.ui.ActionBar;
 
 import android.graphics.Typeface;
 
+import org.telegram.messenger.ApplicationLoader;
+
 /**
  * Cybergram chrome typography.
  *
  * Cybergram gives primary chrome (chat header identity, dialogs rows and their timestamps, dialog
  * filter tabs and the dialogs search field) a narrower, more technical voice using the Android
- * system family {@code sans-serif-condensed}. Nothing is bundled and no proprietary/game font is
- * referenced; message body typography and every out-of-scope surface stay on the upstream path.
+ * system family {@code sans-serif-condensed}. Chat-body typography has a separate optional private
+ * asset seam for local licensed-game comparison; the repository itself contains no proprietary font.
  *
  * The two chrome typefaces are created once and cached, and every resolver here is two-way: it
  * returns the condensed chrome typeface only while
@@ -24,11 +26,15 @@ public final class CybergramTypography {
     /** Android system family used for Cybergram chrome. Not bundled, not proprietary. */
     private static final String CHROME_FAMILY = "sans-serif-condensed";
     private static final String CHROME_MEDIUM_FAMILY = "sans-serif-condensed-medium";
-    private static final String MESSAGE_LIGHT_FAMILY = "sans-serif-condensed-light";
+    private static final String MESSAGE_FALLBACK_FAMILY = "sans-serif";
+    private static final String MESSAGE_MEDIUM_FALLBACK_FAMILY = "sans-serif-medium";
+    private static final String PRIVATE_MESSAGE_REGULAR = "fonts/cybergram_private/raj_rus_regular.ttf";
+    private static final String PRIVATE_MESSAGE_MEDIUM = "fonts/cybergram_private/raj_rus_medium.ttf";
 
     private static Typeface chromeRegular;
     private static Typeface chromeBold;
-    private static Typeface messageLight;
+    private static Typeface messageRegular;
+    private static Typeface messageMedium;
 
     /** Condensed chrome typeface, normal weight. Created once, then cached. */
     public static Typeface chromeRegular() {
@@ -46,17 +52,31 @@ public final class CybergramTypography {
         return chromeBold;
     }
 
-    /** Lighter condensed body face used by Cybergram chat layouts. */
-    public static Typeface messageRegular() {
-        if (messageLight == null) {
-            messageLight = Typeface.create(MESSAGE_LIGHT_FAMILY, Typeface.NORMAL);
+    private static Typeface loadPrivateMessageTypeface(String assetPath, String fallbackFamily) {
+        if (ApplicationLoader.applicationContext != null) {
+            try {
+                return Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+            } catch (RuntimeException ignored) {
+                // Optional private asset: local licensed-game extraction only, never required at runtime.
+            }
         }
-        return messageLight;
+        return Typeface.create(fallbackFamily, Typeface.NORMAL);
     }
 
-    /** Message metadata/name face used by Cybergram chat layouts. */
+    /** Regular body face. Prefers the local private CP2077-derived test asset when present. */
+    public static Typeface messageRegular() {
+        if (messageRegular == null) {
+            messageRegular = loadPrivateMessageTypeface(PRIVATE_MESSAGE_REGULAR, MESSAGE_FALLBACK_FAMILY);
+        }
+        return messageRegular;
+    }
+
+    /** Message metadata/name face with an optional local medium-weight asset. */
     public static Typeface messageMedium() {
-        return chromeBold();
+        if (messageMedium == null) {
+            messageMedium = loadPrivateMessageTypeface(PRIVATE_MESSAGE_MEDIUM, MESSAGE_MEDIUM_FALLBACK_FAMILY);
+        }
+        return messageMedium;
     }
 
     /** True when Cybergram presentation is active for {@code provider}. */

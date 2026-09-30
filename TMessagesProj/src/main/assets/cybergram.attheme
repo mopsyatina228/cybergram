@@ -148,8 +148,8 @@ chat_selectedBackground=436266495
 
 # Incoming message (owner ruling D9.2, 2026-09-17): near-black olive surface, thin yellow
 # outline, light-grey foreground. Surface is translucent so the HUD/wallpaper faintly reads through.
-chat_inBubble=-401337333
-chat_inBubbleSelected=-266329837
+chat_inBubble=-602663925
+chat_inBubbleSelected=-333438701
 chat_inBubbleShadow=0
 chat_messageTextIn=-2238529
 chat_messageLinkIn=-7410958
@@ -176,8 +176,8 @@ chat_inAudioDurationText=-5656405
 
 # Outgoing message (owner ruling D9.2, 2026-09-17): dark blue-green surface, thin blue outline,
 # pale-blue foreground. The surface is a translucent dark blue-green material.
-chat_outBubble=-402385638
-chat_outBubbleSelected=-267901136
+chat_outBubble=-603712230
+chat_outBubbleSelected=-335010000
 chat_outBubbleShadow=0
 chat_outBubbleGradientSelectedOverlay=436266495
 chat_messageTextOut=-2954257

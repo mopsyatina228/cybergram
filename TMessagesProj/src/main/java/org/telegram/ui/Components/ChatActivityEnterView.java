@@ -2618,6 +2618,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             private CybergramHudDrawable cybergramComposerFrame;
             private CybergramHudDrawable cybergramComposerGlow;
             private final Paint cybergramComposerRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint cybergramComposerDividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -2641,14 +2642,29 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 final int frameColor = getThemedColor(Theme.key_chat_messagePanelSend);
                 final int frameTop = dp(2.5f);
+                cybergramComposerGlow.setBounds(0, frameTop, w, h);
                 cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP), true);
                 cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_GLOW_ALPHA);
-                cybergramComposerGlow.setBounds(0, frameTop, w, h);
+                cybergramComposerGlow.draw(canvas);
+                cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_MID_GLOW_WIDTH_DP), true);
+                cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_MID_GLOW_ALPHA);
                 cybergramComposerGlow.draw(canvas);
                 cybergramComposerFrame.setStroke(frameColor, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
-                cybergramComposerFrame.setAlpha(255);
+                cybergramComposerFrame.setAlpha(CybergramTheme.BUBBLE_BORDER_ALPHA);
                 cybergramComposerFrame.setBounds(0, frameTop, w, h);
                 cybergramComposerFrame.draw(canvas);
+
+                final float dividerX = dp(47f);
+                final float dividerTop = frameTop + dp(7f);
+                final float dividerBottom = h - dp(7f);
+                cybergramComposerDividerPaint.setColor(frameColor);
+                cybergramComposerDividerPaint.setStrokeCap(Paint.Cap.SQUARE);
+                cybergramComposerDividerPaint.setStrokeWidth(dp(2f));
+                cybergramComposerDividerPaint.setAlpha(24);
+                canvas.drawLine(dividerX, dividerTop, dividerX, dividerBottom, cybergramComposerDividerPaint);
+                cybergramComposerDividerPaint.setStrokeWidth(Math.max(1f, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP)));
+                cybergramComposerDividerPaint.setAlpha(CybergramTheme.COMPOSER_DIVIDER_ALPHA);
+                canvas.drawLine(dividerX, dividerTop, dividerX, dividerBottom, cybergramComposerDividerPaint);
                 final float ruleH = Math.max(1f, AndroidUtilities.density);
                 cybergramComposerRulePaint.setColor(CybergramTheme.SEPARATOR);
                 cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_GLOW_ALPHA);
@@ -5853,7 +5869,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         updateFieldHint(false);
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(6);
-        messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.COMPOSER_TEXT_SIZE_DP : 18);
         messageEditText.setTypeface(CybergramTypography.messageRegular(resourcesProvider, Typeface.DEFAULT));
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, dp(9), 0, dp(10));
@@ -10429,6 +10446,8 @@ public class ChatActivityEnterView extends FrameLayout implements
     public void updateColors() {
         if (messageEditText != null) {
             messageEditText.setTypeface(CybergramTypography.messageRegular(resourcesProvider, Typeface.DEFAULT));
+            messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.COMPOSER_TEXT_SIZE_DP : 18);
         }
         if (messageEditTextContainer != null && messageEditTextContainer.getLayoutParams() instanceof FrameLayout.LayoutParams) {
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) messageEditTextContainer.getLayoutParams();

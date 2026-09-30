@@ -947,13 +947,18 @@ public class MessageDrawable extends Drawable {
         final int borderColor = getCybergramBorderColor();
         Paint glow = getBorderGlowPaint();
         glow.setColor(borderColor);
+        glow.setStrokeWidth(dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
         int glowAlpha = isSelected ? CybergramTheme.BUBBLE_GLOW_SELECTED_ALPHA : CybergramTheme.BUBBLE_GLOW_ALPHA;
         glow.setAlpha(Math.round(alpha * (glowAlpha / 255f)));
+        canvas.drawPath(cybergramBorderPath, glow);
+        glow.setStrokeWidth(dp(CybergramTheme.BUBBLE_MID_GLOW_WIDTH_DP));
+        int midGlowAlpha = isSelected ? CybergramTheme.BUBBLE_MID_GLOW_SELECTED_ALPHA : CybergramTheme.BUBBLE_MID_GLOW_ALPHA;
+        glow.setAlpha(Math.round(alpha * (midGlowAlpha / 255f)));
         canvas.drawPath(cybergramBorderPath, glow);
 
         Paint bp = getBorderPaint();
         bp.setColor(borderColor);
-        bp.setAlpha(alpha);
+        bp.setAlpha(Math.round(alpha * (CybergramTheme.BUBBLE_BORDER_ALPHA / 255f)));
         canvas.drawPath(cybergramBorderPath, bp);
     }
 

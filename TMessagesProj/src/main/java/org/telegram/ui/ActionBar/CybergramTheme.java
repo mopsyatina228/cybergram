@@ -37,10 +37,10 @@ public final class CybergramTheme {
      * dark blue-green. The saturated turquoise fill is gone — direction is carried by the thin
      * outline and the metadata colour, not by an opaque bright surface.
      */
-    public static final int IN_BUBBLE = 0xE814140B;
-    public static final int IN_BUBBLE_SELECTED = 0xF0202113;
-    public static final int OUT_BUBBLE = 0xE804151A;
-    public static final int OUT_BUBBLE_SELECTED = 0xF0082730;
+    public static final int IN_BUBBLE = 0xDC14140B;
+    public static final int IN_BUBBLE_SELECTED = 0xEC202113;
+    public static final int OUT_BUBBLE = 0xDC04151A;
+    public static final int OUT_BUBBLE_SELECTED = 0xEC082730;
 
     /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
     public static final int IN_TEXT = 0xFFDDD7BF;
@@ -73,11 +73,15 @@ public final class CybergramTheme {
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
 
     /** Cybergram message outline stroke width, in dp (the bright neon core). */
-    public static final float BUBBLE_BORDER_WIDTH_DP = 0.6f;
-    /** Wider low-alpha pass drawn below the core to create a restrained neon halo. */
-    public static final float BUBBLE_GLOW_WIDTH_DP = 4f;
-    public static final int BUBBLE_GLOW_ALPHA = 34;
-    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 48;
+    public static final float BUBBLE_BORDER_WIDTH_DP = 0.55f;
+    public static final int BUBBLE_BORDER_ALPHA = 220;
+    /** Two soft passes under the core: broad bloom plus a tighter mid halo. */
+    public static final float BUBBLE_GLOW_WIDTH_DP = 5.5f;
+    public static final int BUBBLE_GLOW_ALPHA = 14;
+    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 22;
+    public static final float BUBBLE_MID_GLOW_WIDTH_DP = 2.2f;
+    public static final int BUBBLE_MID_GLOW_ALPHA = 38;
+    public static final int BUBBLE_MID_GLOW_SELECTED_ALPHA = 54;
 
     public static final int CANVAS_GRID_ALPHA = 5;
     public static final int CANVAS_RAIL_ALPHA = 34;
@@ -90,7 +94,12 @@ public final class CybergramTheme {
     public static final float CANVAS_GRID_Y_DP = 36f;
 
     /** Physical-pass spacing: visual row clearance without changing bubble/time geometry. */
-    public static final float MESSAGE_ROW_GAP_DP = 4f;
+    public static final float MESSAGE_ROW_GAP_DP = 7f;
+    public static final float MESSAGE_TIME_BOTTOM_INSET_DP = 1.5f;
+    public static final float MESSAGE_TEXT_SIZE_REDUCTION_DP = 1f;
+    public static final float MESSAGE_TIME_TEXT_SIZE_DP = 10.5f;
+    public static final float COMPOSER_TEXT_SIZE_DP = 15f;
+    public static final int COMPOSER_DIVIDER_ALPHA = 170;
     /** Pull bubbles away from the red HUD rails while preserving their measured width. */
     public static final float MESSAGE_SIDE_INSET_DP = 6f;
     /** Reply plates should read as glass/tint, not as a second opaque card. */
@@ -131,20 +140,20 @@ public final class CybergramTheme {
     public static final float BUBBLE_GAP_MAX_DP = 2.5f;
 
     /** Reference-style header rail: restrained warning red under normal Cybergram chrome. */
-    public static final int HEADER_RULE_ALPHA = 145;
+    public static final int HEADER_RULE_ALPHA = 120;
 
     /** Alpha of secondary cyan header ticks/identity segment. */
     public static final int HEADER_TECH_ALPHA = 180;
 
     /** Alpha (0..255) of the thin red separator above the composer (owner ruling D9.1). */
-    public static final int COMPOSER_RULE_ALPHA = 105;
+    public static final int COMPOSER_RULE_ALPHA = 90;
 
     /** Alpha (0..255) of the soft neon bloom under the red rails (owner ruling D9.8). */
-    public static final int HEADER_GLOW_ALPHA = 42;
-    public static final int COMPOSER_GLOW_ALPHA = 38;
+    public static final int HEADER_GLOW_ALPHA = 30;
+    public static final int COMPOSER_GLOW_ALPHA = 28;
 
     /** Radius, in dp, of the red-rail neon bloom (owner ruling D9.8). */
-    public static final float RED_GLOW_RADIUS_DP = 3f;
+    public static final float RED_GLOW_RADIUS_DP = 4f;
 
     /** Extra vertical inner padding, in dp, for Cybergram text bubbles (owner ruling D9.4). */
     public static final float BUBBLE_INNER_PAD_DP = 2.5f;
