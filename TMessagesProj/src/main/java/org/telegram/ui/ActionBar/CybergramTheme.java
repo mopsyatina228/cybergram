@@ -79,9 +79,13 @@ public final class CybergramTheme {
     public static final int BUBBLE_GLOW_ALPHA = 34;
     public static final int BUBBLE_GLOW_SELECTED_ALPHA = 48;
 
-    public static final int CANVAS_GRID_ALPHA = 7;
-    public static final int CANVAS_RAIL_ALPHA = 38;
-    public static final int CANVAS_RAIL_GLOW_ALPHA = 12;
+    public static final int CANVAS_GRID_ALPHA = 5;
+    public static final int CANVAS_RAIL_ALPHA = 34;
+    public static final int CANVAS_RAIL_GLOW_ALPHA = 10;
+    /** Sparse decorative HUD annotations. Neutral labels only, never security/status claims. */
+    public static final int CANVAS_TECH_ALPHA = 40;
+    public static final int CANVAS_MICRO_ALPHA = 30;
+    public static final float CANVAS_MICRO_TEXT_DP = 6.25f;
     public static final float CANVAS_GRID_X_DP = 48f;
     public static final float CANVAS_GRID_Y_DP = 36f;
 

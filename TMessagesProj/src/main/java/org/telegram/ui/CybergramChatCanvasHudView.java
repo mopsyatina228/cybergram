@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Typeface;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -16,9 +17,10 @@ import org.telegram.ui.ActionBar.Theme;
  * B7 — the dedicated Cybergram chat-canvas HUD layer (owner-authorized 2026-09-19).
  *
  * <p>Non-interactive decoration drawn between the wallpaper and the message list: four sparse
- * chamfered corner brackets that live in the canvas edge space. It is never a surface, never carries
- * microtext or claims, and it draws nothing unless Cybergram presentation is active (runtime gate in
- * {@link #onDraw}), so a Day &lt;-&gt; Cybergram theme switch is reflected without recreating the
+ * chamfered corner brackets that live in the canvas edge space. It is never a surface. Sparse neutral
+ * micro-labels are allowed as decorative registration marks, but they must never imply encryption,
+ * security or connection state. It draws nothing unless Cybergram presentation is active (runtime gate
+ * in {@link #onDraw}), so a Day &lt;-&gt; Cybergram theme switch is reflected without recreating the
  * activity. The corner cut is the shared {@link CybergramTheme#BUBBLE_CORNER_CUT_DP} and the stroke is
  * the shared {@link CybergramTheme#BUBBLE_BORDER_WIDTH_DP}, so no second chamfer or stroke language is
  * introduced.
@@ -34,7 +36,8 @@ public class CybergramChatCanvasHudView extends View implements NotificationCent
     /** Length of the straight bracket arm beside the chamfer, in dp. */
     private static final float ARM_DP = 13f;
     /** Very low mark alpha: sparse structural framing, never a competing surface. */
-    private static final int MARK_ALPHA = 44;
+    private static final int MARK_ALPHA = 40;
+    private static final Typeface HUD_TYPEFACE = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -124,6 +127,37 @@ public class CybergramChatCanvasHudView extends View implements NotificationCent
         for (float y = t + gridY; y < b; y += gridY) {
             canvas.drawLine(l, y, r, y, paint);
         }
+
+        // Reference-density registration details. These are deliberately neutral identifiers rather
+        // than fake connection/encryption claims, and remain faint enough to disappear behind text.
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTypeface(HUD_TYPEFACE);
+        paint.setTextSize(dp(CybergramTheme.CANVAS_MICRO_TEXT_DP));
+        paint.setTextAlign(Paint.Align.LEFT);
+        paint.setColor(CybergramTheme.CYAN);
+        paint.setAlpha(CybergramTheme.CANVAS_MICRO_ALPHA);
+        canvas.drawText("CG // GRID 03", l + dp(6f), t + dp(15f), paint);
+        canvas.drawText("NODE // A7", l + dp(6f), b - dp(15f), paint);
+        paint.setTextAlign(Paint.Align.RIGHT);
+        paint.setColor(CybergramTheme.DANGER);
+        paint.setAlpha(Math.max(1, CybergramTheme.CANVAS_MICRO_ALPHA - 6));
+        canvas.drawText("SECTOR // C4", r - dp(6f), t + dp(48f), paint);
+        canvas.drawText("FRAME // 12", r - dp(6f), b - dp(48f), paint);
+        paint.setTypeface(null);
+        paint.setTextAlign(Paint.Align.LEFT);
+
+        // Short cyan/red registration strokes break the empty edge band without becoming rails.
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(Math.max(1f, dp(0.45f)));
+        paint.setStrokeCap(Paint.Cap.SQUARE);
+        paint.setColor(CybergramTheme.CYAN);
+        paint.setAlpha(CybergramTheme.CANVAS_TECH_ALPHA);
+        canvas.drawLine(l + dp(6f), t + dp(22f), l + dp(38f), t + dp(22f), paint);
+        canvas.drawLine(r - dp(46f), b - dp(22f), r - dp(6f), b - dp(22f), paint);
+        paint.setColor(CybergramTheme.DANGER);
+        paint.setAlpha(Math.max(1, CybergramTheme.CANVAS_TECH_ALPHA - 8));
+        canvas.drawLine(l + dp(6f), t + dp(64f), l + dp(20f), t + dp(64f), paint);
+        canvas.drawLine(r - dp(24f), b - dp(64f), r - dp(6f), b - dp(64f), paint);
 
         // Segmented red rails: the reference uses structural fragments, not two continuous bars.
         paint.setStyle(Paint.Style.FILL);
