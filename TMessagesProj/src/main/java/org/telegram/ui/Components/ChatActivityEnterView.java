@@ -2615,12 +2615,46 @@ public class ChatActivityEnterView extends FrameLayout implements
         sendByEnter = preferences.getBoolean("send_by_enter", false);
 
         textFieldContainer = new FrameLayout(context) {
+            private CybergramHudDrawable cybergramComposerFrame;
+            private CybergramHudDrawable cybergramComposerGlow;
+            private final Paint cybergramComposerRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
                 if (botWebViewButton != null && botWebViewButton.getVisibility() == VISIBLE) {
                     return botWebViewButton.dispatchTouchEvent(ev);
                 }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) return;
+                final int w = getWidth(), h = getHeight();
+                if (w <= 0 || h <= 0) return;
+                if (cybergramComposerFrame == null) {
+                    cybergramComposerFrame = new CybergramHudDrawable();
+                    cybergramComposerGlow = new CybergramHudDrawable();
+                    cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                    cybergramComposerGlow.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                }
+                final int frameColor = getThemedColor(Theme.key_chat_messagePanelSend);
+                final int frameTop = dp(2.5f);
+                cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP), true);
+                cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_GLOW_ALPHA);
+                cybergramComposerGlow.setBounds(0, frameTop, w, h);
+                cybergramComposerGlow.draw(canvas);
+                cybergramComposerFrame.setStroke(frameColor, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+                cybergramComposerFrame.setAlpha(255);
+                cybergramComposerFrame.setBounds(0, frameTop, w, h);
+                cybergramComposerFrame.draw(canvas);
+                final float ruleH = Math.max(1f, AndroidUtilities.density);
+                cybergramComposerRulePaint.setColor(CybergramTheme.SEPARATOR);
+                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_GLOW_ALPHA);
+                canvas.drawRect(0, 0, w, dp(CybergramTheme.RED_GLOW_RADIUS_DP), cybergramComposerRulePaint);
+                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_RULE_ALPHA);
+                canvas.drawRect(0, 0, w, ruleH, cybergramComposerRulePaint);
             }
         };
         textFieldContainer.setClipChildren(false);
@@ -2629,10 +2663,6 @@ public class ChatActivityEnterView extends FrameLayout implements
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 1, 0, 0));
 
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
-            private CybergramHudDrawable cybergramComposerFrame;
-            private CybergramHudDrawable cybergramComposerGlow;
-            private final Paint cybergramComposerRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -2672,55 +2702,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 return super.drawChild(canvas, child, drawingTime);
             }
 
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                drawCybergramComposerFrame(canvas);
-            }
-
-            private void drawCybergramComposerFrame(Canvas canvas) {
-                if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {
-                    return;
-                }
-                int w = getWidth();
-                int h = getHeight();
-                if (w <= 0 || h <= 0) {
-                    return;
-                }
-                if (cybergramComposerFrame == null) {
-                    cybergramComposerFrame = new CybergramHudDrawable();
-                    cybergramComposerGlow = new CybergramHudDrawable();
-                    cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-                    cybergramComposerGlow.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-                }
-                // Two-pass edge light: a dim wide halo first, then the thin bright core. Both use
-                // the same shared chamfer geometry, so the neon effect cannot drift from the frame.
-                final int frameColor = getThemedColor(Theme.key_chat_messagePanelSend);
-                final int frameTop = dp(2.5f);
-                cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP), true);
-                cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_GLOW_ALPHA);
-                cybergramComposerGlow.setBounds(0, frameTop, w, h);
-                cybergramComposerGlow.draw(canvas);
-
-                cybergramComposerFrame.setStroke(frameColor,
-                        dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
-                cybergramComposerFrame.setAlpha(255);
-                cybergramComposerFrame.setBounds(0, frameTop, w, h);
-                cybergramComposerFrame.draw(canvas);
-
-                // Owner ruling D9.1/D9.8: thin red structural separator between the message list
-                // and the composer, with a soft neon bloom falling into the composer only. One
-                // device pixel of bright core; the bloom never reaches up over message text.
-                final float ruleH = Math.max(1f, AndroidUtilities.density);
-                cybergramComposerRulePaint.setColor(CybergramTheme.SEPARATOR);
-                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_GLOW_ALPHA);
-                canvas.drawRect(0, 0, w, dp(CybergramTheme.RED_GLOW_RADIUS_DP), cybergramComposerRulePaint);
-                cybergramComposerRulePaint.setAlpha(CybergramTheme.COMPOSER_RULE_ALPHA);
-                canvas.drawRect(0, 0, w, ruleH, cybergramComposerRulePaint);
-            }
         };
         frameLayout.setClipChildren(false);
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : DEFAULT_HEIGHT, 0));
+        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
             @Override
@@ -3481,7 +3465,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             private final Rect tmpRectF = new Rect();
             @Override
             public void draw(@NonNull Canvas canvas) {
-                if (audioVideoButtonContainerForbidden) {
+                if (audioVideoButtonContainerForbidden || CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                     tmpRectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     tmpRectF.inset(dp(7.5f), dp(7.5f));
                     Drawable d = getCurrentState() == State.VIDEO ? cameraOutline : micOutline;
@@ -10448,7 +10432,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         if (messageEditTextContainer != null && messageEditTextContainer.getLayoutParams() instanceof FrameLayout.LayoutParams) {
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) messageEditTextContainer.getLayoutParams();
-            final int targetRight = CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : dp(DEFAULT_HEIGHT);
+            final int targetRight = dp(DEFAULT_HEIGHT);
             if (lp.rightMargin != targetRight) {
                 lp.rightMargin = targetRight;
                 messageEditTextContainer.setLayoutParams(lp);

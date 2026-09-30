@@ -90,7 +90,8 @@ public final class CybergramTheme {
     /** Pull bubbles away from the red HUD rails while preserving their measured width. */
     public static final float MESSAGE_SIDE_INSET_DP = 6f;
     /** Reply plates should read as glass/tint, not as a second opaque card. */
-    public static final float REPLY_PLATE_ALPHA_SCALE = 0.55f;
+    public static final float REPLY_PLATE_ALPHA_SCALE = 0.38f;
+    public static final int DATE_GLOW_ALPHA = 12;
 
     /**
      * Extra vertical inset, in dp, applied to each *unjoined* vertical edge of a Cybergram

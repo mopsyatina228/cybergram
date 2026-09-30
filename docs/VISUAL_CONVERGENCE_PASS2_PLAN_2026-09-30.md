@@ -68,3 +68,13 @@ Validation checkpoint:
 - `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a --no-daemon`: PASS.
 - APK ABI: arm64-v8a only; runtime physical-device screenshot still required for final visual verdict.
 - Final pass-2 ARM64 debug APK: 74,326,172 bytes; SHA-256 `869E32CFAA26A0A1F8642C1C4267BA5C4F7ED47E9AF9CCA899F047A4B798EAC7`.
+
+## Physical-device runtime validation
+
+- Redmi Note 10S / Android 13 / arm64-v8a tested through ADB after pass-2 build.
+- Header cyan identity, avatar ring, message side inset, row clearance and segmented HUD rails render as intended.
+- Runtime date objects now use the angular amber plate; date halo was reduced after device inspection.
+- Reply plate opacity and accent width were reduced again after the 15:50 reply sample remained too heavy.
+- Composer shell was moved to the full outer input container while restoring Telegram's control layout margin.
+- Result: smiley, paperclip and a static microphone glyph render inside one continuous Cybergram frame; typed send state also lays out correctly.
+- Temporary test text was cleared; no test message was sent.

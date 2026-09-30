@@ -1734,7 +1734,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         final int color = getThemedColor(Theme.key_chat_serviceText);
         final float viewAlpha = Math.max(0f, Math.min(1f, getAlpha() * (isFloating() ? .75f : 1f)));
         cybergramDateGlowPaint.setColor(color);
-        cybergramDateGlowPaint.setAlpha(Math.round(CybergramTheme.BUBBLE_GLOW_ALPHA * viewAlpha));
+        cybergramDateGlowPaint.setAlpha(Math.round(CybergramTheme.DATE_GLOW_ALPHA * viewAlpha));
         canvas.drawPath(backgroundPath, cybergramDateGlowPaint);
         cybergramDateStrokePaint.setColor(color);
         cybergramDateStrokePaint.setAlpha(Math.round(255 * viewAlpha));

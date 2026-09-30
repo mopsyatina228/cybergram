@@ -554,7 +554,7 @@ public class ReplyMessageLine {
     public void drawLine(Canvas canvas, RectF rect, float alpha) {
         final int rad = (int) Math.floor(SharedConfig.bubbleRadius / (sponsored ? 2f : 3f));
         final float lineRight = rect.left + Math.max(dp(3), dp(2 * rad));
-        final float lineClipWidth = cybergramAngular ? dp(2f) : dp(3);
+        final float lineClipWidth = cybergramAngular ? dp(1.5f) : dp(3);
 
         final int c1 = color1Animated.set(color1);
         color1Paint.setColor(Theme.multAlpha(c1, alpha));
