@@ -23,6 +23,7 @@ public final class CybergramTypography {
 
     /** Android system family used for Cybergram chrome. Not bundled, not proprietary. */
     private static final String CHROME_FAMILY = "sans-serif-condensed";
+    private static final String CHROME_MEDIUM_FAMILY = "sans-serif-condensed-medium";
 
     private static Typeface chromeRegular;
     private static Typeface chromeBold;
@@ -35,12 +36,22 @@ public final class CybergramTypography {
         return chromeRegular;
     }
 
-    /** Condensed chrome typeface, bold weight. Created once, then cached. */
+    /** Condensed chrome typeface, medium emphasis. Created once, then cached. */
     public static Typeface chromeBold() {
         if (chromeBold == null) {
-            chromeBold = Typeface.create(CHROME_FAMILY, Typeface.BOLD);
+            chromeBold = Typeface.create(CHROME_MEDIUM_FAMILY, Typeface.NORMAL);
         }
         return chromeBold;
+    }
+
+    /** Message body face used by Cybergram chat layouts. */
+    public static Typeface messageRegular() {
+        return chromeRegular();
+    }
+
+    /** Message metadata/name face used by Cybergram chat layouts. */
+    public static Typeface messageMedium() {
+        return chromeBold();
     }
 
     /** True when Cybergram presentation is active for {@code provider}. */

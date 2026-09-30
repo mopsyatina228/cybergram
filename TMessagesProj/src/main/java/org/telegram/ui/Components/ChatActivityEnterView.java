@@ -46,6 +46,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -174,6 +175,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
@@ -2628,6 +2630,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
             private CybergramHudDrawable cybergramComposerFrame;
+            private CybergramHudDrawable cybergramComposerGlow;
             private final Paint cybergramComposerRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             @Override
@@ -2686,14 +2689,21 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 if (cybergramComposerFrame == null) {
                     cybergramComposerFrame = new CybergramHudDrawable();
+                    cybergramComposerGlow = new CybergramHudDrawable();
                     cybergramComposerFrame.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+                    cybergramComposerGlow.setCornerCut(dp(CybergramTheme.BUBBLE_CORNER_CUT_DP));
                 }
-                // Stroke-only by design: a fill would overpaint the field's children (this runs
-                // after dispatchDraw). Owner ruling D9.3/D9.7 (docs/OWNER_DECISIONS_2026-09-17.md):
-                // the frame returns to the thin shared Cybergram stroke; the round-2 D7 1.5dp
-                // widening is superseded.
-                cybergramComposerFrame.setStroke(getThemedColor(Theme.key_chat_messagePanelSend),
+                // Two-pass edge light: a dim wide halo first, then the thin bright core. Both use
+                // the same shared chamfer geometry, so the neon effect cannot drift from the frame.
+                final int frameColor = getThemedColor(Theme.key_chat_messagePanelSend);
+                cybergramComposerGlow.setStroke(frameColor, dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP), true);
+                cybergramComposerGlow.setAlpha(CybergramTheme.BUBBLE_GLOW_ALPHA);
+                cybergramComposerGlow.setBounds(0, 0, w, h);
+                cybergramComposerGlow.draw(canvas);
+
+                cybergramComposerFrame.setStroke(frameColor,
                         dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+                cybergramComposerFrame.setAlpha(255);
                 cybergramComposerFrame.setBounds(0, 0, w, h);
                 cybergramComposerFrame.draw(canvas);
 
@@ -5855,6 +5865,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(6);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        messageEditText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, dp(9), 0, dp(10));
         messageEditText.setBackgroundDrawable(null);
@@ -10427,6 +10438,9 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     @Override
     public void updateColors() {
+        if (messageEditText != null) {
+            messageEditText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
+        }
         if (messageSendPreview != null) {
             messageSendPreview.updateColors();
         }

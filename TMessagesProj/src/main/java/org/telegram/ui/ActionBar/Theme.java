@@ -8434,7 +8434,7 @@ public class Theme {
             chat_adminPaint.setTextSize(dp(smallerDp - 1));
             chat_ephemeralPaint.setTextSize(dp(12));
             float timeDp = 2 * (SharedConfig.fontSize - 16) / 3f + 12;
-            chat_timePaint.setTextSize(dp(12));
+            chat_timePaint.setTextSize(dp(CybergramTheme.isCybergramPresentation(null) ? 11 : 12));
             chat_gamePaint.setTextSize(dp(13));
             chat_shipmentPaint.setTextSize(dp(13));
             chat_instantViewPaint.setTextSize(dp(13));
@@ -8457,6 +8457,20 @@ public class Theme {
         if (chat_msgTextPaint == null) {
             return;
         }
+
+        final boolean cybergramTypography = CybergramTheme.isCybergramPresentation(null);
+        final Typeface chatRegular = cybergramTypography ? CybergramTypography.messageRegular() : Typeface.DEFAULT;
+        final Typeface chatMedium = cybergramTypography ? CybergramTypography.messageMedium() : AndroidUtilities.bold();
+        chat_msgTextPaint.setTypeface(chatRegular);
+        if (chat_timePaint != null) chat_timePaint.setTypeface(chatRegular);
+        if (chat_replyTextPaint != null) chat_replyTextPaint.setTypeface(chatRegular);
+        if (chat_replyNamePaint != null) chat_replyNamePaint.setTypeface(chatMedium);
+        if (chat_namePaint != null) chat_namePaint.setTypeface(chatMedium);
+        if (chat_forwardNamePaint != null) chat_forwardNamePaint.setTypeface(chatMedium);
+        if (chat_adminPaint != null) chat_adminPaint.setTypeface(chatRegular);
+        if (chat_actionTextPaint != null) chat_actionTextPaint.setTypeface(chatMedium);
+        if (chat_actionTextPaint2 != null) chat_actionTextPaint2.setTypeface(chatMedium);
+        if (chat_actionTextPaint3 != null) chat_actionTextPaint3.setTypeface(chatMedium);
 
         if (chat_msgInDrawable != null && !fontsOnly) {
             chat_gamePaint.setColor(getColor(key_chat_previewGameText));

@@ -37,10 +37,10 @@ public final class CybergramTheme {
      * dark blue-green. The saturated turquoise fill is gone — direction is carried by the thin
      * outline and the metadata colour, not by an opaque bright surface.
      */
-    public static final int IN_BUBBLE = 0xFF0B0C07;
-    public static final int IN_BUBBLE_SELECTED = 0xFF16180D;
-    public static final int OUT_BUBBLE = 0xFF0A1B1D;
-    public static final int OUT_BUBBLE_SELECTED = 0xFF0E282B;
+    public static final int IN_BUBBLE = 0xE817170D;
+    public static final int IN_BUBBLE_SELECTED = 0xF0202113;
+    public static final int OUT_BUBBLE = 0xE8031820;
+    public static final int OUT_BUBBLE_SELECTED = 0xF0082730;
 
     /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
     public static final int IN_TEXT = 0xFFD3D6CE;
@@ -67,13 +67,23 @@ public final class CybergramTheme {
      * Cybergram message bubble (owner ruling D9.4). It is drawn inside the reserved 8dp tail region,
      * so the polygon stays within the drawable bounds. The other three corners keep the 45° chamfer.
      */
-    public static final float BUBBLE_TAIL_DP = 4.5f;
+    public static final float BUBBLE_TAIL_DP = 6.5f;
 
     /** Chamfer cut, in dp, for the "near" corners of a grouped Cybergram bubble. */
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
 
-    /** Cybergram message outline stroke width, in dp (reduced by owner ruling D9.3). */
+    /** Cybergram message outline stroke width, in dp (the bright neon core). */
     public static final float BUBBLE_BORDER_WIDTH_DP = 0.75f;
+    /** Wider low-alpha pass drawn below the core to create a restrained neon halo. */
+    public static final float BUBBLE_GLOW_WIDTH_DP = 2.5f;
+    public static final int BUBBLE_GLOW_ALPHA = 48;
+    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 66;
+
+    public static final int CANVAS_GRID_ALPHA = 10;
+    public static final int CANVAS_RAIL_ALPHA = 62;
+    public static final int CANVAS_RAIL_GLOW_ALPHA = 22;
+    public static final float CANVAS_GRID_X_DP = 48f;
+    public static final float CANVAS_GRID_Y_DP = 36f;
 
     /**
      * Extra vertical inset, in dp, applied to each *unjoined* vertical edge of a Cybergram

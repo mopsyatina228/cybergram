@@ -368,6 +368,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     private MessageObject currentMessageObject;
     private int customDate;
+    private boolean customDateMode;
     private CharSequence customText;
     private GiftSheet.CardBackground cardBackground;
 
@@ -379,6 +380,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private ArrayList<Integer> lineWidths = new ArrayList<>();
     private ArrayList<Integer> lineHeights = new ArrayList<>();
     private Path backgroundPath = new Path();
+    private Paint cybergramDateGlowPaint;
+    private Paint cybergramDateStrokePaint;
     private int backgroundLeft, backgroundRight;
     private RectF rect = new RectF();
     private boolean invalidatePath = true;
@@ -550,6 +553,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
+        customDateMode = true;
         if (customDate == date || customDate / 3600 == date / 3600) {
             return;
         }
@@ -589,6 +593,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setCustomText(CharSequence text) {
+        customDateMode = false;
         customText = text;
         if (customText != null) {
             updateTextInternal(false);
@@ -608,6 +613,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     
     public void setMessageObject(MessageObject messageObject, boolean force) {
         if (messageObject == null) return;
+        customDateMode = false;
         if (currentMessageObject == messageObject && (textLayout == null || TextUtils.equals(textLayout.getText(), messageObject.messageText)) && (hasReplyMessage || messageObject.replyMessageObject == null) && !force && messageObject.type != MessageObject.TYPE_SUGGEST_PHOTO && !messageObject.forceUpdate) {
             return;
         }
@@ -1702,6 +1708,32 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return CybergramTheme.useAngularMessageGeometry(themeDelegate)
             && !isButtonLayout(currentMessageObject)
             && !isMessageActionSuggestedPostApproval();
+    }
+
+    private void drawCybergramDateOutline(Canvas canvas) {
+        if (!customDateMode || customDate == 0 || currentMessageObject != null || !useCybergramOrdinaryServicePlate()) {
+            return;
+        }
+        if (cybergramDateGlowPaint == null) {
+            cybergramDateGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            cybergramDateGlowPaint.setStyle(Paint.Style.STROKE);
+            cybergramDateGlowPaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramDateGlowPaint.setStrokeCap(Paint.Cap.SQUARE);
+            cybergramDateGlowPaint.setStrokeWidth(dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
+            cybergramDateStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            cybergramDateStrokePaint.setStyle(Paint.Style.STROKE);
+            cybergramDateStrokePaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramDateStrokePaint.setStrokeCap(Paint.Cap.SQUARE);
+            cybergramDateStrokePaint.setStrokeWidth(dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP));
+        }
+        final int color = getThemedColor(Theme.key_chat_serviceText);
+        final float viewAlpha = Math.max(0f, Math.min(1f, getAlpha() * (isFloating() ? .75f : 1f)));
+        cybergramDateGlowPaint.setColor(color);
+        cybergramDateGlowPaint.setAlpha(Math.round(CybergramTheme.BUBBLE_GLOW_ALPHA * viewAlpha));
+        canvas.drawPath(backgroundPath, cybergramDateGlowPaint);
+        cybergramDateStrokePaint.setColor(color);
+        cybergramDateStrokePaint.setAlpha(Math.round(255 * viewAlpha));
+        canvas.drawPath(backgroundPath, cybergramDateStrokePaint);
     }
 
     private void createLayout(CharSequence text, int width) {
@@ -3530,6 +3562,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 canvas.drawPath(backgroundPath, dimPaint);
                 dimPaint.setAlpha(wasAlpha);
             }
+            drawCybergramDateOutline(canvas);
         }
 
         MessageObject messageObject = currentMessageObject;

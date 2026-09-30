@@ -104,6 +104,7 @@ public class MessageDrawable extends Drawable {
     private float overrideRounding;
     public boolean forceInvalidatePath;
     private Paint borderPaint;
+    private Paint borderGlowPaint;
     private final Path cybergramBorderPath = new Path();
     // R-PERF (owner goal 2026-09-17): the Cybergram outline path depends only on the drawable bounds
     // and the four bubble state flags, so it is cached and rebuilt only when one of those changes
@@ -892,6 +893,17 @@ public class MessageDrawable extends Drawable {
         return borderPaint;
     }
 
+    private Paint getBorderGlowPaint() {
+        if (borderGlowPaint == null) {
+            borderGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            borderGlowPaint.setStyle(Paint.Style.STROKE);
+            borderGlowPaint.setStrokeJoin(Paint.Join.MITER);
+            borderGlowPaint.setStrokeCap(Paint.Cap.SQUARE);
+            borderGlowPaint.setStrokeWidth(dp(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
+        }
+        return borderGlowPaint;
+    }
+
     private int getCybergramBorderColor() {
         if (isOut) {
             if (isSelected) {
@@ -932,8 +944,15 @@ public class MessageDrawable extends Drawable {
             cybergramBorderCacheType = currentType;
             cybergramBorderCacheFilled = true;
         }
+        final int borderColor = getCybergramBorderColor();
+        Paint glow = getBorderGlowPaint();
+        glow.setColor(borderColor);
+        int glowAlpha = isSelected ? CybergramTheme.BUBBLE_GLOW_SELECTED_ALPHA : CybergramTheme.BUBBLE_GLOW_ALPHA;
+        glow.setAlpha(Math.round(alpha * (glowAlpha / 255f)));
+        canvas.drawPath(cybergramBorderPath, glow);
+
         Paint bp = getBorderPaint();
-        bp.setColor(getCybergramBorderColor());
+        bp.setColor(borderColor);
         bp.setAlpha(alpha);
         canvas.drawPath(cybergramBorderPath, bp);
     }
@@ -949,6 +968,9 @@ public class MessageDrawable extends Drawable {
             paint.setAlpha(alpha);
             if (borderPaint != null) {
                 borderPaint.setAlpha(alpha);
+            }
+            if (borderGlowPaint != null) {
+                borderGlowPaint.setAlpha(alpha);
             }
             if (isOut) {
                 selectedPaint.setAlpha((int) (Color.alpha(getColor(Theme.key_chat_outBubbleGradientSelectedOverlay)) * (alpha / 255.0f)));

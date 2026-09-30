@@ -107,6 +107,36 @@ public class CybergramChatCanvasHudView extends View implements NotificationCent
             return;
         }
 
+        // Faint dual-colour field: enough structure to break the flat wallpaper, but deliberately
+        // weaker than message outlines and text.
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1f);
+        paint.setStrokeCap(Paint.Cap.SQUARE);
+        paint.setColor(CybergramTheme.CYAN);
+        paint.setAlpha(CybergramTheme.CANVAS_GRID_ALPHA);
+        final float gridX = dp(CybergramTheme.CANVAS_GRID_X_DP);
+        for (float x = l + gridX; x < r; x += gridX) {
+            canvas.drawLine(x, t, x, b, paint);
+        }
+        paint.setColor(CybergramTheme.DANGER);
+        paint.setAlpha(Math.max(1, CybergramTheme.CANVAS_GRID_ALPHA - 2));
+        final float gridY = dp(CybergramTheme.CANVAS_GRID_Y_DP);
+        for (float y = t + gridY; y < b; y += gridY) {
+            canvas.drawLine(l, y, r, y, paint);
+        }
+
+        // Continuous red edge rails with a dim halo echo the reference's technical frame.
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(CybergramTheme.DANGER);
+        paint.setAlpha(CybergramTheme.CANVAS_RAIL_GLOW_ALPHA);
+        final float railGlow = Math.max(1f, dp(1.5f));
+        canvas.drawRect(l - railGlow, t, l + railGlow, b, paint);
+        canvas.drawRect(r - railGlow, t, r + railGlow, b, paint);
+        paint.setAlpha(CybergramTheme.CANVAS_RAIL_ALPHA);
+        final float railCore = Math.max(1f, dp(0.5f));
+        canvas.drawRect(l, t, l + railCore, b, paint);
+        canvas.drawRect(r - railCore, t, r, b, paint);
+
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(Math.max(1f, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP)));
         paint.setStrokeCap(Paint.Cap.SQUARE);
