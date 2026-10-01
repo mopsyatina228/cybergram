@@ -71,3 +71,15 @@ Status: implementation on `feature/visual-convergence-pass4-typography-softness`
 - `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=arm64-v8a --no-daemon`: BUILD SUCCESSFUL in 6m 6s.
 - ARM64 debug APK: 73,354,939 bytes; SHA-256 `05ecc7f081787674c37a9eda3cfca745c52e794831561583163543900475d1c5`.
 - Physical-device install/visual validation is pending because ADB currently reports no connected device.
+
+## CP2077 Russian font extraction, 2026-10-01
+
+The Steam build is fully installed at `E:\SteamLibrary\steamapps\common\Cyberpunk 2077` (build 20383525). The Russian UI family is `base\gameplay\gui\fonts\foreign\russian\raj_rus.inkfontfamily`.
+
+That family resolves to two actual font resources: `rajdhani_medium_neu.fnt` for Medium and `rajdhani-semibold_ru_v4.fnt` for SemiBold. WolvenKit Console 8.20.0 exported them as TTF for local comparison.
+
+TTF metadata: Medium is weight 500, SemiBold is weight 600. Both use 1000 UPM, ascender 930, descender -346, lineGap 0, x-height 510 and cap-height 643. Both contain basic Russian Cyrillic including Ё/ё. Embedded font metadata identifies Rajdhani/Indian Type Foundry and SIL OFL 1.1.
+
+Local-only test mapping is `rajdhani_medium_neu.ttf -> raj_rus_regular.ttf` and `rajdhani-semibold_ru_v4.ttf -> raj_rus_medium.ttf`. The private asset directory stays ignored by Git; this lets licensed local builds exercise the real in-game Cyrillic without making the binary font part of the repository.
+
+The ARM64 pass-4 APK was rebuilt with both local TTF assets present and verified to contain `assets/fonts/cybergram_private/raj_rus_regular.ttf` and `raj_rus_medium.ttf`. Runtime visual verification remains pending until ADB sees the Redmi again.
