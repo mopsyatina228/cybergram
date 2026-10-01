@@ -36,23 +36,23 @@ public final class CybergramTypography {
     private static Typeface messageRegular;
     private static Typeface messageMedium;
 
-    /** Condensed chrome typeface, normal weight. Created once, then cached. */
+    /** Cybergram chrome face. Uses local Raj Medium when available, condensed Android fallback otherwise. */
     public static Typeface chromeRegular() {
         if (chromeRegular == null) {
-            chromeRegular = Typeface.create(CHROME_FAMILY, Typeface.NORMAL);
+            chromeRegular = loadOptionalPrivateTypeface(PRIVATE_MESSAGE_REGULAR, CHROME_FAMILY);
         }
         return chromeRegular;
     }
 
-    /** Condensed chrome typeface, medium emphasis. Created once, then cached. */
+    /** Cybergram emphasized chrome face. Uses local Raj SemiBold when available. */
     public static Typeface chromeBold() {
         if (chromeBold == null) {
-            chromeBold = Typeface.create(CHROME_MEDIUM_FAMILY, Typeface.NORMAL);
+            chromeBold = loadOptionalPrivateTypeface(PRIVATE_MESSAGE_MEDIUM, CHROME_MEDIUM_FAMILY);
         }
         return chromeBold;
     }
 
-    private static Typeface loadPrivateMessageTypeface(String assetPath, String fallbackFamily) {
+    private static Typeface loadOptionalPrivateTypeface(String assetPath, String fallbackFamily) {
         if (ApplicationLoader.applicationContext != null) {
             try {
                 return Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
@@ -66,7 +66,7 @@ public final class CybergramTypography {
     /** Regular body face. Prefers the local private CP2077-derived test asset when present. */
     public static Typeface messageRegular() {
         if (messageRegular == null) {
-            messageRegular = loadPrivateMessageTypeface(PRIVATE_MESSAGE_REGULAR, MESSAGE_FALLBACK_FAMILY);
+            messageRegular = loadOptionalPrivateTypeface(PRIVATE_MESSAGE_REGULAR, MESSAGE_FALLBACK_FAMILY);
         }
         return messageRegular;
     }
@@ -74,7 +74,7 @@ public final class CybergramTypography {
     /** Message metadata/name face with an optional local medium-weight asset. */
     public static Typeface messageMedium() {
         if (messageMedium == null) {
-            messageMedium = loadPrivateMessageTypeface(PRIVATE_MESSAGE_MEDIUM, MESSAGE_MEDIUM_FALLBACK_FAMILY);
+            messageMedium = loadOptionalPrivateTypeface(PRIVATE_MESSAGE_MEDIUM, MESSAGE_MEDIUM_FALLBACK_FAMILY);
         }
         return messageMedium;
     }
