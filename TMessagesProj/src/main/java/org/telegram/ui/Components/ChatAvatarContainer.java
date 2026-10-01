@@ -432,12 +432,17 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         if (CybergramTheme.isCybergramPresentation(resourcesProvider)
                 && avatarImageView != null && avatarImageView.getVisibility() == VISIBLE) {
             cybergramAvatarRingPaint.setStyle(Paint.Style.STROKE);
-            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(0.9f)));
-            cybergramAvatarRingPaint.setColor(CybergramTheme.DANGER);
-            cybergramAvatarRingPaint.setAlpha(225);
+            cybergramAvatarRingPaint.setColor(CybergramTheme.CYAN);
             final float cx = avatarImageView.getX() + avatarImageView.getWidth() / 2f;
             final float cy = avatarImageView.getY() + avatarImageView.getHeight() / 2f;
             final float radius = Math.min(avatarImageView.getWidth(), avatarImageView.getHeight()) / 2f + dpf2(1f);
+            // Two-pass ring: a soft halo under a thin bright core. The red pass read as a flat warning
+            // badge on-device; cyan behaves much closer to the rest of Cybergram's emissive chrome.
+            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(3.2f)));
+            cybergramAvatarRingPaint.setAlpha(46);
+            canvas.drawCircle(cx, cy, radius, cybergramAvatarRingPaint);
+            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(0.85f)));
+            cybergramAvatarRingPaint.setAlpha(220);
             canvas.drawCircle(cx, cy, radius, cybergramAvatarRingPaint);
         }
         canvas.restore();

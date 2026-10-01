@@ -1076,12 +1076,12 @@ public class ReactionsLayoutInBubble {
                     serviceBackgroundColor = 0xFFE8AB02;
                 } else {
                     if (cybergramAngularCut > 0) {
-                        // Cybergram: a reaction chosen by the current user is a deliberate red HUD mark.
-                        // Reactions from other participants remain neutral, so ownership is legible at a glance.
-                        backgroundColor = ColorUtils.setAlphaComponent(CybergramTheme.DANGER, 64);
-                        textColor = CybergramTheme.DANGER;
-                        serviceTextColor = CybergramTheme.DANGER;
-                        serviceBackgroundColor = ColorUtils.setAlphaComponent(CybergramTheme.DANGER, 52);
+                        final int accent = isOutOwner() ? CybergramTheme.CYAN : CybergramTheme.AMBER;
+                        // Ownership is expressed by fill intensity, not by introducing a third accent color.
+                        backgroundColor = ColorUtils.setAlphaComponent(accent, 70);
+                        textColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonTextSelected : Theme.key_chat_inReactionButtonTextSelected, resourcesProvider);
+                        serviceTextColor = textColor;
+                        serviceBackgroundColor = ColorUtils.setAlphaComponent(accent, 58);
                     } else {
                         backgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
                         textColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonTextSelected : Theme.key_chat_inReactionButtonTextSelected, resourcesProvider);
@@ -1102,10 +1102,17 @@ public class ReactionsLayoutInBubble {
                     serviceBackgroundColor = Color.TRANSPARENT;
                 } else {
                     textColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText, resourcesProvider);
-                    backgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
-                    backgroundColor = ColorUtils.setAlphaComponent(backgroundColor, (int) (Color.alpha(backgroundColor) * 0.156f));
-                    serviceTextColor = Theme.getColor(Theme.key_chat_serviceText, resourcesProvider);
-                    serviceBackgroundColor = Color.TRANSPARENT;
+                    if (cybergramAngularCut > 0) {
+                        final int accent = isOutOwner() ? CybergramTheme.CYAN : CybergramTheme.AMBER;
+                        backgroundColor = ColorUtils.setAlphaComponent(accent, 22);
+                        serviceTextColor = textColor;
+                        serviceBackgroundColor = ColorUtils.setAlphaComponent(accent, 16);
+                    } else {
+                        backgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
+                        backgroundColor = ColorUtils.setAlphaComponent(backgroundColor, (int) (Color.alpha(backgroundColor) * 0.156f));
+                        serviceTextColor = Theme.getColor(Theme.key_chat_serviceText, resourcesProvider);
+                        serviceBackgroundColor = Color.TRANSPARENT;
+                    }
                 }
             }
 
@@ -1187,15 +1194,16 @@ public class ReactionsLayoutInBubble {
             }
             final boolean particlesEnabled = particles != null && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
             drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint);
-            if (cybergramAngularCut > 0 && choosen && !paid) {
+            if (cybergramAngularCut > 0 && !paid) {
                 final Paint.Style previousStyle = paint.getStyle();
                 final float previousStrokeWidth = paint.getStrokeWidth();
                 final int previousColor = paint.getColor();
                 final int previousAlpha = paint.getAlpha();
+                final int accent = isOutOwner() ? CybergramTheme.CYAN : CybergramTheme.AMBER;
                 paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(Math.max(1f, dp(0.75f)));
-                paint.setColor(CybergramTheme.DANGER);
-                paint.setAlpha((int) (210 * alpha));
+                paint.setStrokeWidth(Math.max(1f, dp(choosen ? 0.85f : 0.65f)));
+                paint.setColor(accent);
+                paint.setAlpha((int) ((choosen ? 230 : 166) * alpha));
                 drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint);
                 paint.setStyle(previousStyle);
                 paint.setStrokeWidth(previousStrokeWidth);

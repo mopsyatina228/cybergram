@@ -1967,6 +1967,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
                 final int save = canvas.save();
                 canvas.clipPath(rectPath);
+                if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
+                    // Telegram recomputes attachment X in several late layout branches. Keep the raster
+                    // inside the actual parent bubble even if one of those branches disagrees.
+                    final Rect bubbleBounds = currentBackgroundDrawable.getBounds();
+                    final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                    if (bubbleBounds.width() > inset * 2f && bubbleBounds.height() > inset * 2f) {
+                        canvas.clipRect(bubbleBounds.left + inset, bubbleBounds.top + inset,
+                                bubbleBounds.right - inset, bubbleBounds.bottom - inset);
+                    }
+                }
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
                 setRoundRadiusEnabled(true);
