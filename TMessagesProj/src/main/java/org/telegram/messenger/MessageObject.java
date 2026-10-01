@@ -62,6 +62,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -8490,6 +8491,13 @@ public class MessageObject {
             if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
                 maxWidth -= dp(10);
             }
+        }
+        if (CybergramTheme.isCybergramPresentation(null)
+                && type == TYPE_TEXT
+                && isMediaEmpty()
+                && !hasCode
+                && !isSponsored()) {
+            maxWidth = Math.max(dp(120), Math.round(maxWidth * CybergramTheme.MESSAGE_TEXT_MAX_WIDTH_SCALE));
         }
         if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) && (hasValidReplyMessageObject() || isForwarded())) {
             maxWidth = Math.min(maxWidth, (int) (generatedWithMinSize * .65f));

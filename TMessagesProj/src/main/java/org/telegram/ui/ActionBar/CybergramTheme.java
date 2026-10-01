@@ -37,10 +37,10 @@ public final class CybergramTheme {
      * dark blue-green. The saturated turquoise fill is gone — direction is carried by the thin
      * outline and the metadata colour, not by an opaque bright surface.
      */
-    public static final int IN_BUBBLE = 0xDC14140B;
-    public static final int IN_BUBBLE_SELECTED = 0xEC202113;
-    public static final int OUT_BUBBLE = 0xDC04151A;
-    public static final int OUT_BUBBLE_SELECTED = 0xEC082730;
+    public static final int IN_BUBBLE = 0xD012120D;
+    public static final int IN_BUBBLE_SELECTED = 0xE81E2015;
+    public static final int OUT_BUBBLE = 0xD0031116;
+    public static final int OUT_BUBBLE_SELECTED = 0xE807252D;
 
     /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
     public static final int IN_TEXT = 0xFFDDD7BF;
@@ -67,23 +67,23 @@ public final class CybergramTheme {
      * Cybergram message bubble (owner ruling D9.4). It is drawn inside the reserved 8dp tail region,
      * so the polygon stays within the drawable bounds. The other three corners keep the 45° chamfer.
      */
-    public static final float BUBBLE_TAIL_DP = 6.5f;
+    public static final float BUBBLE_TAIL_DP = 5.25f;
 
     /** Chamfer cut, in dp, for the "near" corners of a grouped Cybergram bubble. */
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
 
     /** Cybergram message outline stroke width, in dp (the bright neon core). */
-    public static final float BUBBLE_BORDER_WIDTH_DP = 0.55f;
-    public static final int BUBBLE_BORDER_ALPHA = 220;
+    public static final float BUBBLE_BORDER_WIDTH_DP = 0.5f;
+    public static final int BUBBLE_BORDER_ALPHA = 198;
     /** Two soft passes under the core: broad bloom plus a tighter mid halo. */
-    public static final float BUBBLE_GLOW_WIDTH_DP = 5.5f;
-    public static final int BUBBLE_GLOW_ALPHA = 14;
-    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 22;
-    public static final float BUBBLE_MID_GLOW_WIDTH_DP = 2.2f;
-    public static final int BUBBLE_MID_GLOW_ALPHA = 38;
-    public static final int BUBBLE_MID_GLOW_SELECTED_ALPHA = 54;
+    public static final float BUBBLE_GLOW_WIDTH_DP = 6.2f;
+    public static final int BUBBLE_GLOW_ALPHA = 11;
+    public static final int BUBBLE_GLOW_SELECTED_ALPHA = 18;
+    public static final float BUBBLE_MID_GLOW_WIDTH_DP = 2.4f;
+    public static final int BUBBLE_MID_GLOW_ALPHA = 30;
+    public static final int BUBBLE_MID_GLOW_SELECTED_ALPHA = 44;
 
-    public static final int CANVAS_GRID_ALPHA = 5;
+    public static final int CANVAS_GRID_ALPHA = 3;
     public static final int CANVAS_RAIL_ALPHA = 34;
     public static final int CANVAS_RAIL_GLOW_ALPHA = 10;
     /** Sparse decorative HUD annotations. Neutral labels only, never security/status claims. */
@@ -95,9 +95,9 @@ public final class CybergramTheme {
 
     /** Physical-pass spacing: visual row clearance without changing bubble/time geometry. */
     public static final float MESSAGE_ROW_GAP_DP = 7f;
-    public static final float MESSAGE_TIME_BOTTOM_INSET_DP = 1.5f;
+    public static final float MESSAGE_TIME_BOTTOM_INSET_DP = 2.5f;
     public static final float MESSAGE_TEXT_SIZE_REDUCTION_DP = 1f;
-    public static final float MESSAGE_TIME_TEXT_SIZE_DP = 10.5f;
+    public static final float MESSAGE_TIME_TEXT_SIZE_DP = 10f;
     public static final float COMPOSER_TEXT_SIZE_DP = 15f;
     public static final int COMPOSER_DIVIDER_ALPHA = 170;
     /** Pull bubbles away from the red HUD rails while preserving their measured width. */
@@ -167,11 +167,23 @@ public final class CybergramTheme {
     /** Optical scale of outgoing delivery checks. Raj makes the metadata cluster visually smaller. */
     public static final float CHECK_SCALE = 0.84f;
 
+    /** Metadata checks should sit behind the time instead of becoming a cyan badge. */
+    public static final float CHECK_ALPHA_SCALE = 0.86f;
+
+    /** Optical upward nudge, in dp, keeping checks aligned with the raised time baseline. */
+    public static final float CHECK_Y_OFFSET_DP = 1f;
+
+    /** Pure text messages use a more card-like width than upstream Telegram. */
+    public static final float MESSAGE_TEXT_MAX_WIDTH_SCALE = 0.86f;
+
     /** Extra horizontal breathing room reserved for Cybergram attachment-heavy bubbles. */
-    public static final float ATTACHMENT_TEXT_INSET_DP = 2f;
+    public static final float ATTACHMENT_TEXT_INSET_DP = 2.5f;
 
     /** Extra internal space below attachment/media content before the angular frame closes. */
-    public static final float ATTACHMENT_BOTTOM_PAD_DP = 5f;
+    public static final float ATTACHMENT_BOTTOM_PAD_DP = 6f;
+
+    /** Inset, in dp, between photo/video payload and the Cybergram media frame. */
+    public static final float ATTACHMENT_MEDIA_INSET_DP = 2.5f;
 
     /** Additional top breathing room for forwarded headers and their media payloads. */
     public static final float FORWARDED_TOP_PAD_DP = 3f;
