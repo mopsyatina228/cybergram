@@ -14096,6 +14096,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (currentMessageObject.isVoiceTranscriptionOpen()) {
                     x += dp(10);
                 }
+                if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                        && currentMessageObject.type != MessageObject.TYPE_TEXT
+                        && useCybergramAngularMediaClip()) {
+                    x += dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                }
                 if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
                     transitionParams.updatePhotoImageX = false;
                     photoImage.setImageCoords(x, currentMessageObject.type != MessageObject.TYPE_ROUND_VIDEO ? linkPreviewY : photoImage.getImageY(), photoImage.getImageWidth(), photoImage.getImageHeight());
@@ -14210,6 +14215,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (drawInstantViewType == 17) {
                 x += dp(10) + (instantWidth - photoImage.getImageWidth()) / 2;
+            }
+            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                    && currentMessageObject.type != MessageObject.TYPE_TEXT
+                    && useCybergramAngularMediaClip()) {
+                x += dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
             }
             if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
                 transitionParams.updatePhotoImageX = false;
@@ -22677,6 +22687,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             Theme.chat_forwardNamePaint.setColor(peerColor.getColor(0, resourcesProvider));
                         }
                     }
+                }
+                if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !hasPsaHint) {
+                    Theme.chat_forwardNamePaint.setColor(ColorUtils.setAlphaComponent(
+                            CybergramTheme.DANGER, currentMessageObject.isOutOwner() ? 188 : 212));
                 }
                 if (currentMessageObject.isOutOwner()) {
                     if (currentMessageObject.needDrawForwarded()) {

@@ -204,6 +204,16 @@ chat_outFileInfoText=-8987160
 chat_outAudioTitleText=-13379841
 chat_outAudioDurationText=-8987160
 
+# Reactions: explicit user-chosen cyan accent, never Telegram green
+chat_inReactionButtonBackground=-15252662
+chat_outReactionButtonBackground=-15252662
+chat_inReactionButtonText=-7951694
+chat_outReactionButtonText=-7951694
+chat_inReactionButtonTextSelected=-7410958
+chat_outReactionButtonTextSelected=-7410958
+chat_reactionServiceButtonBackgroundSelected=-15252662
+chat_reactionServiceButtonTextSelected=-7410958
+
 # Delivery and errors
 chat_outSentCheck=-9446936
 chat_outSentCheckSelected=-7410958
