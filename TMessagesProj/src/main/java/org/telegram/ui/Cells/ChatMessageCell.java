@@ -13784,6 +13784,38 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 || documentAttachType != DOCUMENT_ATTACH_TYPE_NONE || drawPhotoImage);
     }
 
+    private boolean useCybergramAngularMediaClip() {
+        if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                || currentMessageObject == null || !drawPhotoImage || isRoundVideo || isSmallImage
+                || documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND
+                || documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER) {
+            return false;
+        }
+        return currentMessageObject.type == MessageObject.TYPE_PHOTO
+                || currentMessageObject.type == MessageObject.TYPE_VIDEO
+                || currentMessageObject.type == MessageObject.TYPE_GIF
+                || currentMessageObject.type == MessageObject.TYPE_EXTENDED_MEDIA_PREVIEW
+                || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO
+                || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF
+                || documentAttachType == DOCUMENT_ATTACH_TYPE_WALLPAPER
+                || hasLinkPreview;
+    }
+
+    private void buildCybergramMediaPath(Path path, float left, float top, float right, float bottom) {
+        final float cut = Math.min(dp(CybergramTheme.ATTACHMENT_MEDIA_CUT_DP),
+                Math.max(0f, Math.min(right - left, bottom - top) * 0.16f));
+        path.rewind();
+        path.moveTo(left + cut, top);
+        path.lineTo(right - cut, top);
+        path.lineTo(right, top + cut);
+        path.lineTo(right, bottom - cut);
+        path.lineTo(right - cut, bottom);
+        path.lineTo(left + cut, bottom);
+        path.lineTo(left, bottom - cut);
+        path.lineTo(left, top + cut);
+        path.close();
+    }
+
     private void scaleCybergramCheckBounds(Drawable drawable) {
         if (drawable == null || !CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
             return;
@@ -15135,14 +15167,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                     rect.set(photoImage.getImageX(), photoImage.getImageY(), photoImage.getImageX() + photoImage.getImageWidth(), photoImage.getImageY() + photoImage.getImageHeight());
 
-                    int[] rad = photoImage.getRoundRadius();
-                    rectPath.reset();
-                    for (int a = 0; a < rad.length; a++) {
-                        radii[a * 2] = rad[a];
-                        radii[a * 2 + 1] = rad[a];
+                    if (useCybergramAngularMediaClip()) {
+                        buildCybergramMediaPath(rectPath, rect.left, rect.top, rect.right, rect.bottom);
+                    } else {
+                        int[] rad = photoImage.getRoundRadius();
+                        rectPath.reset();
+                        for (int a = 0; a < rad.length; a++) {
+                            radii[a * 2] = rad[a];
+                            radii[a * 2 + 1] = rad[a];
+                        }
+                        rectPath.addRoundRect(rect, radii, Path.Direction.CW);
+                        rectPath.close();
                     }
-                    rectPath.addRoundRect(rect, radii, Path.Direction.CW);
-                    rectPath.close();
                     canvas.drawPath(rectPath, Theme.chat_docBackPaint);
                 } else {
                     radialProgress.setColorKeys(Theme.key_chat_mediaLoaderPhoto, Theme.key_chat_mediaLoaderPhotoSelected, Theme.key_chat_mediaLoaderPhotoIcon, Theme.key_chat_mediaLoaderPhotoIconSelected);
@@ -15296,15 +15332,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return;
         }
 
-        int[] rad = photoImage.getRoundRadius();
-        mediaSpoilerRadii[0] = mediaSpoilerRadii[1] = rad[0];
-        mediaSpoilerRadii[2] = mediaSpoilerRadii[3] = rad[1];
-        mediaSpoilerRadii[4] = mediaSpoilerRadii[5] = rad[2];
-        mediaSpoilerRadii[6] = mediaSpoilerRadii[7] = rad[3];
-
+        final boolean cybergramAngularMedia = useCybergramAngularMediaClip();
         mediaSpoilerPath.rewind();
         AndroidUtilities.rectTmp.set(photoImage.getImageX(), photoImage.getImageY(), photoImage.getImageX2(), photoImage.getImageY2());
-        mediaSpoilerPath.addRoundRect(AndroidUtilities.rectTmp, mediaSpoilerRadii, Path.Direction.CW);
+        if (cybergramAngularMedia) {
+            buildCybergramMediaPath(mediaSpoilerPath, AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top,
+                    AndroidUtilities.rectTmp.right, AndroidUtilities.rectTmp.bottom);
+        } else {
+            int[] rad = photoImage.getRoundRadius();
+            mediaSpoilerRadii[0] = mediaSpoilerRadii[1] = rad[0];
+            mediaSpoilerRadii[2] = mediaSpoilerRadii[3] = rad[1];
+            mediaSpoilerRadii[4] = mediaSpoilerRadii[5] = rad[2];
+            mediaSpoilerRadii[6] = mediaSpoilerRadii[7] = rad[3];
+            mediaSpoilerPath.addRoundRect(AndroidUtilities.rectTmp, mediaSpoilerRadii, Path.Direction.CW);
+        }
 
         canvas.save();
         canvas.clipPath(mediaSpoilerPath);
@@ -15316,11 +15357,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (currentMessageObject.needDrawBluredPreview()) {
+            if (cybergramAngularMedia) {
+                photoImage.setRoundRadiusEnabled(false);
+            }
             photoImage.draw(canvas);
+            if (cybergramAngularMedia) {
+                photoImage.setRoundRadiusEnabled(true);
+            }
         } else {
             blurredPhotoImage.setImageCoords(photoImage.getImageX(), photoImage.getImageY(), photoImage.getImageWidth(), photoImage.getImageHeight());
             blurredPhotoImage.setRoundRadius(photoImage.getRoundRadius());
+            if (cybergramAngularMedia) {
+                blurredPhotoImage.setRoundRadiusEnabled(false);
+            }
             blurredPhotoImage.draw(canvas);
+            if (cybergramAngularMedia) {
+                blurredPhotoImage.setRoundRadiusEnabled(true);
+            }
         }
 
         drawBlurredPhotoParticles(canvas);
@@ -29311,6 +29364,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     protected boolean drawPhotoImage(Canvas canvas) {
+        if (!useCybergramAngularMediaClip()) {
+            return drawPhotoImageContents(canvas);
+        }
+        buildCybergramMediaPath(rectPath, photoImage.getImageX(), photoImage.getImageY(),
+                photoImage.getImageX2(), photoImage.getImageY2());
+        canvas.save();
+        canvas.clipPath(rectPath);
+        photoImage.setRoundRadiusEnabled(false);
+        final boolean result = drawPhotoImageContents(canvas);
+        photoImage.setRoundRadiusEnabled(true);
+        canvas.restore();
+        return result;
+    }
+
+    private boolean drawPhotoImageContents(Canvas canvas) {
         if (currentMessageObject != null && currentMessageObject.isLivePhoto()) {
             final AnimatedFileDrawable animation = photoImage.getAnimation();
             if (animation != null && animation.getDurationMs() > 0) {

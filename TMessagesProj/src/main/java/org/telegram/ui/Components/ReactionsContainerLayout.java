@@ -72,6 +72,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -150,6 +151,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cybergramOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint leftShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG),
             rightShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float leftAlpha, rightAlpha;
@@ -441,10 +443,35 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         if (type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
             bgPaint.setColor(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.13f));
+        } else if (useCybergramPanel()) {
+            bgPaint.setColor(CybergramTheme.PANEL_RAISED);
+            cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
+            cybergramOutlinePaint.setStrokeWidth(dp(CybergramTheme.REACTION_PANEL_BORDER_WIDTH_DP));
+            cybergramOutlinePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.REACTION_PANEL_BORDER_ALPHA));
         } else {
             bgPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
         }
         MediaDataController.getInstance(currentAccount).preloadDefaultReactions();
+    }
+
+    private boolean useCybergramPanel() {
+        return CybergramTheme.isCybergramPresentation(resourcesProvider)
+                && (type == TYPE_DEFAULT || type == TYPE_TAGS);
+    }
+
+    private void buildCybergramPanelPath(Path path, RectF bounds) {
+        final float cut = Math.min(dp(CybergramTheme.REACTION_PANEL_CUT_DP),
+                Math.min(bounds.width(), bounds.height()) * 0.22f);
+        path.rewind();
+        path.moveTo(bounds.left + cut, bounds.top);
+        path.lineTo(bounds.right - cut, bounds.top);
+        path.lineTo(bounds.right, bounds.top + cut);
+        path.lineTo(bounds.right, bounds.bottom - cut);
+        path.lineTo(bounds.right - cut, bounds.bottom);
+        path.lineTo(bounds.left + cut, bounds.bottom);
+        path.lineTo(bounds.left, bounds.bottom - cut);
+        path.lineTo(bounds.left, bounds.top + cut);
+        path.close();
     }
 
     public boolean showExpandableReactions() {
@@ -718,7 +745,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (type != TYPE_STORY) {
             shadow.setAlpha((int) (Utilities.clamp(1f - (customEmojiReactionsEnterProgress / 0.05f), 1f, 0f) * 255));
             shadow.setBounds((int) (getPaddingLeft() + (getWidth() - getPaddingRight() + shadowPad.right) * lt - shadowPad.left), getPaddingTop() - shadowPad.top - (int) expandSize, (int) ((getWidth() - getPaddingRight() + shadowPad.right) * rt), getHeight() - getPaddingBottom() + shadowPad.bottom + (int) expandSize);
-            if (blurredBackgroundDrawable == null) {
+            if (blurredBackgroundDrawable == null && !useCybergramPanel()) {
                 shadow.draw(canvas);
             }
         }
@@ -731,13 +758,28 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 float sc = transitionProgress;
                 canvas.scale(sc, sc, pivotX, getHeight() / 2f);
             }
+            final boolean cybergramPanel = useCybergramPanel();
             if (type == TYPE_STORY || delegate.drawBackground()) {
                 delegate.drawRoundRect(canvas, rect, radius, getX(), getY(), 255, false);
+            } else if (cybergramPanel) {
+                buildCybergramPanelPath(mPath, rect);
+                if (blurredBackgroundDrawable != null) {
+                    rect.round(AndroidUtilities.rectTmp2);
+                    AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
+                    canvas.save();
+                    canvas.clipPath(mPath);
+                    blurredBackgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
+                    blurredBackgroundDrawable.setAlpha(bgPaint.getAlpha());
+                    blurredBackgroundDrawable.draw(canvas);
+                    canvas.restore();
+                } else {
+                    canvas.drawPath(mPath, bgPaint);
+                }
+                canvas.drawPath(mPath, cybergramOutlinePaint);
             } else {
                 if (blurredBackgroundDrawable != null) {
                     rect.round(AndroidUtilities.rectTmp2);
                     AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
-
                     blurredBackgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
                     blurredBackgroundDrawable.setAlpha(bgPaint.getAlpha());
                     blurredBackgroundDrawable.draw(canvas);
@@ -755,7 +797,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     }
                 }
                 if (!isStarSelected) {
-                    canvas.drawRoundRect(rect, radius, radius, getStarGradientPaint(rect, Utilities.clamp01(1f - getPullingLeftProgress())));
+                    if (cybergramPanel) {
+                        canvas.drawPath(mPath, getStarGradientPaint(rect, Utilities.clamp01(1f - getPullingLeftProgress())));
+                    } else {
+                        canvas.drawRoundRect(rect, radius, radius, getStarGradientPaint(rect, Utilities.clamp01(1f - getPullingLeftProgress())));
+                    }
                 }
             }
 
@@ -763,7 +809,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         }
 
         mPath.rewind();
-        mPath.addRoundRect(rect, radius, radius, Path.Direction.CW);
+        if (useCybergramPanel()) {
+            buildCybergramPanelPath(mPath, rect);
+        } else {
+            mPath.addRoundRect(rect, radius, radius, Path.Direction.CW);
+        }
 
         s = canvas.save();
         if (transitionProgress != 1f) {

@@ -17,6 +17,8 @@ import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 
 public class TextStyleSpan extends MetricAffectingSpan {
@@ -91,7 +93,17 @@ public class TextStyleSpan extends MetricAffectingSpan {
             }
             if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_CODE) != 0) {
                 return Typeface.MONOSPACE;
-            } else if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
+            }
+            if (CybergramTheme.isCybergramPresentation(null)) {
+                if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
+                    return CybergramTypography.messageMediumItalic();
+                } else if ((flags & FLAG_STYLE_BOLD) != 0) {
+                    return CybergramTypography.messageMedium();
+                } else if ((flags & FLAG_STYLE_ITALIC) != 0) {
+                    return CybergramTypography.messageItalic();
+                }
+            }
+            if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
                 return AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC);
             } else if ((flags & FLAG_STYLE_BOLD) != 0) {
                 return AndroidUtilities.bold();

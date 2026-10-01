@@ -35,6 +35,8 @@ public final class CybergramTypography {
     private static Typeface chromeBold;
     private static Typeface messageRegular;
     private static Typeface messageMedium;
+    private static Typeface messageItalic;
+    private static Typeface messageMediumItalic;
 
     /** Cybergram chrome face. Uses local Raj Medium when available, condensed Android fallback otherwise. */
     public static Typeface chromeRegular() {
@@ -77,6 +79,20 @@ public final class CybergramTypography {
             messageMedium = loadOptionalPrivateTypeface(PRIVATE_MESSAGE_MEDIUM, MESSAGE_MEDIUM_FALLBACK_FAMILY);
         }
         return messageMedium;
+    }
+
+    public static Typeface messageItalic() {
+        if (messageItalic == null) {
+            messageItalic = Typeface.create(messageRegular(), Typeface.ITALIC);
+        }
+        return messageItalic;
+    }
+
+    public static Typeface messageMediumItalic() {
+        if (messageMediumItalic == null) {
+            messageMediumItalic = Typeface.create(messageMedium(), Typeface.ITALIC);
+        }
+        return messageMediumItalic;
     }
 
     /** True when Cybergram presentation is active for {@code provider}. */

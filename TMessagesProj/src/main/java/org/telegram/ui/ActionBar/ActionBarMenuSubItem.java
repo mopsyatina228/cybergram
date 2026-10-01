@@ -79,6 +79,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         iconColor = getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon);
         iconColorMode = PorterDuff.Mode.MULTIPLY;
         selectorColor = getThemedColor(Theme.key_dialogButtonSelector);
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        if (cybergram) {
+            selectorRad = 2;
+            iconColor = CybergramTheme.ICON_PALE;
+            selectorColor = Theme.multAlpha(CybergramTheme.CYAN, CybergramTheme.MESSAGE_MENU_SELECTOR_ALPHA / 255f);
+        }
 
         updateBackground();
         setPadding(dp(18), 0, dp(18), 0);
@@ -94,7 +100,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setGravity(Gravity.LEFT);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTextColor(textColor);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, cybergram ? 15 : 16);
+        if (cybergram) {
+            textView.setTypeface(CybergramTypography.chromeRegular());
+        }
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         checkViewLeft = LocaleController.isRTL;
@@ -363,6 +372,9 @@ public class ActionBarMenuSubItem extends FrameLayout {
             subtextView.setTextColor(getThemedColor(Theme.key_groupcreate_sectionText));
             subtextView.setVisibility(GONE);
             subtextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                subtextView.setTypeface(CybergramTypography.chromeRegular());
+            }
             subtextView.setPadding(LocaleController.isRTL ? 0 : dp(43), 0, LocaleController.isRTL ? dp(43) : 0, 0);
             addView(subtextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 0, 10, 0, 0));
         }

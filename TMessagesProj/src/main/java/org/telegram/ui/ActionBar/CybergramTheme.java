@@ -43,8 +43,8 @@ public final class CybergramTheme {
     public static final int OUT_BUBBLE_SELECTED = 0xE807252D;
 
     /** Body text: incoming light grey, outgoing pale blue (owner ruling D9.5). */
-    public static final int IN_TEXT = 0xFFDDD7BF;
-    public static final int OUT_TEXT = 0xFFD2EBEF;
+    public static final int IN_TEXT = 0xFFD4C39F;
+    public static final int OUT_TEXT = 0xFFB7D5DA;
 
     /** Time/metadata: smaller and dimmer than the body text on both sides (owner ruling D9.5). */
     public static final int IN_TIME = 0xFFB1A76F;
@@ -184,6 +184,7 @@ public final class CybergramTheme {
 
     /** Inset, in dp, between photo/video payload and the Cybergram media frame. */
     public static final float ATTACHMENT_MEDIA_INSET_DP = 2.5f;
+    public static final float ATTACHMENT_MEDIA_CUT_DP = 4f;
 
     /** Additional top breathing room for forwarded headers and their media payloads. */
     public static final float FORWARDED_TOP_PAD_DP = 3f;
@@ -202,6 +203,15 @@ public final class CybergramTheme {
 
     /** Alpha (0..255) of the small 45-degree HUD tick on a dialogs row. */
     public static final int DIALOGS_ROW_TICK_ALPHA = 110;
+
+    /** Quick-reaction rail: use the game's cut-panel grammar, not its exact silhouette. */
+    public static final float REACTION_PANEL_CUT_DP = 6f;
+    public static final float REACTION_PANEL_BORDER_WIDTH_DP = 0.65f;
+    public static final int REACTION_PANEL_BORDER_ALPHA = 138;
+
+    /** Message context menus keep the glass, but shed Telegram's oversized rounded-card radius. */
+    public static final float MESSAGE_MENU_RADIUS_DP = 4f;
+    public static final int MESSAGE_MENU_SELECTOR_ALPHA = 24;
 
     /**
      * Marker {@link Theme.ResourcesProvider} that opts a renderer into Cybergram
