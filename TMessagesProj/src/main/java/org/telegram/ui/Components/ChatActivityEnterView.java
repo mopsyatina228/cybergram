@@ -3484,6 +3484,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (audioVideoButtonContainerForbidden || CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                     tmpRectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     tmpRectF.inset(dp(7.5f), dp(7.5f));
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider) && getCurrentState() != State.VIDEO) {
+                        // input_mic is optically bottom-heavy even when its bounds are mathematically centred.
+                        tmpRectF.offset(0, -dp(1.5f));
+                    }
                     Drawable d = getCurrentState() == State.VIDEO ? cameraOutline : micOutline;
                     d.setBounds(tmpRectF);
                     d.draw(canvas);

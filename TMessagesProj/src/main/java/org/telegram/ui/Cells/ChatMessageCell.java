@@ -14097,8 +14097,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     x += dp(10);
                 }
                 if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
-                        && currentMessageObject.type != MessageObject.TYPE_TEXT
                         && useCybergramAngularMediaClip()) {
+                    // The width is already reduced by 2*inset when the image is measured. Keep the
+                    // matching left inset during Telegram's final x pass too, including link previews.
                     x += dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
                 }
                 if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
@@ -14217,8 +14218,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 x += dp(10) + (instantWidth - photoImage.getImageWidth()) / 2;
             }
             if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
-                    && currentMessageObject.type != MessageObject.TYPE_TEXT
                     && useCybergramAngularMediaClip()) {
+                // Same correction for generic media/link-preview positioning.
                 x += dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
             }
             if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {

@@ -1075,14 +1075,23 @@ public class ReactionsLayoutInBubble {
                     serviceTextColor = 0xFFFFFFFF;
                     serviceBackgroundColor = 0xFFE8AB02;
                 } else {
-                    backgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
-                    textColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonTextSelected : Theme.key_chat_inReactionButtonTextSelected, resourcesProvider);
-                    if (parentView instanceof ChatActionCell) {
-                        serviceTextColor = Theme.getColor(Theme.key_chat_reactionServiceButtonTextSelected, resourcesProvider);
-                        serviceBackgroundColor = Theme.getColor(Theme.key_chat_reactionServiceButtonBackgroundSelected, resourcesProvider);
+                    if (cybergramAngularCut > 0) {
+                        // Cybergram: a reaction chosen by the current user is a deliberate red HUD mark.
+                        // Reactions from other participants remain neutral, so ownership is legible at a glance.
+                        backgroundColor = ColorUtils.setAlphaComponent(CybergramTheme.DANGER, 64);
+                        textColor = CybergramTheme.DANGER;
+                        serviceTextColor = CybergramTheme.DANGER;
+                        serviceBackgroundColor = ColorUtils.setAlphaComponent(CybergramTheme.DANGER, 52);
                     } else {
-                        serviceTextColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
-                        serviceBackgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble, resourcesProvider);
+                        backgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
+                        textColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonTextSelected : Theme.key_chat_inReactionButtonTextSelected, resourcesProvider);
+                        if (parentView instanceof ChatActionCell) {
+                            serviceTextColor = Theme.getColor(Theme.key_chat_reactionServiceButtonTextSelected, resourcesProvider);
+                            serviceBackgroundColor = Theme.getColor(Theme.key_chat_reactionServiceButtonBackgroundSelected, resourcesProvider);
+                        } else {
+                            serviceTextColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outReactionButtonBackground : Theme.key_chat_inReactionButtonBackground, resourcesProvider);
+                            serviceBackgroundColor = Theme.getColor(isOutOwner() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble, resourcesProvider);
+                        }
                     }
                 }
             } else {
@@ -1178,6 +1187,21 @@ public class ReactionsLayoutInBubble {
             }
             final boolean particlesEnabled = particles != null && LiteMode.isEnabled(LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS);
             drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint);
+            if (cybergramAngularCut > 0 && choosen && !paid) {
+                final Paint.Style previousStyle = paint.getStyle();
+                final float previousStrokeWidth = paint.getStrokeWidth();
+                final int previousColor = paint.getColor();
+                final int previousAlpha = paint.getAlpha();
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(Math.max(1f, dp(0.75f)));
+                paint.setColor(CybergramTheme.DANGER);
+                paint.setAlpha((int) (210 * alpha));
+                drawRoundRect(canvas, AndroidUtilities.rectTmp, rad, paint);
+                paint.setStyle(previousStyle);
+                paint.setStrokeWidth(previousStrokeWidth);
+                paint.setColor(previousColor);
+                paint.setAlpha(previousAlpha);
+            }
             if (isTag && drawTagDot()) {
                 Paint paint;
                 if (cutTagCircle) {

@@ -432,9 +432,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         if (CybergramTheme.isCybergramPresentation(resourcesProvider)
                 && avatarImageView != null && avatarImageView.getVisibility() == VISIBLE) {
             cybergramAvatarRingPaint.setStyle(Paint.Style.STROKE);
-            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(0.75f)));
-            cybergramAvatarRingPaint.setColor(CybergramTheme.CYAN);
-            cybergramAvatarRingPaint.setAlpha(190);
+            cybergramAvatarRingPaint.setStrokeWidth(Math.max(1f, dpf2(0.9f)));
+            cybergramAvatarRingPaint.setColor(CybergramTheme.DANGER);
+            cybergramAvatarRingPaint.setAlpha(225);
             final float cx = avatarImageView.getX() + avatarImageView.getWidth() / 2f;
             final float cy = avatarImageView.getY() + avatarImageView.getHeight() / 2f;
             final float radius = Math.min(avatarImageView.getWidth(), avatarImageView.getHeight()) / 2f + dpf2(1f);
