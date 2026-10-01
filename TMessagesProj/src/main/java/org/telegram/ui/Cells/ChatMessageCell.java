@@ -1958,6 +1958,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     pollContentDrawable.imageReceiver.setRoundRadius(pollPhotoImageRadius);
                 }
             }
+
+            @Override
+            public boolean draw(Canvas canvas) {
+                if (!useCybergramAngularMediaClip()) {
+                    return super.draw(canvas);
+                }
+                buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
+                final int save = canvas.save();
+                canvas.clipPath(rectPath);
+                setRoundRadiusEnabled(false);
+                final boolean result = super.draw(canvas);
+                setRoundRadiusEnabled(true);
+                canvas.restoreToCount(save);
+                return result;
+            }
         };
         photoImage.setAllowLoadingOnAttachedOnly(true);
         photoImage.setUseRoundForThumbDrawable(true);
@@ -29364,18 +29379,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     protected boolean drawPhotoImage(Canvas canvas) {
-        if (!useCybergramAngularMediaClip()) {
-            return drawPhotoImageContents(canvas);
-        }
-        buildCybergramMediaPath(rectPath, photoImage.getImageX(), photoImage.getImageY(),
-                photoImage.getImageX2(), photoImage.getImageY2());
-        canvas.save();
-        canvas.clipPath(rectPath);
-        photoImage.setRoundRadiusEnabled(false);
-        final boolean result = drawPhotoImageContents(canvas);
-        photoImage.setRoundRadiusEnabled(true);
-        canvas.restore();
-        return result;
+        // The receiver itself owns the Cybergram clip so upstream direct draw() calls cannot
+        // fall back to Android round-rect geometry.
+        return drawPhotoImageContents(canvas);
     }
 
     private boolean drawPhotoImageContents(Canvas canvas) {

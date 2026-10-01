@@ -184,15 +184,15 @@ public class TextStyleSpan extends MetricAffectingSpan {
     }
 
     public boolean isBold() {
-        return style.getTypeface() == AndroidUtilities.bold();
+        return (style.flags & FLAG_STYLE_BOLD) != 0;
     }
 
     public boolean isItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/ritalic.ttf");
+        return (style.flags & FLAG_STYLE_ITALIC) != 0;
     }
 
     public boolean isBoldItalic() {
-        return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+        return (style.flags & FLAG_STYLE_BOLD) != 0 && (style.flags & FLAG_STYLE_ITALIC) != 0;
     }
 
     private void applySubSuper(TextPaint p) {

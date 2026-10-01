@@ -204,14 +204,29 @@ public final class CybergramTheme {
     /** Alpha (0..255) of the small 45-degree HUD tick on a dialogs row. */
     public static final int DIALOGS_ROW_TICK_ALPHA = 110;
 
-    /** Quick-reaction rail: use the game's cut-panel grammar, not its exact silhouette. */
+    /** Quick-reaction rail: game QuickHack/Slot grammar, adapted to the concept silhouette. */
     public static final float REACTION_PANEL_CUT_DP = 6f;
     public static final float REACTION_PANEL_BORDER_WIDTH_DP = 0.65f;
-    public static final int REACTION_PANEL_BORDER_ALPHA = 138;
+    public static final int REACTION_PANEL_BORDER_ALPHA = 116;
+    public static final int REACTION_PANEL_FILL_ALPHA = 196;
+    public static final int REACTION_PANEL_FLUFF_ALPHA = 52;
+    public static final float REACTION_EXPAND_CUT_DP = 5f;
 
-    /** Message context menus keep the glass, but shed Telegram's oversized rounded-card radius. */
+    /** Popup/context menu plate: darkest glass + separate frame/fluff, matching CP2077 Popup grammar. */
+    public static final float MESSAGE_MENU_CUT_DP = 7f;
     public static final float MESSAGE_MENU_RADIUS_DP = 4f;
+    public static final float MESSAGE_MENU_BORDER_WIDTH_DP = 0.65f;
+    public static final int MESSAGE_MENU_FILL_ALPHA = 244;
+    public static final int MESSAGE_MENU_BORDER_ALPHA = 110;
+    public static final int MESSAGE_MENU_FLUFF_ALPHA = 62;
     public static final int MESSAGE_MENU_SELECTOR_ALPHA = 24;
+
+    /** Pinned strip follows the notification plate/bracket grammar rather than a Material card. */
+    public static final float PINNED_PANEL_CUT_DP = 8f;
+    public static final float PINNED_PANEL_BORDER_WIDTH_DP = 0.65f;
+    public static final int PINNED_PANEL_FILL_ALPHA = 238;
+    public static final int PINNED_PANEL_BORDER_ALPHA = 82;
+    public static final int PINNED_PANEL_ACCENT_ALPHA = 148;
 
     /**
      * Marker {@link Theme.ResourcesProvider} that opts a renderer into Cybergram

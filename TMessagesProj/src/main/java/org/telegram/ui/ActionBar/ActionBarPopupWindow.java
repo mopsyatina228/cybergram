@@ -447,6 +447,43 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         Path path;
+        private final Path cybergramPanelPath = new Path();
+        private final RectF cybergramPanelRect = new RectF();
+        private final Paint cybergramPanelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramPanelStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        private void drawCybergramPanel(Canvas canvas, Rect bounds, int alpha) {
+            cybergramPanelRect.set(bounds);
+            cybergramPanelRect.inset(dp(4), dp(4));
+            final float cut = Math.min(dp(CybergramTheme.MESSAGE_MENU_CUT_DP),
+                    Math.min(cybergramPanelRect.width(), cybergramPanelRect.height()) * 0.18f);
+            cybergramPanelPath.rewind();
+            cybergramPanelPath.moveTo(cybergramPanelRect.left + cut, cybergramPanelRect.top);
+            cybergramPanelPath.lineTo(cybergramPanelRect.right - cut, cybergramPanelRect.top);
+            cybergramPanelPath.lineTo(cybergramPanelRect.right, cybergramPanelRect.top + cut);
+            cybergramPanelPath.lineTo(cybergramPanelRect.right, cybergramPanelRect.bottom - cut);
+            cybergramPanelPath.lineTo(cybergramPanelRect.right - cut, cybergramPanelRect.bottom);
+            cybergramPanelPath.lineTo(cybergramPanelRect.left + cut, cybergramPanelRect.bottom);
+            cybergramPanelPath.lineTo(cybergramPanelRect.left, cybergramPanelRect.bottom - cut);
+            cybergramPanelPath.lineTo(cybergramPanelRect.left, cybergramPanelRect.top + cut);
+            cybergramPanelPath.close();
+
+            cybergramPanelPaint.setStyle(Paint.Style.FILL);
+            cybergramPanelPaint.setColor(CybergramTheme.PANEL_RAISED);
+            cybergramPanelPaint.setAlpha(CybergramTheme.MESSAGE_MENU_FILL_ALPHA * alpha / 255);
+            canvas.drawPath(cybergramPanelPath, cybergramPanelPaint);
+
+            cybergramPanelStroke.setStyle(Paint.Style.STROKE);
+            cybergramPanelStroke.setStrokeWidth(dp(CybergramTheme.MESSAGE_MENU_BORDER_WIDTH_DP));
+            cybergramPanelStroke.setColor(CybergramTheme.CYAN);
+            cybergramPanelStroke.setAlpha(CybergramTheme.MESSAGE_MENU_BORDER_ALPHA * alpha / 255);
+            canvas.drawPath(cybergramPanelPath, cybergramPanelStroke);
+
+            cybergramPanelStroke.setColor(CybergramTheme.DANGER);
+            cybergramPanelStroke.setAlpha(CybergramTheme.MESSAGE_MENU_FLUFF_ALPHA * alpha / 255);
+            canvas.drawLine(cybergramPanelRect.left + cut, cybergramPanelRect.top,
+                    cybergramPanelRect.left + cut + dp(18), cybergramPanelRect.top, cybergramPanelStroke);
+        }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
@@ -529,7 +566,11 @@ public class ActionBarPopupWindow extends PopupWindow {
                         AndroidUtilities.lerp(rect, AndroidUtilities.rectTmp2, reactionsEnterProgress, AndroidUtilities.rectTmp2);
                     }
                     backgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
-                    backgroundDrawable.draw(canvas);
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        drawCybergramPanel(canvas, AndroidUtilities.rectTmp2, applyAlpha ? backAlpha : 255);
+                    } else {
+                        backgroundDrawable.draw(canvas);
+                    }
                     if (clipChildren) {
                         AndroidUtilities.rectTmp2.left += bgPaddings.left;
                         AndroidUtilities.rectTmp2.top += bgPaddings.top;

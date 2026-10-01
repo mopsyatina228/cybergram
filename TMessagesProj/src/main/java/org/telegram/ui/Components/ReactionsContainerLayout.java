@@ -445,6 +445,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             bgPaint.setColor(ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.13f));
         } else if (useCybergramPanel()) {
             bgPaint.setColor(CybergramTheme.PANEL_RAISED);
+            bgPaint.setAlpha(CybergramTheme.REACTION_PANEL_FILL_ALPHA);
             cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
             cybergramOutlinePaint.setStrokeWidth(dp(CybergramTheme.REACTION_PANEL_BORDER_WIDTH_DP));
             cybergramOutlinePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.REACTION_PANEL_BORDER_ALPHA));
@@ -776,6 +777,11 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     canvas.drawPath(mPath, bgPaint);
                 }
                 canvas.drawPath(mPath, cybergramOutlinePaint);
+                cybergramOutlinePaint.setColor(CybergramTheme.DANGER);
+                cybergramOutlinePaint.setAlpha(CybergramTheme.REACTION_PANEL_FLUFF_ALPHA);
+                canvas.drawLine(rect.left + dp(CybergramTheme.REACTION_PANEL_CUT_DP), rect.top,
+                        rect.left + dp(CybergramTheme.REACTION_PANEL_CUT_DP + 12f), rect.top, cybergramOutlinePaint);
+                cybergramOutlinePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.REACTION_PANEL_BORDER_ALPHA));
             } else {
                 if (blurredBackgroundDrawable != null) {
                     rect.round(AndroidUtilities.rectTmp2);
@@ -2543,9 +2549,13 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     private class CustomReactionsContainer extends FrameLayout {
 
         Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Path panelPath = new Path();
+        RectF panelRect = new RectF();
 
         public CustomReactionsContainer(Context context) {
             super(context);
+            borderPaint.setStyle(Paint.Style.STROKE);
         }
 
         @Override
@@ -2568,7 +2578,32 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             AndroidUtilities.rectTmp.set(cx - sizeHalf, cy - sizeHalf - expandSize, cx + sizeHalf, cy + sizeHalf + expandSize);
             canvas.save();
             canvas.scale(child.getScaleX(), child.getScaleY(), cx, cy);
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, sizeHalf, sizeHalf, backgroundPaint);
+            if (useCybergramPanel()) {
+                panelRect.set(AndroidUtilities.rectTmp);
+                final float cut = Math.min(dp(CybergramTheme.REACTION_EXPAND_CUT_DP), panelRect.width() * 0.22f);
+                panelPath.rewind();
+                panelPath.moveTo(panelRect.left + cut, panelRect.top);
+                panelPath.lineTo(panelRect.right - cut, panelRect.top);
+                panelPath.lineTo(panelRect.right, panelRect.top + cut);
+                panelPath.lineTo(panelRect.right, panelRect.bottom - cut);
+                panelPath.lineTo(panelRect.right - cut, panelRect.bottom);
+                panelPath.lineTo(panelRect.left + cut, panelRect.bottom);
+                panelPath.lineTo(panelRect.left, panelRect.bottom - cut);
+                panelPath.lineTo(panelRect.left, panelRect.top + cut);
+                panelPath.close();
+                backgroundPaint.setColor(CybergramTheme.PANEL_RAISED);
+                backgroundPaint.setAlpha(CybergramTheme.REACTION_PANEL_FILL_ALPHA);
+                canvas.drawPath(panelPath, backgroundPaint);
+                borderPaint.setStrokeWidth(dp(CybergramTheme.REACTION_PANEL_BORDER_WIDTH_DP));
+                borderPaint.setColor(CybergramTheme.CYAN);
+                borderPaint.setAlpha(CybergramTheme.REACTION_PANEL_BORDER_ALPHA);
+                canvas.drawPath(panelPath, borderPaint);
+                borderPaint.setColor(CybergramTheme.DANGER);
+                borderPaint.setAlpha(CybergramTheme.REACTION_PANEL_FLUFF_ALPHA);
+                canvas.drawLine(panelRect.left + cut, panelRect.top, panelRect.left + cut + dp(8), panelRect.top, borderPaint);
+            } else {
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, sizeHalf, sizeHalf, backgroundPaint);
+            }
             canvas.restore();
 
             canvas.save();
