@@ -164,6 +164,18 @@ public final class CybergramTheme {
     /** Extra leftward shift, in dp, of the outgoing delivery checks toward the time (D9.5). */
     public static final float CHECK_INSET_DP = 3f;
 
+    /** Optical scale of outgoing delivery checks. Raj makes the metadata cluster visually smaller. */
+    public static final float CHECK_SCALE = 0.84f;
+
+    /** Extra horizontal breathing room reserved for Cybergram attachment-heavy bubbles. */
+    public static final float ATTACHMENT_TEXT_INSET_DP = 2f;
+
+    /** Extra internal space below attachment/media content before the angular frame closes. */
+    public static final float ATTACHMENT_BOTTOM_PAD_DP = 5f;
+
+    /** Additional top breathing room for forwarded headers and their media payloads. */
+    public static final float FORWARDED_TOP_PAD_DP = 3f;
+
     /** Cybergram composer field height, in dp (owner ruling D9.7). Upstream is 44. */
     public static final int COMPOSER_HEIGHT_DP = 40;
 

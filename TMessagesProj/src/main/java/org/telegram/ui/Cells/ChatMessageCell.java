@@ -7724,6 +7724,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
 
                 setMessageObjectInternal(messageObject);
+                if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                        && drawForwardedName && messageObject.needDrawForwarded()) {
+                    namesOffset += dp(CybergramTheme.FORWARDED_TOP_PAD_DP);
+                }
                 giveawayMessageCell.setMessageContent(messageObject, getParentWidth(), forwardedNameWidth);
                 giveawayResultsMessageCell.setMessageContent(messageObject, getParentWidth(), forwardedNameWidth);
 
@@ -9080,6 +9084,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 createDocumentLayout(backgroundWidth, messageObject);
 
                 setMessageObjectInternal(messageObject);
+                if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                        && drawForwardedName && messageObject.needDrawForwarded()) {
+                    namesOffset += dp(CybergramTheme.FORWARDED_TOP_PAD_DP);
+                }
 
                 totalHeight = dp(70) + namesOffset;
                 if (drawPinnedTop) {
@@ -10487,7 +10495,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 if (drawForwardedName && messageObject.needDrawForwarded() && (currentPosition == null || currentPosition.minY == 0)) {
                     if (messageObject.type != MessageObject.TYPE_ROUND_VIDEO) {
-                        namesOffset += dp(5);
+                        namesOffset += dp(5 + (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                                ? CybergramTheme.FORWARDED_TOP_PAD_DP : 0f));
                     }
                 } else if (drawNameLayout && (messageObject.getReplyMsgId() == 0 || isThreadChat && messageObject.getReplyTopMsgId() == 0)) {
                     namesOffset += dp(7);
@@ -11244,6 +11253,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (unlockSpoilerEffect != null && unlockLayout == null) {
                 unlockSpoilerEffect = null;
+            }
+            if (useCybergramAttachmentPadding()
+                    && (currentPosition == null || currentMessagesGroup == null
+                    || currentMessagesGroup.isDocuments && currentPosition.last)) {
+                totalHeight += dp(CybergramTheme.ATTACHMENT_BOTTOM_PAD_DP);
             }
             scheduleUpdateRelativeDates();
         }
@@ -13751,8 +13765,32 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             // getExtraTextX() feeds both backgroundWidth (2x) and textX (1x), this widens the
             // bubble symmetrically around the text instead of only on one side.
             pad += dp(CybergramTheme.BUBBLE_TEXT_INSET_DP);
+            if (useCybergramAttachmentPadding()) {
+                pad += dp(CybergramTheme.ATTACHMENT_TEXT_INSET_DP);
+            }
         }
         return pad;
+    }
+
+    private boolean useCybergramAttachmentPadding() {
+        return CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                && currentMessageObject != null
+                && ((drawForwardedName && currentMessageObject.needDrawForwarded())
+                || hasLinkPreview || captionLayout != null
+                || documentAttachType != DOCUMENT_ATTACH_TYPE_NONE || drawPhotoImage);
+    }
+
+    private void scaleCybergramCheckBounds(Drawable drawable) {
+        if (drawable == null || !CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
+            return;
+        }
+        final android.graphics.Rect bounds = drawable.getBounds();
+        final float scale = CybergramTheme.CHECK_SCALE;
+        final float cx = bounds.exactCenterX();
+        final float cy = bounds.exactCenterY();
+        final float halfW = bounds.width() * scale * 0.5f;
+        final float halfH = bounds.height() * scale * 0.5f;
+        drawable.setBounds(Math.round(cx - halfW), Math.round(cy - halfH), Math.round(cx + halfW), Math.round(cy + halfH));
     }
 
     /** Extra leftward shift, in dp, of the outgoing delivery checks toward the time (D9.5). */
@@ -24848,6 +24886,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     Theme.chat_msgMediaCheckDrawable.setAlpha((int) (255 * timeAlpha * alpha));
                     drawable = Theme.chat_msgMediaCheckDrawable;
                 }
+                scaleCybergramCheckBounds(drawable);
                 if (useScale) {
                     canvas.save();
                     canvas.scale(scale, scale, drawable.getBounds().centerX(), drawable.getBounds().centerY());
@@ -24875,6 +24914,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     drawable = getThemedDrawable(drawSelectionBackground ? Theme.key_drawable_msgOutCheckSelected : Theme.key_drawable_msgOutCheck);
                     setDrawableBounds(drawable, layoutWidth - dp(18.5f + cybergramCheckInset()) - drawable.getIntrinsicWidth() + offsetX, layoutHeight - dp(pinnedBottom || pinnedTop ? 9 : 8) - drawable.getIntrinsicHeight() + timeYOffset);
                 }
+                scaleCybergramCheckBounds(drawable);
                 drawable.setAlpha((int) (255 * alpha));
                 if (useScale) {
                     canvas.save();
@@ -24894,6 +24934,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (shouldDrawTimeOnMedia()) {
                 Drawable drawable = currentMessageObject.shouldDrawWithoutBackground() ? getThemedDrawable(Theme.key_drawable_msgStickerHalfCheck) : Theme.chat_msgMediaHalfCheckDrawable;
                 setDrawableBounds(drawable, layoutWidth - dp(bigRadius ? 23.5f : 21.5f) - drawable.getIntrinsicWidth() + offsetX, timeY - drawable.getIntrinsicHeight() + timeYOffset);
+                scaleCybergramCheckBounds(drawable);
                 drawable.setAlpha((int) (255 * timeAlpha * alpha));
                 if (useScale || moveCheck) {
                     canvas.save();
@@ -24907,6 +24948,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else {
                 Drawable drawable = getThemedDrawable(drawSelectionBackground ? Theme.key_drawable_msgOutHalfCheckSelected : Theme.key_drawable_msgOutHalfCheck);
                 setDrawableBounds(drawable, layoutWidth - dp(18 + cybergramCheckInset()) - drawable.getIntrinsicWidth(), layoutHeight - dp(pinnedBottom || pinnedTop ? 9 : 8) - drawable.getIntrinsicHeight() + timeYOffset);
+                scaleCybergramCheckBounds(drawable);
                 drawable.setAlpha((int) (255 * alpha));
                 if (useScale || moveCheck) {
                     canvas.save();
