@@ -8,6 +8,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -188,6 +189,8 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     }
 
     private Drawable bg;
+    private final Paint cybergramRulePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private CybergramHudDrawable cybergramActiveSearchPlate;
 
     private boolean useCybergramPresentation() {
         return CybergramTheme.isCybergramPresentation(resourcesProvider);
@@ -196,7 +199,36 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         canvas.save();
-        if (bg != null) {
+        if (useCybergramPresentation()) {
+            // Search is a flat compositional plane, not a card. The opaque plane is important
+            // while Telegram animates/collapses the stories header behind this row.
+            cybergramRulePaint.setStyle(Paint.Style.FILL);
+            cybergramRulePaint.setColor(CybergramTheme.BACKGROUND);
+            cybergramRulePaint.setAlpha(255);
+            canvas.drawRect(0, 0, getWidth(), getHeight(), cybergramRulePaint);
+
+            final boolean active = editText.hasFocus() || editText.length() > 0 || hasRemovableFilters();
+            if (active) {
+                if (cybergramActiveSearchPlate == null) {
+                    cybergramActiveSearchPlate = new CybergramHudDrawable()
+                            .setFillColor(Theme.multAlpha(CybergramTheme.PANEL_RAISED, 0.78f))
+                            .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.48f), AndroidUtilities.dpf2(0.75f), true)
+                            .setCornerCut(dp(4));
+                }
+                cybergramActiveSearchPlate.setBounds(
+                        getPaddingLeft() + dp(4), getPaddingTop() + dp(2),
+                        getWidth() - getPaddingRight() - dp(4), getHeight() - getPaddingBottom() - dp(2));
+                cybergramActiveSearchPlate.draw(canvas);
+            } else {
+                cybergramRulePaint.setStyle(Paint.Style.FILL);
+                cybergramRulePaint.setColor(CybergramTheme.DANGER);
+                cybergramRulePaint.setAlpha(64);
+                final float y = getHeight() - getPaddingBottom() - AndroidUtilities.dpf2(0.65f);
+                canvas.drawRect(getPaddingLeft() + dp(12), y,
+                        getWidth() - getPaddingRight() - dp(12), y + AndroidUtilities.dpf2(0.65f),
+                        cybergramRulePaint);
+            }
+        } else if (bg != null) {
             bg.setBounds(
                 getPaddingLeft(),
                 getPaddingTop(),
@@ -314,22 +346,24 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     public void updateColors() {
         final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
         if (useCybergramPresentation()) {
-            CybergramHudDrawable plate = new CybergramHudDrawable();
-            plate.setFillColor(CybergramTheme.PANEL_RAISED);
-            plate.setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.48f), AndroidUtilities.dpf2(1f), true);
-            plate.setCornerCut(AndroidUtilities.dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-            bg = plate;
+            bg = null;
+            searchIcon.setColorFilter(CybergramTheme.ICON_PALE, PorterDuff.Mode.SRC_IN);
+            closeIcon.setColorFilter(CybergramTheme.ICON_PALE, PorterDuff.Mode.SRC_IN);
+            closeIcon.setBackground(null);
+            editText.setHintTextColor(CybergramTheme.TEXT_MUTED);
+            editText.setTextColor(CybergramTheme.TEXT);
+            editText.setCursorColor(CybergramTheme.CYAN);
         } else {
             bg = isSectionBackground ?
                 Theme.createRoundRectDrawableShadowed(dp(20), getThemedColor(Theme.key_windowBackgroundWhite)) :
                 Theme.createRoundRectDrawable(dp(20), isWhiteBackground ? getThemedColor(Theme.key_windowBackgroundWhite) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText, isDark ? 0.07f : 0.05f));
+            searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
+            closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
+            closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(17)));
+            editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.5f));
+            editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            editText.setCursorColor(getThemedColor(Theme.key_groupcreate_cursor));
         }
-        searchIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
-        closeIcon.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.6f), PorterDuff.Mode.MULTIPLY);
-        closeIcon.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(17)));
-        editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.5f));
-        editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        editText.setCursorColor(getThemedColor(Theme.key_groupcreate_cursor));
         // Two-way: restores the upstream typeface when Cybergram presentation is not active.
         editText.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, Typeface.DEFAULT));
         if (blurredBackgroundDrawable != null) {

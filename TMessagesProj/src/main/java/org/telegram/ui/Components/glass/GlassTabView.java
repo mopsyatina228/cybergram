@@ -38,6 +38,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -189,19 +190,12 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.save();
             canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
             if (useCybergramMainTabsPlate()) {
-                // B1: same selected factor/scale/rectangle as upstream, angular plate instead of
-                // the rounded translucent capsule. Drawable alpha carries the selection fade.
-                if (cybergramSelectedPlate == null) {
-                    cybergramSelectedPlate = new CybergramHudDrawable()
-                            .setFillColor(CybergramTheme.PANEL_RAISED)
-                            .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
-                            .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-                }
-                cybergramSelectedPlate.setAlpha((int) (255 * alpha));
-                cybergramSelectedPlate.setBounds(
-                        (int) tmpRectF.left, (int) tmpRectF.top,
-                        (int) tmpRectF.right, (int) tmpRectF.bottom);
-                cybergramSelectedPlate.draw(canvas);
+                paintCounterBackground.setColor(CybergramTheme.CYAN);
+                paintCounterBackground.setAlpha((int) (224 * alpha));
+                canvas.drawRect(
+                        tmpRectF.left + dp(12), tmpRectF.top,
+                        tmpRectF.right - dp(12), tmpRectF.top + dpf2(1.5f),
+                        paintCounterBackground);
             } else {
                 paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
                 final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
@@ -236,7 +230,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             );
 
             canvas.scale(hasCounter, hasCounter, cx, cy);
-            canvas.drawRoundRect(tmpRectF, rOuter, rOuter, Theme.PAINT_CLEAR);
+            if (!useCybergramMainTabsPlate()) {
+                canvas.drawRoundRect(tmpRectF, rOuter, rOuter, Theme.PAINT_CLEAR);
+            }
             tmpRectF.inset(gap, gap);
 
             if (usePremiumCounter) {
@@ -250,7 +246,22 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
                 int y = (int)(cy - dpf2(7f));
                 premiumStarDrawable.setBounds(x, y, x + dp(14), y + dp(14));
                 premiumStarDrawable.draw(canvas);
+            } else if (useCybergramMainTabsPlate()) {
+                final float error = isHasCounterErrorAnimator.getFloatValue();
+                final int accent = ColorUtils.blendARGB(
+                        CybergramTheme.CYAN_SECONDARY, CybergramTheme.DANGER, error);
+                counter.setTextColor(accent);
+                counter.setBounds(tmpRectF);
+                counter.draw(canvas);
+
+                paintCounterBackground.setColor(accent);
+                paintCounterBackground.setAlpha(220);
+                final float markerW = Math.min(tmpRectF.width(), Math.max(dp(8), counter.getCurrentWidth() + dp(2)));
+                final float markerY = tmpRectF.bottom + dpf2(1f);
+                canvas.drawRect(cx - markerW / 2f, markerY, cx + markerW / 2f,
+                        markerY + dpf2(1f), paintCounterBackground);
             } else {
+                counter.setTextColor(Color.WHITE);
                 paintCounterBackground.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_telegram_color), Theme.getColor(Theme.key_fill_RedNormal), isHasCounterErrorAnimator.getFloatValue()));
                 canvas.drawRoundRect(tmpRectF, rInner, rInner, paintCounterBackground);
                 counter.setBounds(tmpRectF);
@@ -280,7 +291,13 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         isSelectedAnimator.setValue(selected, animated);
         checkPlayAnimation(animated);
 
-        textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        if (useCybergramMainTabsPlate()) {
+            textView.setTypeface(selected
+                    ? CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold())
+                    : CybergramTypography.chromeRegular(resourcesProvider, AndroidUtilities.bold()));
+        } else {
+            textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        }
     }
 
     public boolean isTabSelected() {

@@ -150,6 +150,8 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -1086,6 +1088,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             updateContextViewPosition();
+            if (CybergramTheme.isCybergramPresentation(resourceProvider) && hasStories) {
+                // Cybergram keeps stories as a dedicated contact rail instead of collapsing them
+                // into the title. Fade that rail before it reaches the search/filter planes so
+                // partial avatar circles never leak between the terminal-style ribbons.
+                final float railExit = Utilities.clamp(
+                        (-scrollYOffset - dp(6f)) / dp(18f), 1f, 0f);
+                storiesAlpha *= 1f - railExit;
+            }
             updateStoriesViewAlpha(storiesAlpha);
             super.dispatchDraw(canvas);
             drawHeaderShadow(canvas, top + actionBarHeight);
@@ -1282,6 +1292,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         childTop = lp.topMargin;
                 }
 
+                final boolean cybergramStoryRailVisible =
+                        CybergramTheme.isCybergramPresentation(resourceProvider)
+                                && dialogStoriesCellVisible;
+
                 if (child == fragmentSearchField || child == searchTabsAndFiltersLayout || child == dialogStoriesCell) {
                     childTop = actionBar.getMeasuredHeight();
                     if (child != fragmentSearchField && child != dialogStoriesCell && child != searchTabsAndFiltersLayout) {
@@ -1290,8 +1304,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     //if (rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment() && (child == searchTabsView || child == filtersView)) {
                     //    childTop -= dp(SEARCH_FIELD_HEIGHT);
                     //}
-                    if (hasStories && child == fragmentSearchField) {
-                        childTop += dp(DialogStoriesCell.HEIGHT_IN_DP);
+                    if (child == fragmentSearchField) {
+                        if (cybergramStoryRailVisible) {
+                            childTop += dp(DialogStoriesCell.HEIGHT_IN_DP + 8);
+                        } else if (hasStories) {
+                            childTop += dp(DialogStoriesCell.HEIGHT_IN_DP);
+                        }
                     }
                     if (child == dialogStoriesCell && dialogStoriesCell.getPremiumHint() != null) {
                         dialogStoriesCell.getPremiumHint().layout(childLeft, childTop - dp(24 + 8 + 22) + height, childLeft + width, childTop - dp(24 + 8 + 22) + height + dialogStoriesCell.getPremiumHint().getMeasuredHeight());
@@ -1310,6 +1328,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     childTop = 0;
                 } else if (child == topPanelLayout || child == topBubblesFadeView || child == filterTabsView) {
                     childTop += actionBar.getMeasuredHeight();
+                    // Stories are already included in filterTabsView's animated totalOffset.
+                    // Adding their height here as well pushed the ribbon down by one full story
+                    // rail and made the first dialog appear above it.
                     childTop += dp(SEARCH_FIELD_HEIGHT);
                 } else if (dialogStoriesCell != null && dialogStoriesCell.getPremiumHint() == child) {
                     continue;
@@ -1629,8 +1650,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factorSearch = Utilities.clamp(searchAnimationProgress * 2, 1f, 0f);
         dialogStoriesCell.setAlpha((1f - progressToActionMode) * alpha * progressToDialogStoriesCell * (1f - factorSearch));
         float containersAlpha;
+        final boolean cybergramStoryRail = CybergramTheme.isCybergramPresentation(resourceProvider)
+                && (hasStories || animateToHasStories);
 
-        if (hasStories || animateToHasStories) {
+        if (cybergramStoryRail) {
+            // Cybergram keeps identity and contacts as two explicit hierarchy bands. Telegram's
+            // upstream collapse animation moves stories into the action bar and fades its title;
+            // that is exactly the stacked-avatar composition we do not want here.
+            dialogStoriesCell.setClipTop(0);
+            dialogStoriesCell.setTranslationY(0);
+            dialogStoriesCell.setProgressToCollapse(0f, false);
+            containersAlpha = 1f;
+            actionBar.setTranslationY(0);
+        } else if (hasStories || animateToHasStories) {
             float p = Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
             if (progressToActionMode == 1f) {
                 p = 1f;
@@ -3517,12 +3549,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
                 statusDrawable.center = true;
-                logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
-                logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
-                logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.AppName));
-                ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                actionBar.setTitle(ssb, statusDrawable);
+                if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+                    // The stock Telegram wordmark is a single ImageSpan, so it ignores our
+                    // typography and dominates the whole header. Cybergram uses a real title
+                    // instead, matching the restrained identity block used inside chats.
+                    actionBar.setTitle(getString(R.string.AppName), statusDrawable);
+                    if (actionBar.getTitleTextView() != null) {
+                        actionBar.getTitleTextView().setTypeface(
+                                CybergramTypography.chromeBold(resourceProvider, AndroidUtilities.bold()));
+                        actionBar.getTitleTextView().setTextSize(18);
+                    }
+                } else {
+                    logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
+                    logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
+                    logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
+                    SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.AppName));
+                    ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    actionBar.setTitle(ssb, statusDrawable);
+                }
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
@@ -4718,7 +4762,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         searchViewPagerIndex = contentView.getChildCount();
 
-        searchTabsAndFiltersLayout = new SearchTabsAndFiltersLayout(getContext());
+        searchTabsAndFiltersLayout = new SearchTabsAndFiltersLayout(getContext(), resourceProvider);
         searchTabsAndFiltersLayout.setPadding(0, dp(7), 0, dp(7));
         contentView.addView(searchTabsAndFiltersLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, SEARCH_TABS_HEIGHT, Gravity.TOP, 4, 0, 4, 0));
 
@@ -4738,7 +4782,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searchTabsAndFiltersLayout.addView(filtersView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP));
 
         floatingButtonStories = new FragmentFloatingButton(context, resourceProvider, true);
-        floatingButtonStories.setCybergramPresentationEnabled(true);
         floatingButtonStories.setContentDescription(getString(R.string.StoryPrivacyButtonPost));
         floatingButtonStories.setImageResource(R.drawable.outline_fab_story_24);
         floatingButtonStories.setOnClickListener(v -> openStoriesRecorder());
@@ -4746,7 +4789,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         floatingButton3 = new FragmentFloatingButton(context, resourceProvider);
         floatingButton3.setCybergramPresentationEnabled(true);
-        contentView.addView(floatingButton3, FragmentFloatingButton.createDefaultLayoutParams());
+        final FrameLayout.LayoutParams composeButtonLayout = CybergramTheme.isCybergramPresentation(resourceProvider)
+                ? LayoutHelper.createFrame(48, 48,
+                        (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
+                        0, 0, 0, 14)
+                : FragmentFloatingButton.createDefaultLayoutParams();
+        contentView.addView(floatingButton3, composeButtonLayout);
 
         CybergramHeaderDecorationView cybergramHeaderDecoration = new CybergramHeaderDecorationView(context, actionBar, resourceProvider);
         cybergramHeaderDecoration.setDecorStateProvider(() -> {
@@ -5173,6 +5221,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             filterTabsViewBackground.setPadding(dp(6.666f));
             filterTabsView.setPadding(0, dp(7), 0, dp(7));
             filterTabsView.setBlurredBackground(filterTabsViewBackground);
+            if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+                filterTabsView.setTranslationZ(dp(2));
+            }
             contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
         }
 
@@ -5355,6 +5406,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             contentView.addView(animatedStatusView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.TOP));
         }
         if (fragmentSearchField != null) {
+            if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+                fragmentSearchField.setTranslationZ(dp(2));
+            }
             contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 7, -2, 7, 0));
         }
 
@@ -7512,7 +7566,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 searchFiltersWasShowed = true;
             }
             if (searchTabsView == null && searchViewPager != null && !onlyDialogsAdapter && communityId == 0) {
-                searchTabsView = searchViewPager.createTabsView(false, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
+                searchTabsView = searchViewPager.createTabsView(false,
+                        CybergramTheme.isCybergramPresentation(resourceProvider)
+                                ? 3
+                                : ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
                 searchTabsAndFiltersLayout.addView(searchTabsView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
             } else if (searchTabsAndFiltersLayout != null && onlyDialogsAdapter && communityId == 0) {
                 AndroidUtilities.removeFromParent(searchTabsView);
@@ -8869,7 +8926,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButton3.setButtonVisible(isVisible, animated);
         }
         if (floatingButtonStories != null) {
-            floatingButtonStories.setButtonVisible(isVisible, animated);
+            floatingButtonStories.setButtonVisible(
+                    isVisible && !CybergramTheme.isCybergramPresentation(resourceProvider),
+                    animated);
         }
     }
 
@@ -8894,7 +8953,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final boolean storiesEnabled = getMessagesController().storiesEnabled();
         if (this.storiesEnabled != storiesEnabled) {
             updateFloatingButtonOffset();
-            if (!this.storiesEnabled && storiesEnabled && storyHint != null) {
+            if (!this.storiesEnabled && storiesEnabled && storyHint != null
+                    && !CybergramTheme.isCybergramPresentation(resourceProvider)) {
                 storyHint.show();
             }
             this.storiesEnabled = storiesEnabled;
@@ -8908,7 +8968,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButton3.setImageResource(R.drawable.floating_check);
             floatingButton3.setContentDescription(LocaleController.getString(R.string.Done));
         } else {
-            floatingButton3.setImageResource(R.drawable.filled_fab_compose_32);
+            floatingButton3.setImageResource(CybergramTheme.isCybergramPresentation(resourceProvider)
+                    ? R.drawable.outline_profile_edit_24
+                    : R.drawable.filled_fab_compose_32);
             floatingButton3.setContentDescription(LocaleController.getString(R.string.NewMessageTitle));
         }
     }

@@ -319,8 +319,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setCybergramMainTabsPresentation(true);
         tabsView.setClipChildren(false);
-        tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
-        tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+        if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+            tabsView.setPadding(dp(8), 0, dp(8), 0);
+            tabsView.setMaxWidth(0);
+        } else {
+            tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
+            tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+        }
 
         tabs = new GlassTabView[5];
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
@@ -436,13 +441,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         final Drawable background;
         if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
-            if (cybergramTabsViewBackground == null) {
-                cybergramTabsViewBackground = new CybergramHudDrawable()
-                        .setFillColor(CybergramTheme.PANEL)
-                        .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.24f), dpf2(1f), true)
-                        .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-            }
-            background = cybergramTabsViewBackground;
+            // MainTabsLayout paints the edge-to-edge terminal ribbon itself. No floating card.
+            background = null;
         } else {
             background = tabsViewBackground;
         }

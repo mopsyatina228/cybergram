@@ -40,6 +40,7 @@ import me.vkryl.android.util.ClickHelper;
 public class MainTabsLayout extends AnimatedLinearLayout {
 
     private final Theme.ResourcesProvider resourcesProvider;
+    private final Paint cybergramRibbonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public MainTabsLayout(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -92,7 +93,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
-        final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
+        final int minTotalWidthForTabs = useCybergramMainTabsPresentation()
+                ? maxTotalWidthForTabs
+                : Math.min(dp(320), maxTotalWidthForTabs);
 
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
         float lastMeasuredTextSize = -1;
@@ -335,25 +338,29 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        if (useCybergramMainTabsPresentation()) {
+            cybergramRibbonPaint.setStyle(Paint.Style.FILL);
+            cybergramRibbonPaint.setColor(CybergramTheme.PANEL);
+            cybergramRibbonPaint.setAlpha(255);
+            canvas.drawRect(0, 0, getWidth(), getHeight(), cybergramRibbonPaint);
+
+            cybergramRibbonPaint.setColor(CybergramTheme.DANGER);
+            cybergramRibbonPaint.setAlpha(104);
+            canvas.drawRect(0, 0, getWidth(), dpf2(0.75f), cybergramRibbonPaint);
+        }
+
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
             if (useCybergramMainTabsPresentation()) {
-                // B1: same computed bounds/animation as the upstream rounded selector; only
-                // the silhouette and surface change, and only for the opted-in main-tabs
-                // instance (this class is also hosted by unrelated secondary screens).
-                if (cybergramSelectorDrawable == null) {
-                    cybergramSelectorDrawable = new CybergramHudDrawable()
-                            .setFillColor(CybergramTheme.PANEL_RAISED)
-                            .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
-                            .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
-                }
-                cybergramSelectorDrawable.setBounds(
-                        (int) (x - sWidth / 2f), (int) ((getHeight() - sHeight) / 2f),
-                        (int) (x + sWidth / 2f), (int) ((getHeight() + sHeight) / 2f));
-                cybergramSelectorDrawable.draw(canvas);
+                cybergramRibbonPaint.setColor(CybergramTheme.CYAN);
+                cybergramRibbonPaint.setAlpha(210);
+                canvas.drawRect(
+                        x - sWidth * 0.28f, getPaddingTop(),
+                        x + sWidth * 0.28f, getPaddingTop() + dpf2(1.5f),
+                        cybergramRibbonPaint);
             } else {
                 canvas.drawRoundRect(
                         x - sWidth / 2f, (getHeight() - sHeight) / 2f,

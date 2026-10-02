@@ -495,7 +495,13 @@ public class FilterTabsView extends FrameLayout {
                     float s = animateCounterEnter ? changeProgress : 1f - changeProgress;
                     canvas.scale(s, s, rect.centerX(), rect.centerY());
                 }
-                canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, counterPaint);
+                if (useCybergramPresentation()) {
+                    textCounterPaint.setColor(currentTab.id == selectedTabId
+                            ? CybergramTheme.CYAN_SECONDARY
+                            : CybergramTheme.TEXT_MUTED);
+                } else {
+                    canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, counterPaint);
+                }
 
                 if (animateCounterReplace) {
                     float y = countTop;
@@ -826,6 +832,7 @@ public class FilterTabsView extends FrameLayout {
     private final GradientDrawable selectorDrawable;
     private final CybergramHudDrawable cybergramSelectorDrawable;
     private final CybergramHudDrawable cybergramPanelDrawable;
+    private final Paint cybergramRibbonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private int tabLineColorKey = Theme.key_actionBarTabLine;
     private int activeTextColorKey = Theme.key_actionBarTabActiveText;
@@ -1533,11 +1540,21 @@ public class FilterTabsView extends FrameLayout {
 
             final float add = additionalTabWidth / 2f;
 
-            final int y = height / 2 - dp(14);
-            Drawable selectedPlate = useCybergramPresentation() ? cybergramSelectorDrawable : selectorDrawable;
-            selectedPlate.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y, (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
-            selectedPlate.setAlpha(useCybergramPresentation() ? (int) (255 * listView.getAlpha()) : 31);
-            selectedPlate.draw(canvas);
+            if (useCybergramPresentation()) {
+                cybergramRibbonPaint.setStyle(Paint.Style.FILL);
+                cybergramRibbonPaint.setColor(CybergramTheme.CYAN);
+                cybergramRibbonPaint.setAlpha((int) (220 * listView.getAlpha()));
+                final float left = indicatorX - dp(2) - add * 0.25f;
+                final float right = indicatorX + indicatorWidth + dp(2) + add * 0.25f;
+                final float bottom = height - dp(6.5f);
+                canvas.drawRect(left, bottom - dpf2(1.5f), right, bottom, cybergramRibbonPaint);
+            } else {
+                final int y = height / 2 - dp(14);
+                selectorDrawable.setBounds((int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y,
+                        (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add), y + dp(28));
+                selectorDrawable.setAlpha(31);
+                selectorDrawable.draw(canvas);
+            }
             canvas.restore();
         }
     }
@@ -1553,8 +1570,19 @@ public class FilterTabsView extends FrameLayout {
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         if (useCybergramPresentation()) {
-            cybergramPanelDrawable.setBounds(dp(7), dp(7), getWidth() - dp(7), getHeight() - dp(7));
-            cybergramPanelDrawable.draw(canvas);
+            // A flat opaque plane keeps the dialog list from showing through the ribbon while
+            // avoiding the rounded glass/card silhouette used by stock Telegram.
+            cybergramRibbonPaint.setStyle(Paint.Style.FILL);
+            cybergramRibbonPaint.setColor(CybergramTheme.BACKGROUND);
+            cybergramRibbonPaint.setAlpha(255);
+            // The stock layout lets the tabs overlap the search field by a few dp. Keep that
+            // transition transparent and mask only the content-facing part of the ribbon.
+            canvas.drawRect(0, dp(11), getWidth(), getHeight(), cybergramRibbonPaint);
+
+            cybergramRibbonPaint.setColor(CybergramTheme.DANGER);
+            cybergramRibbonPaint.setAlpha(54);
+            final float y = getHeight() - dpf2(0.65f);
+            canvas.drawRect(dp(12), y, getWidth() - dp(12), getHeight(), cybergramRibbonPaint);
         }
         canvas.save();
         canvas.clipPath(clipPath);
@@ -1579,11 +1607,7 @@ public class FilterTabsView extends FrameLayout {
             return;
         }
         if (useCybergramPresentation()) {
-            CybergramBubbleDrawable.buildPath(
-                    clipPath,
-                    dp(9), dp(9), w - dp(9), h - dp(9),
-                    dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP)
-            );
+            clipPath.addRect(0, 0, w, h, Path.Direction.CW);
         } else {
             clipPath.addRoundRect(
                     dp(9), dp(9), w - dp(9), h - dp(9),
