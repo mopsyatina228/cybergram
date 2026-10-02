@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -166,8 +167,28 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     public void setCybergramMainTabsPresentation(boolean enabled) {
         if (cybergramMainTabsPresentation != enabled) {
             cybergramMainTabsPresentation = enabled;
+            applyTabTypeface();
             invalidate();
         }
+    }
+
+    private void applyTabTypeface() {
+        if (useCybergramMainTabsPlate()) {
+            final Typeface typeface = isSelectedAnimator.getValue()
+                    ? CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold())
+                    : CybergramTypography.chromeRegular(resourcesProvider, AndroidUtilities.bold());
+            textView.setTypeface(typeface);
+            defaultTextPaint.setTypeface(typeface);
+            counter.setTypeface(CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
+        } else {
+            final Typeface typeface = isSelectedAnimator.getValue()
+                    ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD)
+                    : AndroidUtilities.bold();
+            textView.setTypeface(typeface);
+            defaultTextPaint.setTypeface(typeface);
+            counter.setTypeface(AndroidUtilities.bold());
+        }
+        scaledTextPaint = null;
     }
 
     /**
@@ -291,13 +312,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         isSelectedAnimator.setValue(selected, animated);
         checkPlayAnimation(animated);
 
-        if (useCybergramMainTabsPlate()) {
-            textView.setTypeface(selected
-                    ? CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold())
-                    : CybergramTypography.chromeRegular(resourcesProvider, AndroidUtilities.bold()));
-        } else {
-            textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
-        }
+        applyTabTypeface();
     }
 
     public boolean isTabSelected() {
@@ -476,6 +491,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public static GlassTabView createAvatar(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, @StringRes int stringRes) {
         GlassTabView tab = new GlassTabView(context);
+        tab.resourcesProvider = resourcesProvider;
         tab.textView.setText(LocaleController.getString(stringRes));
         tab.imageView.setVisibility(GONE);
 
