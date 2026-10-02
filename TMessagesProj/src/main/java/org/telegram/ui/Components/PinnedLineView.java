@@ -17,6 +17,7 @@ import android.view.View;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 public class PinnedLineView extends View {
@@ -73,9 +74,23 @@ public class PinnedLineView extends View {
     }
 
     public void updateColors() {
-        color = getThemedColor(Theme.key_chat_topPanelLine);
-        paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 112)));
-        selectedPaint.setColor(color);
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            color = CybergramTheme.DANGER;
+            paint.setColor(ColorUtils.setAlphaComponent(color, CybergramTheme.PINNED_RAIL_IDLE_ALPHA));
+            selectedPaint.setColor(ColorUtils.setAlphaComponent(color, CybergramTheme.PINNED_RAIL_ACTIVE_ALPHA));
+        } else {
+            color = getThemedColor(Theme.key_chat_topPanelLine);
+            paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 112)));
+            selectedPaint.setColor(color);
+        }
+    }
+
+    private void drawSegment(Canvas canvas, RectF bounds, float radius, Paint segmentPaint) {
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            canvas.drawRect(bounds, segmentPaint);
+        } else {
+            canvas.drawRoundRect(bounds, radius, radius, segmentPaint);
+        }
     }
 
     private void selectPosition(int position) {
@@ -187,16 +202,19 @@ public class PinnedLineView extends View {
                 continue;
             }
             rectF.set(0, startY + linePadding, getMeasuredWidth(), startY + lineH - linePadding);
+            final int idleAlpha = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.PINNED_RAIL_IDLE_ALPHA
+                    : (int) ((Color.alpha(color) / 255f) * 76);
             if (replaceInProgress && i >= animateToTotal) {
-                paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 76 * (1f - animationProgress))));
-                canvas.drawRoundRect(rectF, r, r, paint);
-                paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 76)));
+                paint.setColor(ColorUtils.setAlphaComponent(color, (int) (idleAlpha * (1f - animationProgress))));
+                drawSegment(canvas, rectF, r, paint);
+                paint.setColor(ColorUtils.setAlphaComponent(color, idleAlpha));
             } else if (replaceInProgress && i >= animateFromTotal) {
-                paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 76 * animationProgress)));
-                canvas.drawRoundRect(rectF, r, r, paint);
-                paint.setColor(ColorUtils.setAlphaComponent(color, (int) ((Color.alpha(color) / 255f) * 76)));
+                paint.setColor(ColorUtils.setAlphaComponent(color, (int) (idleAlpha * animationProgress)));
+                drawSegment(canvas, rectF, r, paint);
+                paint.setColor(ColorUtils.setAlphaComponent(color, idleAlpha));
             } else {
-                canvas.drawRoundRect(rectF, r, r, paint);
+                drawSegment(canvas, rectF, r, paint);
             }
 
         }
@@ -204,11 +222,11 @@ public class PinnedLineView extends View {
         if (animationInProgress) {
             float startY = viewPadding + (animateFromPosition * (1f - animationProgress) + animateToPosition * animationProgress) * lineH - startOffset;
             rectF.set(0, startY + linePadding, getMeasuredWidth(), startY + lineH - linePadding);
-            canvas.drawRoundRect(rectF, r, r, selectedPaint);
+            drawSegment(canvas, rectF, r, selectedPaint);
         } else {
             float startY = viewPadding + selectedPosition * lineH - startOffset;
             rectF.set(0, startY + linePadding, getMeasuredWidth(), startY + lineH - linePadding);
-            canvas.drawRoundRect(rectF, r, r, selectedPaint);
+            drawSegment(canvas, rectF, r, selectedPaint);
         }
 
         final boolean drawFade = needDrawFade;

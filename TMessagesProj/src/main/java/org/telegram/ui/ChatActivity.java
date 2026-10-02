@@ -219,6 +219,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.CybergramBackdropDrawable;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
@@ -10865,10 +10866,20 @@ public class ChatActivity extends BaseFragment implements
             setLines(1);
             setMaxLines(1);
             setEllipsize(TextUtils.TruncateAt.END);
-            setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-            setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 16));
+            if (CybergramTheme.isCybergramPresentation(getResourceProvider())) {
+                setTextColor(CybergramTheme.ICON_PALE);
+                setBackground(new CybergramHudDrawable()
+                        .setFillColor(ColorUtils.setAlphaComponent(CybergramTheme.PANEL_RAISED, 224))
+                        .setStroke(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, 124),
+                                dp(CybergramTheme.INTERACTION_PANEL_BORDER_WIDTH_DP), true)
+                        .setCornerCut(dp(5)));
+                setTypeface(CybergramTypography.chromeBold());
+            } else {
+                setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+                setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 16));
+                setTypeface(AndroidUtilities.bold());
+            }
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            setTypeface(AndroidUtilities.bold());
             setGravity(Gravity.CENTER);
             setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         }
@@ -11385,6 +11396,7 @@ public class ChatActivity extends BaseFragment implements
             float startY;
             final Paint cybergramPinnedFill = new Paint(Paint.ANTI_ALIAS_FLAG);
             final Paint cybergramPinnedStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+            final Paint cybergramPinnedBracket = new Paint(Paint.ANTI_ALIAS_FLAG);
             final Path cybergramPinnedPath = new Path();
             final RectF cybergramPinnedRect = new RectF();
 
@@ -11432,29 +11444,43 @@ public class ChatActivity extends BaseFragment implements
                 if (CybergramTheme.isCybergramPresentation(getResourceProvider())) {
                     cybergramPinnedRect.set(dp(5), dp(2), getMeasuredWidth() - dp(5), getMeasuredHeight() - dp(2));
                     final float cut = Math.min(dp(CybergramTheme.PINNED_PANEL_CUT_DP), cybergramPinnedRect.height() * 0.25f);
-                    cybergramPinnedPath.rewind();
-                    cybergramPinnedPath.moveTo(cybergramPinnedRect.left + cut, cybergramPinnedRect.top);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.right - cut, cybergramPinnedRect.top);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.right, cybergramPinnedRect.top + cut);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.right, cybergramPinnedRect.bottom - cut);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.right - cut, cybergramPinnedRect.bottom);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.left + cut, cybergramPinnedRect.bottom);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.left, cybergramPinnedRect.bottom - cut);
-                    cybergramPinnedPath.lineTo(cybergramPinnedRect.left, cybergramPinnedRect.top + cut);
-                    cybergramPinnedPath.close();
+                    final float bracket = Math.min(dp(CybergramTheme.PINNED_PANEL_BRACKET_LENGTH_DP),
+                            cybergramPinnedRect.width() * 0.12f);
+                    CybergramTheme.buildInteractionPanelPath(
+                            cybergramPinnedPath, cybergramPinnedRect, CybergramTheme.PINNED_PANEL_CUT_DP);
+
                     cybergramPinnedFill.setStyle(Paint.Style.FILL);
                     cybergramPinnedFill.setColor(CybergramTheme.PANEL);
                     cybergramPinnedFill.setAlpha(CybergramTheme.PINNED_PANEL_FILL_ALPHA);
                     canvas.drawPath(cybergramPinnedPath, cybergramPinnedFill);
+
                     cybergramPinnedStroke.setStyle(Paint.Style.STROKE);
                     cybergramPinnedStroke.setStrokeWidth(dp(CybergramTheme.PINNED_PANEL_BORDER_WIDTH_DP));
                     cybergramPinnedStroke.setColor(CybergramTheme.CYAN);
                     cybergramPinnedStroke.setAlpha(CybergramTheme.PINNED_PANEL_BORDER_ALPHA);
                     canvas.drawPath(cybergramPinnedPath, cybergramPinnedStroke);
-                    cybergramPinnedStroke.setColor(CybergramTheme.DANGER);
-                    cybergramPinnedStroke.setAlpha(CybergramTheme.PINNED_PANEL_ACCENT_ALPHA);
+
+                    // Notification-style corner brackets sit above the low-alpha frame.
+                    cybergramPinnedBracket.setStyle(Paint.Style.STROKE);
+                    cybergramPinnedBracket.setStrokeWidth(dp(CybergramTheme.PINNED_PANEL_BRACKET_WIDTH_DP));
+                    cybergramPinnedBracket.setStrokeCap(Paint.Cap.SQUARE);
+                    cybergramPinnedBracket.setColor(CybergramTheme.CYAN);
+                    cybergramPinnedBracket.setAlpha(CybergramTheme.PINNED_PANEL_BRACKET_ALPHA);
                     canvas.drawLine(cybergramPinnedRect.left + cut, cybergramPinnedRect.top,
-                            cybergramPinnedRect.left + cut + dp(20), cybergramPinnedRect.top, cybergramPinnedStroke);
+                            cybergramPinnedRect.left + cut + bracket, cybergramPinnedRect.top, cybergramPinnedBracket);
+                    canvas.drawLine(cybergramPinnedRect.left, cybergramPinnedRect.top + cut,
+                            cybergramPinnedRect.left, cybergramPinnedRect.top + cut + bracket, cybergramPinnedBracket);
+                    canvas.drawLine(cybergramPinnedRect.right - cut - bracket, cybergramPinnedRect.bottom,
+                            cybergramPinnedRect.right - cut, cybergramPinnedRect.bottom, cybergramPinnedBracket);
+                    canvas.drawLine(cybergramPinnedRect.right, cybergramPinnedRect.bottom - cut - bracket,
+                            cybergramPinnedRect.right, cybergramPinnedRect.bottom - cut, cybergramPinnedBracket);
+
+                    // Red remains a structural accent only; message state is still carried by Telegram.
+                    cybergramPinnedBracket.setColor(CybergramTheme.DANGER);
+                    cybergramPinnedBracket.setAlpha(CybergramTheme.PINNED_PANEL_ACCENT_ALPHA);
+                    canvas.drawLine(cybergramPinnedRect.left + cut + bracket + dp(4), cybergramPinnedRect.top,
+                            cybergramPinnedRect.left + cut + bracket + dp(16), cybergramPinnedRect.top,
+                            cybergramPinnedBracket);
                 }
                 super.dispatchDraw(canvas);
             }
@@ -11602,20 +11628,30 @@ public class ChatActivity extends BaseFragment implements
 
         pinnedListButton = new ImageView(getContext());
         pinnedListButton.setImageResource(R.drawable.msg_pinnedlist);
-        pinnedListButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_topPanelClose), PorterDuff.Mode.MULTIPLY));
+        pinnedListButton.setColorFilter(new PorterDuffColorFilter(
+                CybergramTheme.isCybergramPresentation(getResourceProvider())
+                        ? CybergramTheme.ICON_PALE
+                        : getThemedColor(Theme.key_chat_topPanelClose),
+                PorterDuff.Mode.MULTIPLY));
         pinnedListButton.setScaleType(ImageView.ScaleType.CENTER);
         pinnedListButton.setContentDescription(LocaleController.getString(R.string.AccPinnedMessagesList));
         pinnedListButton.setVisibility(View.INVISIBLE);
         pinnedListButton.setAlpha(0.0f);
         pinnedListButton.setScaleX(0.4f);
         pinnedListButton.setScaleY(0.4f);
-        pinnedListButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff));
+        pinnedListButton.setBackgroundDrawable(CybergramTheme.isCybergramPresentation(getResourceProvider())
+                ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, 0.10f), Theme.RIPPLE_MASK_ALL)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff));
         pinnedMessageView.addView(pinnedListButton, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 7, 0));
         pinnedListButton.setOnClickListener(v -> openPinnedMessagesList(false));
 
         closePinned = new ImageView(getContext());
         closePinned.setImageResource(R.drawable.miniplayer_close);
-        closePinned.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_topPanelClose), PorterDuff.Mode.MULTIPLY));
+        closePinned.setColorFilter(new PorterDuffColorFilter(
+                CybergramTheme.isCybergramPresentation(getResourceProvider())
+                        ? CybergramTheme.ICON_PALE
+                        : getThemedColor(Theme.key_chat_topPanelClose),
+                PorterDuff.Mode.MULTIPLY));
         closePinned.setScaleType(ImageView.ScaleType.CENTER);
         closePinned.setVisibility(View.GONE);
         closePinned.setContentDescription(LocaleController.getString(R.string.Close));
@@ -11624,10 +11660,14 @@ public class ChatActivity extends BaseFragment implements
         pinnedProgress.setVisibility(View.GONE);
         pinnedProgress.setSize(AndroidUtilities.dp(16));
         pinnedProgress.setStrokeWidth(2f);
-        pinnedProgress.setProgressColor(getThemedColor(Theme.key_chat_topPanelLine));
+        pinnedProgress.setProgressColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
+                ? CybergramTheme.CYAN_SECONDARY
+                : getThemedColor(Theme.key_chat_topPanelLine));
         pinnedMessageView.addView(pinnedProgress, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
 
-        closePinned.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
+        closePinned.setBackgroundDrawable(CybergramTheme.isCybergramPresentation(getResourceProvider())
+                ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, 0.10f), Theme.RIPPLE_MASK_ALL)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
         pinnedMessageView.addView(closePinned, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
         closePinned.setOnClickListener(v -> {
             if (getParentActivity() == null) {

@@ -239,9 +239,14 @@ public final class CybergramTheme {
     /** Pinned strip follows the notification plate/bracket grammar rather than a Material card. */
     public static final float PINNED_PANEL_CUT_DP = 8f;
     public static final float PINNED_PANEL_BORDER_WIDTH_DP = 0.65f;
-    public static final int PINNED_PANEL_FILL_ALPHA = 238;
-    public static final int PINNED_PANEL_BORDER_ALPHA = 82;
-    public static final int PINNED_PANEL_ACCENT_ALPHA = 148;
+    public static final int PINNED_PANEL_FILL_ALPHA = 232;
+    public static final int PINNED_PANEL_BORDER_ALPHA = 72;
+    public static final float PINNED_PANEL_BRACKET_WIDTH_DP = 1f;
+    public static final float PINNED_PANEL_BRACKET_LENGTH_DP = 13f;
+    public static final int PINNED_PANEL_BRACKET_ALPHA = 148;
+    public static final int PINNED_PANEL_ACCENT_ALPHA = 186;
+    public static final int PINNED_RAIL_IDLE_ALPHA = 72;
+    public static final int PINNED_RAIL_ACTIVE_ALPHA = 214;
 
     /** Build the shared eight-segment chamfer used by Cybergram interaction surfaces. */
     public static void buildInteractionPanelPath(Path path, RectF bounds, float cutDp) {
