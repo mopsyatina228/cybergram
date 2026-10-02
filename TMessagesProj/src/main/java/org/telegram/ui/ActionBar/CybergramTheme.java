@@ -201,11 +201,12 @@ public final class CybergramTheme {
     public static final int HEADER_AVATAR_DP = 36;
 
     /** Dialog-list palette. Saturated colors are reserved for state, not decoration. */
-    public static final int DIALOGS_TEXT_READ = 0xFF9AAEB6;
-    public static final int DIALOGS_TEXT_PREVIEW = 0xFF71838D;
-    public static final int DIALOGS_TEXT_META = 0xFF6F828C;
-    public static final int DIALOGS_TEXT_SENDER = 0xFF86A8B0;
-    public static final int DIALOGS_RULE = 0xFF321018;
+    public static final int DIALOGS_TEXT_READ = 0xFF6FC5CD;
+    public static final int DIALOGS_TEXT_UNREAD = 0xFFA0EAF0;
+    public static final int DIALOGS_TEXT_PREVIEW = 0xFF6E929A;
+    public static final int DIALOGS_TEXT_META = 0xFF75939A;
+    public static final int DIALOGS_TEXT_SENDER = 0xFF78CDD5;
+    public static final int DIALOGS_RULE = 0xFF47121C;
     public static final int DIALOGS_ACTIVE = CYAN;
     public static final int DIALOGS_ATTENTION = AMBER_HIGHLIGHT;
     public static final int DIALOGS_ALERT = DANGER;

@@ -4153,7 +4153,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             rect.offset(0, -translateY + collapseOffset);
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                 cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_ACTIVE);
+                cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_ALERT);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_WASH_ALPHA);
                 canvas.drawRect(rect, cybergramSeparatorPaint);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_RULE_ALPHA);
@@ -4265,18 +4265,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                     final int nameColor;
                     if (currentDialogFolderId != 0) {
-                        nameColor = CybergramTheme.TEXT_MUTED;
+                        nameColor = CybergramTheme.DIALOGS_TEXT_READ;
                     } else if (encryptedChat != null || customDialog != null && customDialog.type == 2) {
                         nameColor = CybergramTheme.CYAN_SECONDARY;
                     } else if (unreadCount > 0 || markUnread) {
-                        nameColor = CybergramTheme.TEXT;
+                        nameColor = CybergramTheme.DIALOGS_TEXT_UNREAD;
                     } else if (isCounterMuted()) {
                         nameColor = CybergramTheme.TEXT_MUTED;
                     } else {
                         nameColor = CybergramTheme.DIALOGS_TEXT_READ;
                     }
-                    getNamePaint(paintIndex).setColor(nameColor);
-                    getNamePaint(paintIndex).linkColor = nameColor;
+                    final TextPaint dialogNamePaint = getNamePaint(paintIndex);
+                    dialogNamePaint.setColor(nameColor);
+                    dialogNamePaint.linkColor = nameColor;
                 } else if (currentDialogFolderId != 0) {
                     getNamePaint(paintIndex).setColor(getNamePaint(paintIndex).linkColor = Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider));
                 } else if (encryptedChat != null || customDialog != null && customDialog.type == 2) {
