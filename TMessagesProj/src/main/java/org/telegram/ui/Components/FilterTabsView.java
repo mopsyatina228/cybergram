@@ -361,6 +361,21 @@ public class FilterTabsView extends FrameLayout {
                     textPaint.setColor(ColorUtils.blendARGB(color1, color2, animationValue));
                 }
             }
+            if (useCybergramPresentation()) {
+                final boolean moving = animatingIndicator || manualScrollingToId != -1;
+                final float activeFactor;
+                if (currentTab.id == id1) {
+                    activeFactor = moving ? animatingIndicatorProgress : 1f;
+                } else if (currentTab.id == id2) {
+                    activeFactor = moving ? 1f - animatingIndicatorProgress : 0f;
+                } else {
+                    activeFactor = 0f;
+                }
+                textPaint.setColor(ColorUtils.blendARGB(
+                        CybergramTheme.DIALOGS_TEXT_META,
+                        CybergramTheme.DIALOGS_ACTIVE,
+                        activeFactor));
+            }
             emojiColorFilter = new PorterDuffColorFilter(textPaint.getColor(), PorterDuff.Mode.SRC_IN);
 
             float counterWidth;
@@ -497,8 +512,8 @@ public class FilterTabsView extends FrameLayout {
                 }
                 if (useCybergramPresentation()) {
                     textCounterPaint.setColor(currentTab.id == selectedTabId
-                            ? CybergramTheme.CYAN_SECONDARY
-                            : CybergramTheme.TEXT_MUTED);
+                            ? CybergramTheme.DIALOGS_ATTENTION
+                            : CybergramTheme.DIALOGS_TEXT_META);
                 } else {
                     canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, counterPaint);
                 }
@@ -1542,8 +1557,8 @@ public class FilterTabsView extends FrameLayout {
 
             if (useCybergramPresentation()) {
                 cybergramRibbonPaint.setStyle(Paint.Style.FILL);
-                cybergramRibbonPaint.setColor(CybergramTheme.CYAN);
-                cybergramRibbonPaint.setAlpha((int) (220 * listView.getAlpha()));
+                cybergramRibbonPaint.setColor(CybergramTheme.DIALOGS_ACTIVE);
+                cybergramRibbonPaint.setAlpha((int) (200 * listView.getAlpha()));
                 final float left = indicatorX - dp(2) - add * 0.25f;
                 final float right = indicatorX + indicatorWidth + dp(2) + add * 0.25f;
                 final float bottom = height - dp(6.5f);
@@ -1580,7 +1595,7 @@ public class FilterTabsView extends FrameLayout {
             canvas.drawRect(0, dp(11), getWidth(), getHeight(), cybergramRibbonPaint);
 
             cybergramRibbonPaint.setColor(CybergramTheme.DANGER);
-            cybergramRibbonPaint.setAlpha(54);
+            cybergramRibbonPaint.setAlpha(36);
             final float y = getHeight() - dpf2(0.65f);
             canvas.drawRect(dp(12), y, getWidth() - dp(12), getHeight(), cybergramRibbonPaint);
         }

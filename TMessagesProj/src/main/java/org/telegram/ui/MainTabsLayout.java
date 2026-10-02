@@ -345,7 +345,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             canvas.drawRect(0, 0, getWidth(), getHeight(), cybergramRibbonPaint);
 
             cybergramRibbonPaint.setColor(CybergramTheme.DANGER);
-            cybergramRibbonPaint.setAlpha(104);
+            cybergramRibbonPaint.setAlpha(72);
             canvas.drawRect(0, 0, getWidth(), dpf2(0.75f), cybergramRibbonPaint);
         }
 
@@ -355,8 +355,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
             if (useCybergramMainTabsPresentation()) {
-                cybergramRibbonPaint.setColor(CybergramTheme.CYAN);
-                cybergramRibbonPaint.setAlpha(210);
+                cybergramRibbonPaint.setColor(CybergramTheme.DIALOGS_ACTIVE);
+                cybergramRibbonPaint.setAlpha(190);
                 canvas.drawRect(
                         x - sWidth * 0.28f, getPaddingTop(),
                         x + sWidth * 0.28f, getPaddingTop() + dpf2(1.5f),

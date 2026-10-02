@@ -270,7 +270,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             } else if (useCybergramMainTabsPlate()) {
                 final float error = isHasCounterErrorAnimator.getFloatValue();
                 final int accent = ColorUtils.blendARGB(
-                        CybergramTheme.CYAN_SECONDARY, CybergramTheme.DANGER, error);
+                        CybergramTheme.DIALOGS_ATTENTION, CybergramTheme.DIALOGS_ALERT, error);
                 counter.setTextColor(accent);
                 counter.setBounds(tmpRectF);
                 counter.draw(canvas);
@@ -330,8 +330,19 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private boolean needUpdateBackupViewColor;
 
     private void updateColors() {
-        final int color = ColorUtils.blendARGB(colorDefault, colorSelected, isSelectedAnimator.getFloatValue());
-        final int colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, isSelectedAnimator.getFloatValue());
+        final int color;
+        final int colorText;
+        if (useCybergramMainTabsPlate()) {
+            final float selected = isSelectedAnimator.getFloatValue();
+            color = ColorUtils.blendARGB(
+                    CybergramTheme.DIALOGS_TEXT_META,
+                    CybergramTheme.DIALOGS_ACTIVE,
+                    selected);
+            colorText = color;
+        } else {
+            color = ColorUtils.blendARGB(colorDefault, colorSelected, isSelectedAnimator.getFloatValue());
+            colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, isSelectedAnimator.getFloatValue());
+        }
 
         final PorterDuffColorFilter filter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
         if (backupImageView != null && needUpdateBackupViewColor) {

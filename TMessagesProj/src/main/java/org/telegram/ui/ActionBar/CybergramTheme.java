@@ -200,16 +200,26 @@ public final class CybergramTheme {
     /** Cybergram chat-header avatar size, in dp (owner ruling D9.6). Upstream is 42. */
     public static final int HEADER_AVATAR_DP = 36;
 
-    /** Dialog-list grammar: structural red stays quiet; state color appears only when meaningful. */
-    public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 24;
-    public static final int DIALOGS_ROW_ACCENT_ALPHA = 208;
+    /** Dialog-list palette. Saturated colors are reserved for state, not decoration. */
+    public static final int DIALOGS_TEXT_READ = 0xFF9AAEB6;
+    public static final int DIALOGS_TEXT_PREVIEW = 0xFF71838D;
+    public static final int DIALOGS_TEXT_META = 0xFF6F828C;
+    public static final int DIALOGS_TEXT_SENDER = 0xFF86A8B0;
+    public static final int DIALOGS_RULE = 0xFF321018;
+    public static final int DIALOGS_ACTIVE = CYAN;
+    public static final int DIALOGS_ATTENTION = AMBER_HIGHLIGHT;
+    public static final int DIALOGS_ALERT = DANGER;
+
+    /** Dialog-list grammar: structure stays quiet; state color appears only when meaningful. */
+    public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 168;
+    public static final int DIALOGS_ROW_ACCENT_ALPHA = 188;
     public static final int DIALOGS_ROW_TICK_ALPHA = 0;
-    public static final int DIALOGS_ROW_UNREAD_WASH_ALPHA = 10;
-    public static final int DIALOGS_ROW_MENTION_WASH_ALPHA = 14;
-    public static final int DIALOGS_ROW_SELECTED_WASH_ALPHA = 30;
-    public static final int DIALOGS_ROW_SELECTED_RULE_ALPHA = 190;
-    public static final int DIALOGS_COUNTER_MUTED_ALPHA = 118;
-    public static final int DIALOGS_COUNTER_ACTIVE_ALPHA = 230;
+    public static final int DIALOGS_ROW_UNREAD_WASH_ALPHA = 7;
+    public static final int DIALOGS_ROW_MENTION_WASH_ALPHA = 10;
+    public static final int DIALOGS_ROW_SELECTED_WASH_ALPHA = 14;
+    public static final int DIALOGS_ROW_SELECTED_RULE_ALPHA = 188;
+    public static final int DIALOGS_COUNTER_MUTED_ALPHA = 108;
+    public static final int DIALOGS_COUNTER_ACTIVE_ALPHA = 220;
 
     /**
      * Shared interaction-shell geometry. Quick reactions and message context menus are separate

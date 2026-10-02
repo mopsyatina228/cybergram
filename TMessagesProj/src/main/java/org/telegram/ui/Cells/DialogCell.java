@@ -45,6 +45,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.view.Gravity;
@@ -725,8 +726,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // Raj has a tall x-height; a slightly smaller preview restores the Journal/Database
         // hierarchy where the secondary line clearly yields to the entry title.
         paint.setTextSize(dpf2(paintIndex == 1 ? 14f : 15f));
-        paint.setColor(upstream.getColor());
-        paint.linkColor = upstream.linkColor;
+        final int color = printing
+                ? CybergramTheme.DIALOGS_TEXT_SENDER
+                : CybergramTheme.DIALOGS_TEXT_PREVIEW;
+        paint.setColor(color);
+        paint.linkColor = color;
         paint.setAlpha(upstream.getAlpha());
         return paint;
     }
@@ -742,8 +746,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             cybergramMessageNamePaint.setTypeface(CybergramTypography.chromeBold());
         }
         mirrorUpstreamTextSize(cybergramMessageNamePaint, upstream);
-        cybergramMessageNamePaint.setColor(upstream.getColor());
-        cybergramMessageNamePaint.linkColor = upstream.linkColor;
+        cybergramMessageNamePaint.setColor(CybergramTheme.DIALOGS_TEXT_SENDER);
+        cybergramMessageNamePaint.linkColor = CybergramTheme.DIALOGS_TEXT_SENDER;
         cybergramMessageNamePaint.setAlpha(upstream.getAlpha());
         return cybergramMessageNamePaint;
     }
@@ -1691,7 +1695,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 buttonString = message != null ? getMessageStringFormatted(messageFormatType, restrictionReason, messageNameString, true) : "";
                 if (applyName && buttonString.length() >= 0 && messageNameString != null) {
                     SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(buttonString);
-                    spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_chats_name, resourcesProvider), 0, Math.min(spannableStringBuilder.length(), messageNameString.length() + 1), 0);
+                    spannableStringBuilder.setSpan(
+                            CybergramTheme.isCybergramPresentation(resourcesProvider)
+                                    ? new ForegroundColorSpan(CybergramTheme.DIALOGS_TEXT_SENDER)
+                                    : new ForegroundColorSpanThemable(Theme.key_chats_name, resourcesProvider),
+                            0, Math.min(spannableStringBuilder.length(), messageNameString.length() + 1), 0);
                     buttonString = spannableStringBuilder;
                 }
                 currentMessagePaint = getMessagePaint(paintIndex, false);
@@ -1922,7 +1930,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     if (!TextUtils.isEmpty(topicName)) {
                                         SpannableStringBuilder arrowSpan = new SpannableStringBuilder("-");
                                         ColoredImageSpan coloredImageSpan = new ColoredImageSpan(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_mini_forumarrow).mutate());
-                                        coloredImageSpan.setColorKey(useForceThreeLines || SharedConfig.useThreeLinesLayout ? -1 : Theme.key_chats_nameMessage);
+                                        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                                            coloredImageSpan.setOverrideColor(CybergramTheme.DIALOGS_TEXT_SENDER);
+                                        } else {
+                                            coloredImageSpan.setColorKey(useForceThreeLines || SharedConfig.useThreeLinesLayout ? -1 : Theme.key_chats_nameMessage);
+                                        }
                                         arrowSpan.setSpan(coloredImageSpan, 0, 1, 0);
                                         SpannableStringBuilder nameSpannableString = new SpannableStringBuilder();
                                         nameSpannableString.append(messageNameString).append(arrowSpan).append(topicName);
@@ -1935,7 +1947,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 int thumbInsertIndex = 0;
                                 if (!useFromUserAsAvatar && (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0 && stringBuilder.length() > 0)) {
                                     try {
-                                        stringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_chats_nameMessage, resourcesProvider), 0, thumbInsertIndex = messageNameString.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                        stringBuilder.setSpan(
+                                                CybergramTheme.isCybergramPresentation(resourcesProvider)
+                                                        ? new ForegroundColorSpan(CybergramTheme.DIALOGS_TEXT_SENDER)
+                                                        : new ForegroundColorSpanThemable(Theme.key_chats_nameMessage, resourcesProvider),
+                                                0, thumbInsertIndex = messageNameString.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                         offsetName = thumbInsertIndex;
                                     } catch (Exception e) {
                                         FileLog.e(e);
@@ -4137,7 +4153,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             rect.offset(0, -translateY + collapseOffset);
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                 cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                cybergramSeparatorPaint.setColor(CybergramTheme.DANGER);
+                cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_ACTIVE);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_WASH_ALPHA);
                 canvas.drawRect(rect, cybergramSeparatorPaint);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_RULE_ALPHA);
@@ -4257,8 +4273,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     } else if (isCounterMuted()) {
                         nameColor = CybergramTheme.TEXT_MUTED;
                     } else {
-                        nameColor = ColorUtils.blendARGB(
-                                CybergramTheme.TEXT_MUTED, CybergramTheme.TEXT, 0.42f);
+                        nameColor = CybergramTheme.DIALOGS_TEXT_READ;
                     }
                     getNamePaint(paintIndex).setColor(nameColor);
                     getNamePaint(paintIndex).linkColor = nameColor;
@@ -4297,11 +4312,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 final int originalTimeAlpha = timeTextPaint.getAlpha();
                 if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                     final boolean muted = isCounterMuted();
+                    final boolean incomingAttention = unreadCount > 0 || markUnread;
                     timeTextPaint.setColor(muted
                             ? CybergramTheme.TEXT_MUTED
                             : (message != null && message.isOutOwner()
                                     ? CybergramTheme.OUT_TIME
-                                    : CybergramTheme.IN_TIME));
+                                    : incomingAttention
+                                            ? CybergramTheme.IN_TIME
+                                            : CybergramTheme.DIALOGS_TEXT_META));
                 }
                 if (getIsPinned()) {
                     canvas.translate(dp(20), 0);
@@ -4358,7 +4376,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
 
             if (messageNameLayout != null && !isForumCell()) {
-                if (currentDialogFolderId != 0) {
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    final int senderColor = currentDialogFolderId != 0
+                            ? CybergramTheme.TEXT_MUTED
+                            : draftMessage != null
+                                    ? CybergramTheme.DIALOGS_ALERT
+                                    : CybergramTheme.DIALOGS_TEXT_SENDER;
+                    getMessageNamePaint().setColor(senderColor);
+                    getMessageNamePaint().linkColor = senderColor;
+                } else if (currentDialogFolderId != 0) {
                     getMessageNamePaint().setColor(getMessageNamePaint().linkColor = Theme.getColor(Theme.key_chats_nameMessageArchived_threeLines, resourcesProvider));
                 } else if (draftMessage != null) {
                     getMessageNamePaint().setColor(getMessageNamePaint().linkColor = Theme.getColor(Theme.key_chats_draft, resourcesProvider));
@@ -4377,7 +4403,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
 
             if (messageLayout != null) {
-                if (currentDialogFolderId != 0) {
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    final TextPaint previewPaint = messageLayout.getPaint();
+                    final int previewColor = currentDialogFolderId != 0
+                            ? CybergramTheme.TEXT_MUTED
+                            : previewPaint == getMessagePaint(paintIndex, true)
+                                    ? CybergramTheme.DIALOGS_TEXT_SENDER
+                                    : CybergramTheme.DIALOGS_TEXT_PREVIEW;
+                    previewPaint.setColor(previewColor);
+                    previewPaint.linkColor = previewColor;
+                } else if (currentDialogFolderId != 0) {
                     if (chat != null) {
                         getMessagePaint(paintIndex, false).setColor(getMessagePaint(paintIndex, false).linkColor = Theme.getColor(Theme.key_chats_nameMessageArchived, resourcesProvider));
                     } else {
@@ -4722,9 +4757,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                             getCountTextPaint().setColor(drawCounterMuted
                                     ? CybergramTheme.TEXT_MUTED
-                                    : CybergramTheme.DANGER);
+                                    : CybergramTheme.DIALOGS_ALERT);
                             cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                            cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DANGER);
+                            cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ALERT);
                             cybergramSeparatorPaint.setAlpha(drawCounterMuted ? 90 : 200);
                             canvas.drawRect(rect.left + dp(2), rect.bottom - dpf2(1f), rect.right - dp(2), rect.bottom,
                                     cybergramSeparatorPaint);
@@ -5179,7 +5214,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         // Cyberpunk list grammar: the row itself stays flat. A faint global red rule binds the list
         // to the chat HUD, but starts at the text column so avatars keep visual breathing room.
-        cybergramSeparatorPaint.setColor(CybergramTheme.DANGER);
+        cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_RULE);
         cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SEPARATOR_ALPHA);
         final float y = h - dpf2(0.65f);
         canvas.drawRect(dp(78), y, w - dp(12), h, cybergramSeparatorPaint);
@@ -5187,7 +5222,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // State color is semantic rather than decorative. Incoming attention is amber, explicit
         // mentions/errors are red. Normal and pinned rows receive no gratuitous rail.
         if (hasUnread || hasMention) {
-            final int stateColor = hasMention ? CybergramTheme.DANGER : CybergramTheme.AMBER;
+            final int stateColor = hasMention
+                    ? CybergramTheme.DIALOGS_ALERT
+                    : CybergramTheme.DIALOGS_ATTENTION;
             final int washAlpha = muted ? 4 : (hasMention
                     ? CybergramTheme.DIALOGS_ROW_MENTION_WASH_ALPHA
                     : CybergramTheme.DIALOGS_ROW_UNREAD_WASH_ALPHA);
@@ -5479,7 +5516,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (cybergram) {
             getCountTextPaint().setColor(drawCounterMuted
                     ? ColorUtils.setAlphaComponent(CybergramTheme.TEXT_MUTED, CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA)
-                    : ColorUtils.setAlphaComponent(CybergramTheme.AMBER_HIGHLIGHT, CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA));
+                    : ColorUtils.setAlphaComponent(CybergramTheme.DIALOGS_ATTENTION, CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA));
         }
         if (drawCount && drawCount2 || countChangeProgress != 1f) {
             final float progressFinal = (unreadCount == 0 && !markUnread) ? 1f - countChangeProgress : countChangeProgress;
@@ -5533,7 +5570,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
                 if (cybergram) {
                     cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.AMBER);
+                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ATTENTION);
                     cybergramSeparatorPaint.setAlpha(drawCounterMuted
                             ? CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA
                             : CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA);
@@ -5593,7 +5630,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.scale(scale * globalScale, scale * globalScale, rect.centerX(), rect.centerY());
                 if (cybergram) {
                     cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.AMBER);
+                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ATTENTION);
                     cybergramSeparatorPaint.setAlpha(drawCounterMuted
                             ? CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA
                             : CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA);
