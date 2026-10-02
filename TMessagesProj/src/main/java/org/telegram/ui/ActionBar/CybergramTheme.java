@@ -200,14 +200,20 @@ public final class CybergramTheme {
     /** Cybergram chat-header avatar size, in dp (owner ruling D9.6). Upstream is 42. */
     public static final int HEADER_AVATAR_DP = 36;
 
-    /** Alpha (0..255) of the thin cyan-dark separator on a dialogs row bottom edge. */
-    public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 66;
-
-    /** Alpha (0..255) of the short left-edge cyan accent tab on a dialogs row. */
-    public static final int DIALOGS_ROW_ACCENT_ALPHA = 150;
-
-    /** Alpha (0..255) of the small 45-degree HUD tick on a dialogs row. */
-    public static final int DIALOGS_ROW_TICK_ALPHA = 110;
+    /** Dialog-list grammar: dense rows, state encoded by rail/wash instead of per-row cards. */
+    public static final int DIALOGS_ROW_SEPARATOR_ALPHA = 46;
+    public static final int DIALOGS_ROW_ACCENT_ALPHA = 92;
+    public static final int DIALOGS_ROW_TICK_ALPHA = 72;
+    public static final int DIALOGS_ROW_UNREAD_WASH_ALPHA = 24;
+    public static final int DIALOGS_ROW_PINNED_WASH_ALPHA = 12;
+    public static final int DIALOGS_ROW_MENTION_WASH_ALPHA = 18;
+    public static final int DIALOGS_ROW_UNREAD_ACCENT_ALPHA = 188;
+    public static final int DIALOGS_ROW_MENTION_ACCENT_ALPHA = 220;
+    public static final int DIALOGS_ROW_PINNED_ACCENT_ALPHA = 118;
+    public static final int DIALOGS_ROW_MUTED_ACCENT_ALPHA = 56;
+    public static final float DIALOGS_BADGE_CUT_DP = 4f;
+    public static final float DIALOGS_BADGE_STROKE_DP = 0.65f;
+    public static final int DIALOGS_BADGE_STROKE_ALPHA = 116;
 
     /**
      * Shared interaction-shell geometry. Quick reactions and message context menus are separate

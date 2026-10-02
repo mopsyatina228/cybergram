@@ -17,6 +17,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
@@ -152,30 +153,51 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
     public void setCybergramPresentationEnabled(boolean enabled) {
         cybergramPresentationEnabled = enabled;
+        if (enabled && CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            // Material elevation uses an oval outline on the primary FAB. Cybergram draws its
+            // silhouette explicitly, so keep the shadow from reintroducing a circular footprint.
+            setTranslationZ(0);
+        }
         updateColors();
     }
 
     public void updateColors() {
+        final boolean cybergram = cybergramPresentationEnabled
+                && CybergramTheme.isCybergramPresentation(resourcesProvider);
         if (isSubButton) {
-            imageView.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
-            progressView.setProgressColor(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider));
+            if (cybergram) {
+                imageView.setColorFilter(CybergramTheme.ICON_PALE, PorterDuff.Mode.SRC_IN);
+                progressView.setProgressColor(CybergramTheme.CYAN_SECONDARY);
+                CybergramHudDrawable plate = new CybergramHudDrawable()
+                        .setFillColor(ColorUtils.setAlphaComponent(CybergramTheme.PANEL_RAISED, 228))
+                        .setStroke(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, 118), dpf2(0.75f), true)
+                        .setCornerCut(dp(5));
+                setBackground(plate);
+            } else {
+                imageView.setColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
+                progressView.setProgressColor(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider));
 
-            iBlur3SourceColor.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            iBlur3ColorProviderTabs.updateColors();
-            iBlur3Background.updateColors();
+                iBlur3SourceColor.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                iBlur3ColorProviderTabs.updateColors();
+                iBlur3Background.updateColors();
+
+                int rad = dp(18);
+                int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
+                setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+            }
             invalidate();
-
-            int rad = dp(18);
-            int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-            setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
         } else {
-            imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
-            progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            if (cybergramPresentationEnabled && CybergramTheme.isCybergramPresentation(resourcesProvider)) {
-                CybergramHudDrawable plate = new CybergramHudDrawable();
-                plate.setFillColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                plate.setStroke(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider), dpf2(1), true);
-                plate.setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
+            imageView.setColorFilter(cybergram
+                    ? CybergramTheme.ICON_PALE
+                    : Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
+            progressView.setProgressColor(cybergram
+                    ? CybergramTheme.CYAN_SECONDARY
+                    : Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
+            if (cybergram) {
+                CybergramHudDrawable plate = new CybergramHudDrawable()
+                        .setFillColor(ColorUtils.setAlphaComponent(CybergramTheme.PANEL, 242))
+                        .setStroke(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, 156), dpf2(0.9f), true)
+                        .setCornerCut(dp(7));
                 setBackground(plate);
             } else {
                 setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
@@ -230,7 +252,8 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        if (iBlur3Background != null) {
+        if (iBlur3Background != null
+                && !(cybergramPresentationEnabled && CybergramTheme.isCybergramPresentation(resourcesProvider))) {
             iBlur3Background.draw(canvas);
         }
         super.draw(canvas);

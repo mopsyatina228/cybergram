@@ -16,10 +16,12 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -71,6 +73,8 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarAnimatedSubtitleOverlayContainer;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -134,6 +138,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     Paint grayPaint = new Paint();
     Paint addCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path cybergramStoryBadgePath = new Path();
+    private final RectF cybergramStoryBadgeRect = new RectF();
     CanvasButton miniItemsClickArea = new CanvasButton(this);
 
     private HintView2 premiumHint;
@@ -180,6 +186,14 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private ActionBar actionBar;
     private StoriesUtilities.EnsureStoryFileLoadedObject globalCancelable;
     private float menuItemsOffset;
+
+    private Theme.ResourcesProvider getResourcesProvider() {
+        return fragment != null ? fragment.getResourceProvider() : null;
+    }
+
+    private boolean useCybergramPresentation() {
+        return CybergramTheme.isCybergramPresentation(getResourcesProvider());
+    }
 
     public DialogStoriesCell(@NonNull Context context, BaseFragment fragment, int currentAccount, int type) {
         super(context);
@@ -325,7 +339,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         titleView = new AnimatedTextView(getContext(), true, true, false);
         titleView.setGravity(Gravity.LEFT);
         titleView.setTextColor(getTextLogoColor());
-        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTypeface(CybergramTypography.chromeBold(getResourcesProvider(), AndroidUtilities.bold()));
         titleView.setPadding(0, dp(8), 0, dp(8));
         titleView.setTextSize(dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20));
         titleView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
@@ -1153,6 +1167,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         int color = getTextColor();
 
         titleView.setTextColor(getTextLogoColor());
+        titleView.setTypeface(CybergramTypography.chromeBold(getResourcesProvider(), AndroidUtilities.bold()));
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.updateColors();
         }
@@ -1161,6 +1176,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             StoryCell cell = (StoryCell) view;
             cell.invalidate();
             cell.textView.setTextColor(color);
+            cell.textView.setTypeface(CybergramTypography.chromeRegular(
+                    getResourcesProvider(), AndroidUtilities.bold()));
         });
         AndroidUtilities.forEachViews(listViewMini, view -> {
             StoryCell cell = (StoryCell) view;
@@ -1507,7 +1524,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         private void createTextView() {
             textView = new SimpleTextView(getContext());
-            textView.setTypeface(AndroidUtilities.bold());
+            textView.setTypeface(CybergramTypography.chromeRegular(getResourcesProvider(), AndroidUtilities.bold()));
             textView.setGravity(Gravity.CENTER);
             textView.setTextSize(11);
             textView.setTextColor(getTextColor());
@@ -1902,10 +1919,26 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             } else {
                 backgroundPaint.setColor(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultArchived), alpha));
             }
-            canvas.drawCircle(cx2, cy2, dp(11), backgroundPaint);
-            canvas.drawCircle(cx2, cy2, dp(9), addCirclePaint);
+            if (useCybergramPresentation()) {
+                cybergramStoryBadgeRect.set(cx2 - dp(11), cy2 - dp(11), cx2 + dp(11), cy2 + dp(11));
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramStoryBadgePath, cybergramStoryBadgeRect, CybergramTheme.DIALOGS_BADGE_CUT_DP);
+                canvas.drawPath(cybergramStoryBadgePath, backgroundPaint);
 
-            int newDrawableColor = type == TYPE_DIALOGS ? getThemedColor(Theme.key_actionBarDefault) : getThemedColor(Theme.key_actionBarDefaultArchived);
+                cybergramStoryBadgeRect.set(cx2 - dp(9), cy2 - dp(9), cx2 + dp(9), cy2 + dp(9));
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramStoryBadgePath, cybergramStoryBadgeRect, 3f);
+                canvas.drawPath(cybergramStoryBadgePath, addCirclePaint);
+            } else {
+                canvas.drawCircle(cx2, cy2, dp(11), backgroundPaint);
+                canvas.drawCircle(cx2, cy2, dp(9), addCirclePaint);
+            }
+
+            int newDrawableColor = useCybergramPresentation()
+                    ? CybergramTheme.PANEL
+                    : (type == TYPE_DIALOGS
+                            ? getThemedColor(Theme.key_actionBarDefault)
+                            : getThemedColor(Theme.key_actionBarDefaultArchived));
             if (newDrawableColor != addNewStoryLastColor) {
                 addNewStoryDrawable.setColorFilter(new PorterDuffColorFilter(addNewStoryLastColor = newDrawableColor, PorterDuff.Mode.MULTIPLY));
             }
@@ -1932,8 +1965,21 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 backgroundPaint.setColor(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultArchived), alpha));
             }
             float r = dp(9) * CubicBezierInterpolator.EASE_OUT_BACK.getInterpolation(alpha);
-            canvas.drawCircle(cx2, cy2, r + dp(2), backgroundPaint);
-            canvas.drawCircle(cx2, cy2, r, addCirclePaint);
+            if (useCybergramPresentation()) {
+                cybergramStoryBadgeRect.set(cx2 - r - dp(2), cy2 - r - dp(2),
+                        cx2 + r + dp(2), cy2 + r + dp(2));
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramStoryBadgePath, cybergramStoryBadgeRect, CybergramTheme.DIALOGS_BADGE_CUT_DP);
+                canvas.drawPath(cybergramStoryBadgePath, backgroundPaint);
+
+                cybergramStoryBadgeRect.set(cx2 - r, cy2 - r, cx2 + r, cy2 + r);
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramStoryBadgePath, cybergramStoryBadgeRect, 3f);
+                canvas.drawPath(cybergramStoryBadgePath, addCirclePaint);
+            } else {
+                canvas.drawCircle(cx2, cy2, r + dp(2), backgroundPaint);
+                canvas.drawCircle(cx2, cy2, r, addCirclePaint);
+            }
 
             addCirclePaint.setColor(Theme.multAlpha(getTextColor(), alpha));
 
