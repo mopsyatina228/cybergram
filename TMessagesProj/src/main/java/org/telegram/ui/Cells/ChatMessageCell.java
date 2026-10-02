@@ -1964,18 +1964,38 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (!useCybergramAngularMediaClip()) {
                     return super.draw(canvas);
                 }
+                Rect bubbleBounds = null;
+                float inset = 0f;
+                if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
+                    // Telegram rewrites attachment X after measurement in several late layout branches.
+                    // At draw time the bubble bounds are final, so force the receiver's real bounding box
+                    // back inside the inner frame instead of merely clipping an oversized raster.
+                    bubbleBounds = currentBackgroundDrawable.getBounds();
+                    inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                    final float safeLeft = bubbleBounds.left + inset;
+                    final float safeTop = bubbleBounds.top + inset;
+                    final float safeRight = bubbleBounds.right - inset;
+                    final float safeBottom = bubbleBounds.bottom - inset;
+                    if (safeRight > safeLeft && safeBottom > safeTop) {
+                        final float safeWidth = safeRight - safeLeft;
+                        final float width = Math.min(getImageWidth(), safeWidth);
+                        // Keep a narrower Telegram receiver optically centered in the Cybergram frame.
+                        // Oversized media is still reduced to the safe width, never enlarged.
+                        final float x = safeLeft + (safeWidth - width) * 0.5f;
+                        final float y = Math.max(getImageY(), safeTop);
+                        final float height = Math.min(getImageHeight(), Math.max(1f, safeBottom - y));
+                        if (Math.abs(x - getImageX()) > 0.5f || Math.abs(y - getImageY()) > 0.5f
+                                || Math.abs(width - getImageWidth()) > 0.5f || Math.abs(height - getImageHeight()) > 0.5f) {
+                            setImageCoords(x, y, width, height);
+                        }
+                    }
+                }
                 buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
                 final int save = canvas.save();
                 canvas.clipPath(rectPath);
-                if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
-                    // Telegram recomputes attachment X in several late layout branches. Keep the raster
-                    // inside the actual parent bubble even if one of those branches disagrees.
-                    final Rect bubbleBounds = currentBackgroundDrawable.getBounds();
-                    final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-                    if (bubbleBounds.width() > inset * 2f && bubbleBounds.height() > inset * 2f) {
-                        canvas.clipRect(bubbleBounds.left + inset, bubbleBounds.top + inset,
-                                bubbleBounds.right - inset, bubbleBounds.bottom - inset);
-                    }
+                if (bubbleBounds != null) {
+                    canvas.clipRect(bubbleBounds.left + inset, bubbleBounds.top + inset,
+                            bubbleBounds.right - inset, bubbleBounds.bottom - inset);
                 }
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
@@ -22701,7 +22721,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !hasPsaHint) {
                     Theme.chat_forwardNamePaint.setColor(ColorUtils.setAlphaComponent(
-                            CybergramTheme.DANGER, currentMessageObject.isOutOwner() ? 188 : 212));
+                            CybergramTheme.ICON_PALE, currentMessageObject.isOutOwner() ? 188 : 208));
                 }
                 if (currentMessageObject.isOutOwner()) {
                     if (currentMessageObject.needDrawForwarded()) {
