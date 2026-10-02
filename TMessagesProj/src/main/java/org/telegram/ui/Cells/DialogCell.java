@@ -645,7 +645,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     private boolean isSelected;
     private final Paint cybergramSeparatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final CybergramHudDrawable cybergramSelectedPanel = new CybergramHudDrawable();
+    private final CybergramHudDrawable cybergramRowPanel = new CybergramHudDrawable();
 
     /**
      * Cybergram chrome typography (dialogs row title + timestamp).
@@ -4153,7 +4153,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             rect.offset(0, -translateY + collapseOffset);
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                 cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_ALERT);
+                cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_ATTENTION);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_WASH_ALPHA);
                 canvas.drawRect(rect, cybergramSeparatorPaint);
                 cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SELECTED_RULE_ALPHA);
@@ -5213,12 +5213,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
 
-        // Cyberpunk list grammar: the row itself stays flat. A faint global red rule binds the list
-        // to the chat HUD, but starts at the text column so avatars keep visual breathing room.
-        cybergramSeparatorPaint.setColor(CybergramTheme.DIALOGS_RULE);
-        cybergramSeparatorPaint.setAlpha(CybergramTheme.DIALOGS_ROW_SEPARATOR_ALPHA);
-        final float y = h - dpf2(0.65f);
-        canvas.drawRect(dp(78), y, w - dp(12), h, cybergramSeparatorPaint);
+        // Database entries separate plate, frame and content. Mirror the incoming bubble material
+        // inside the existing text column; retain the avatar gutter and upstream row measurements.
+        final boolean active = isSelected || currentDialogFolderId != 0;
+        final int frameAlpha = active ? CybergramTheme.DIALOGS_ROW_FRAME_SELECTED_ALPHA
+                : hasUnread && !muted ? CybergramTheme.DIALOGS_ROW_FRAME_UNREAD_ALPHA
+                : CybergramTheme.DIALOGS_ROW_FRAME_ALPHA;
+        final int frameColor = hasMention ? CybergramTheme.DIALOGS_ALERT : CybergramTheme.AMBER;
+        cybergramRowPanel.setBounds(LocaleController.isRTL ? dp(10) : dp(72), dp(3),
+                w - (LocaleController.isRTL ? dp(72) : dp(10)), h - dp(3));
+        cybergramRowPanel.setCornerCut(dpf2(CybergramTheme.DIALOGS_ROW_CUT_DP));
+        cybergramRowPanel.setFillColor(active ? CybergramTheme.DIALOGS_ROW_SURFACE_ACTIVE
+                : CybergramTheme.DIALOGS_ROW_SURFACE);
+        cybergramRowPanel.setStroke((frameAlpha << 24) | (frameColor & 0x00FFFFFF),
+                dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+        cybergramRowPanel.draw(canvas);
 
         // State color is semantic rather than decorative. Incoming attention is amber, explicit
         // mentions/errors are red. Normal and pinned rows receive no gratuitous rail.
@@ -5226,19 +5235,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             final int stateColor = hasMention
                     ? CybergramTheme.DIALOGS_ALERT
                     : CybergramTheme.DIALOGS_ATTENTION;
-            final int washAlpha = muted ? 4 : (hasMention
-                    ? CybergramTheme.DIALOGS_ROW_MENTION_WASH_ALPHA
-                    : CybergramTheme.DIALOGS_ROW_UNREAD_WASH_ALPHA);
             cybergramSeparatorPaint.setColor(stateColor);
-            cybergramSeparatorPaint.setAlpha(washAlpha);
-            canvas.drawRect(dp(72), 0, w, h, cybergramSeparatorPaint);
-
             final float railH = dp(hasMention ? 28f : 20f);
             final float railTop = (h - railH) * 0.5f;
             cybergramSeparatorPaint.setAlpha(muted
                     ? CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA
                     : CybergramTheme.DIALOGS_ROW_ACCENT_ALPHA);
-            canvas.drawRect(0, railTop, dpf2(hasMention ? 2f : 1.5f), railTop + railH,
+            final float railX = LocaleController.isRTL ? w - dpf2(hasMention ? 2f : 1.5f) : 0;
+            canvas.drawRect(railX, railTop, railX + dpf2(hasMention ? 2f : 1.5f), railTop + railH,
                     cybergramSeparatorPaint);
         }
     }

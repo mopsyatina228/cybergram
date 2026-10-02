@@ -201,11 +201,18 @@ public final class CybergramTheme {
     public static final int HEADER_AVATAR_DP = 36;
 
     /** Dialog-list palette. Saturated colors are reserved for state, not decoration. */
-    public static final int DIALOGS_TEXT_READ = 0xFF6FC5CD;
-    public static final int DIALOGS_TEXT_UNREAD = 0xFFA0EAF0;
-    public static final int DIALOGS_TEXT_PREVIEW = 0xFF6E929A;
-    public static final int DIALOGS_TEXT_META = 0xFF75939A;
-    public static final int DIALOGS_TEXT_SENDER = 0xFF78CDD5;
+    public static final int DIALOGS_TEXT_READ = IN_TEXT;
+    public static final int DIALOGS_TEXT_UNREAD = 0xFFE5D8B8;
+    public static final int DIALOGS_TEXT_PREVIEW = 0xFFA39D83;
+    public static final int DIALOGS_TEXT_META = IN_TIME;
+    public static final int DIALOGS_TEXT_SENDER = IN_TEXT;
+    /** Database entry grammar: independent olive plate and quiet state-dependent frame. */
+    public static final int DIALOGS_ROW_SURFACE = IN_BUBBLE;
+    public static final int DIALOGS_ROW_SURFACE_ACTIVE = IN_BUBBLE_SELECTED;
+    public static final float DIALOGS_ROW_CUT_DP = 5f;
+    public static final int DIALOGS_ROW_FRAME_ALPHA = 18;
+    public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 64;
+    public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 138;
     public static final int DIALOGS_RULE = 0xFF47121C;
     public static final int DIALOGS_ACTIVE = CYAN;
     public static final int DIALOGS_ATTENTION = AMBER_HIGHLIGHT;

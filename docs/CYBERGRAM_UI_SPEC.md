@@ -137,6 +137,13 @@ time.
 
 ## Dialog list target
 
+Amended 2026-10-03: dialogs inherit the incoming-message material: near-black olive plates,
+warm light titles and muted warm previews/metadata. The local CP2077 database (`fullscreen/codex`)
+study supplies the separate plate/frame/content hierarchy: quiet default frames, stronger frames
+for unread/selected rows, and an independent avatar gutter. Cybergram draws original chamfered
+plates within the existing row bounds; cyan remains available for navigation/actions and outgoing
+delivery state, red for mentions/errors. No game artwork is copied.
+
 Keep Telegram's information hierarchy: avatar, title, message preview, date/status and unread state.
 
 Use a dark list background. Selected/pinned rows should use a raised dark panel rather than a light overlay. Names use light text; unread/active state is cyan; destructive/error state is red; optional amber can indicate special or system states.
