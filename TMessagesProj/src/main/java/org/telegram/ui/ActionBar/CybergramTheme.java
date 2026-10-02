@@ -1,5 +1,10 @@
 package org.telegram.ui.ActionBar;
 
+import android.graphics.Path;
+import android.graphics.RectF;
+
+import org.telegram.messenger.AndroidUtilities;
+
 /**
  * Cybergram-owned visual constants.
  *
@@ -204,21 +209,31 @@ public final class CybergramTheme {
     /** Alpha (0..255) of the small 45-degree HUD tick on a dialogs row. */
     public static final int DIALOGS_ROW_TICK_ALPHA = 110;
 
-    /** Quick-reaction rail: game QuickHack/Slot grammar, adapted to the concept silhouette. */
-    public static final float REACTION_PANEL_CUT_DP = 6f;
-    public static final float REACTION_PANEL_BORDER_WIDTH_DP = 0.65f;
-    public static final int REACTION_PANEL_BORDER_ALPHA = 116;
-    public static final int REACTION_PANEL_FILL_ALPHA = 196;
-    public static final int REACTION_PANEL_FLUFF_ALPHA = 52;
+    /**
+     * Shared interaction-shell geometry. Quick reactions and message context menus are separate
+     * surfaces, but they should read as one component family rather than two unrelated HUD cards.
+     */
+    public static final float INTERACTION_PANEL_CUT_DP = 7f;
+    public static final float INTERACTION_PANEL_BORDER_WIDTH_DP = 0.65f;
+    public static final int INTERACTION_PANEL_BORDER_ALPHA = 120;
+    public static final int INTERACTION_PANEL_ACCENT_ALPHA = 62;
+    public static final float INTERACTION_PANEL_ACCENT_LENGTH_DP = 16f;
+
+    /** Quick-reaction rail: lighter glass using the shared interaction shell. */
+    public static final float REACTION_PANEL_CUT_DP = INTERACTION_PANEL_CUT_DP;
+    public static final float REACTION_PANEL_BORDER_WIDTH_DP = INTERACTION_PANEL_BORDER_WIDTH_DP;
+    public static final int REACTION_PANEL_BORDER_ALPHA = INTERACTION_PANEL_BORDER_ALPHA;
+    public static final int REACTION_PANEL_FILL_ALPHA = 214;
+    public static final int REACTION_PANEL_FLUFF_ALPHA = INTERACTION_PANEL_ACCENT_ALPHA;
     public static final float REACTION_EXPAND_CUT_DP = 5f;
 
-    /** Popup/context menu plate: darkest glass + separate frame/fluff, matching CP2077 Popup grammar. */
-    public static final float MESSAGE_MENU_CUT_DP = 7f;
+    /** Popup/context menu plate: denser glass using the same shell geometry as quick reactions. */
+    public static final float MESSAGE_MENU_CUT_DP = INTERACTION_PANEL_CUT_DP;
     public static final float MESSAGE_MENU_RADIUS_DP = 4f;
-    public static final float MESSAGE_MENU_BORDER_WIDTH_DP = 0.65f;
-    public static final int MESSAGE_MENU_FILL_ALPHA = 244;
-    public static final int MESSAGE_MENU_BORDER_ALPHA = 110;
-    public static final int MESSAGE_MENU_FLUFF_ALPHA = 62;
+    public static final float MESSAGE_MENU_BORDER_WIDTH_DP = INTERACTION_PANEL_BORDER_WIDTH_DP;
+    public static final int MESSAGE_MENU_FILL_ALPHA = 242;
+    public static final int MESSAGE_MENU_BORDER_ALPHA = INTERACTION_PANEL_BORDER_ALPHA;
+    public static final int MESSAGE_MENU_FLUFF_ALPHA = INTERACTION_PANEL_ACCENT_ALPHA;
     public static final int MESSAGE_MENU_SELECTOR_ALPHA = 24;
 
     /** Pinned strip follows the notification plate/bracket grammar rather than a Material card. */
@@ -227,6 +242,22 @@ public final class CybergramTheme {
     public static final int PINNED_PANEL_FILL_ALPHA = 238;
     public static final int PINNED_PANEL_BORDER_ALPHA = 82;
     public static final int PINNED_PANEL_ACCENT_ALPHA = 148;
+
+    /** Build the shared eight-segment chamfer used by Cybergram interaction surfaces. */
+    public static void buildInteractionPanelPath(Path path, RectF bounds, float cutDp) {
+        final float cut = Math.min(AndroidUtilities.dp(cutDp),
+                Math.min(bounds.width(), bounds.height()) * 0.22f);
+        path.rewind();
+        path.moveTo(bounds.left + cut, bounds.top);
+        path.lineTo(bounds.right - cut, bounds.top);
+        path.lineTo(bounds.right, bounds.top + cut);
+        path.lineTo(bounds.right, bounds.bottom - cut);
+        path.lineTo(bounds.right - cut, bounds.bottom);
+        path.lineTo(bounds.left + cut, bounds.bottom);
+        path.lineTo(bounds.left, bounds.bottom - cut);
+        path.lineTo(bounds.left, bounds.top + cut);
+        path.close();
+    }
 
     /**
      * Marker {@link Theme.ResourcesProvider} that opts a renderer into Cybergram

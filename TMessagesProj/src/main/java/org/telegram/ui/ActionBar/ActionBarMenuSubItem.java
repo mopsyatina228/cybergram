@@ -424,7 +424,13 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void updateBackground() {
-        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            // The parent menu owns the chamfered outer shell. Keep row feedback flat so Material
+            // radii do not reappear inside that shell.
+            setBackground(Theme.createSelectorDrawable(selectorColor, Theme.RIPPLE_MASK_ALL));
+        } else {
+            setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        }
     }
 
     private int getThemedColor(int key) {

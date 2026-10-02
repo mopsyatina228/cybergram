@@ -32460,7 +32460,10 @@ public class ChatActivity extends BaseFragment implements
             scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
             popupLayout.setFitItems(true);
 
-            ItemOptions.setGapBackgroundColor(popupLayout, Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), 0.06f));
+            ItemOptions.setGapBackgroundColor(popupLayout,
+                    CybergramTheme.isCybergramPresentation(getResourceProvider())
+                            ? Theme.multAlpha(CybergramTheme.DANGER, 0.12f)
+                            : Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), 0.06f));
 
             int popupX = v.getLeft() + (int) x - scrimPopupContainerLayout.getMeasuredWidth() + backgroundPaddings.left - AndroidUtilities.dp(28);
             if (popupX < AndroidUtilities.dp(6)) {

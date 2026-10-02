@@ -152,6 +152,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint cybergramOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path cybergramConnectorPath = new Path();
+    private final RectF cybergramConnectorRect = new RectF();
     private final Paint leftShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG),
             rightShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float leftAlpha, rightAlpha;
@@ -461,18 +463,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     }
 
     private void buildCybergramPanelPath(Path path, RectF bounds) {
-        final float cut = Math.min(dp(CybergramTheme.REACTION_PANEL_CUT_DP),
-                Math.min(bounds.width(), bounds.height()) * 0.22f);
-        path.rewind();
-        path.moveTo(bounds.left + cut, bounds.top);
-        path.lineTo(bounds.right - cut, bounds.top);
-        path.lineTo(bounds.right, bounds.top + cut);
-        path.lineTo(bounds.right, bounds.bottom - cut);
-        path.lineTo(bounds.right - cut, bounds.bottom);
-        path.lineTo(bounds.left + cut, bounds.bottom);
-        path.lineTo(bounds.left, bounds.bottom - cut);
-        path.lineTo(bounds.left, bounds.top + cut);
-        path.close();
+        CybergramTheme.buildInteractionPanelPath(path, bounds, CybergramTheme.REACTION_PANEL_CUT_DP);
     }
 
     public boolean showExpandableReactions() {
@@ -780,7 +771,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                 cybergramOutlinePaint.setColor(CybergramTheme.DANGER);
                 cybergramOutlinePaint.setAlpha(CybergramTheme.REACTION_PANEL_FLUFF_ALPHA);
                 canvas.drawLine(rect.left + dp(CybergramTheme.REACTION_PANEL_CUT_DP), rect.top,
-                        rect.left + dp(CybergramTheme.REACTION_PANEL_CUT_DP + 12f), rect.top, cybergramOutlinePaint);
+                        rect.left + dp(CybergramTheme.REACTION_PANEL_CUT_DP
+                                + CybergramTheme.INTERACTION_PANEL_ACCENT_LENGTH_DP),
+                        rect.top, cybergramOutlinePaint);
                 cybergramOutlinePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.REACTION_PANEL_BORDER_ALPHA));
             } else {
                 if (blurredBackgroundDrawable != null) {
@@ -962,6 +955,25 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         drawBubbles(canvas, br, cPr, sr, alpha);
     }
 
+    private void drawCybergramConnector(Canvas canvas, float cx, float cy, float radius, int alpha) {
+        if (radius <= 0f || alpha <= 0) {
+            return;
+        }
+        cybergramConnectorRect.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        CybergramTheme.buildInteractionPanelPath(
+                cybergramConnectorPath, cybergramConnectorRect, CybergramTheme.REACTION_PANEL_CUT_DP);
+
+        bgPaint.setColor(CybergramTheme.PANEL_RAISED);
+        bgPaint.setAlpha(CybergramTheme.REACTION_PANEL_FILL_ALPHA * alpha / 255);
+        canvas.drawPath(cybergramConnectorPath, bgPaint);
+
+        cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
+        cybergramOutlinePaint.setStrokeWidth(dp(CybergramTheme.REACTION_PANEL_BORDER_WIDTH_DP));
+        cybergramOutlinePaint.setColor(CybergramTheme.CYAN);
+        cybergramOutlinePaint.setAlpha(CybergramTheme.REACTION_PANEL_BORDER_ALPHA * alpha / 255);
+        canvas.drawPath(cybergramConnectorPath, cybergramOutlinePaint);
+    }
+
     private void drawBubbles(Canvas canvas, float br, float cPr, float sr, int alpha) {
         if (type == TYPE_STORY) {
             return;
@@ -976,6 +988,29 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         cx += bubblesOffset;
         float cy = isTop ? getPaddingTop() - expandSize() : getHeight() - getPaddingBottom() + expandSize();
         int sPad = dp(3);
+
+        if (useCybergramPanel() && !delegate.drawBackground()) {
+            drawCybergramConnector(canvas, cx, cy, br, alpha);
+
+            float smallCx = LocaleController.isRTL || mirrorX
+                    ? bigCircleOffset - bigCircleRadius
+                    : getWidth() - bigCircleOffset + bigCircleRadius;
+            smallCx += bubblesOffset + miniBubblesOffset;
+            float smallCy = isTop
+                    ? getPaddingTop() - expandSize() - dp(16)
+                    : getHeight() - smallCircleRadius - sPad + expandSize();
+            smallCy = AndroidUtilities.lerp(smallCy, smallCircleRadius + sPad - expandSize(),
+                    CubicBezierInterpolator.DEFAULT.getInterpolation(flipVerticalProgress));
+            drawCybergramConnector(canvas, smallCx, smallCy, sr, alpha);
+
+            canvas.restore();
+            bgPaint.setAlpha(CybergramTheme.REACTION_PANEL_FILL_ALPHA);
+            cybergramOutlinePaint.setColor(ColorUtils.setAlphaComponent(
+                    CybergramTheme.CYAN, CybergramTheme.REACTION_PANEL_BORDER_ALPHA));
+            cybergramOutlinePaint.setAlpha(CybergramTheme.REACTION_PANEL_BORDER_ALPHA);
+            return;
+        }
+
         shadow.setAlpha(alpha);
         bgPaint.setAlpha(alpha);
         shadow.setBounds((int) (cx - br - sPad * cPr), (int) (cy - br - sPad * cPr), (int) (cx + br + sPad * cPr), (int) (cy + br + sPad * cPr));

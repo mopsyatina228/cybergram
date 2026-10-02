@@ -456,17 +456,9 @@ public class ActionBarPopupWindow extends PopupWindow {
             cybergramPanelRect.set(bounds);
             cybergramPanelRect.inset(dp(4), dp(4));
             final float cut = Math.min(dp(CybergramTheme.MESSAGE_MENU_CUT_DP),
-                    Math.min(cybergramPanelRect.width(), cybergramPanelRect.height()) * 0.18f);
-            cybergramPanelPath.rewind();
-            cybergramPanelPath.moveTo(cybergramPanelRect.left + cut, cybergramPanelRect.top);
-            cybergramPanelPath.lineTo(cybergramPanelRect.right - cut, cybergramPanelRect.top);
-            cybergramPanelPath.lineTo(cybergramPanelRect.right, cybergramPanelRect.top + cut);
-            cybergramPanelPath.lineTo(cybergramPanelRect.right, cybergramPanelRect.bottom - cut);
-            cybergramPanelPath.lineTo(cybergramPanelRect.right - cut, cybergramPanelRect.bottom);
-            cybergramPanelPath.lineTo(cybergramPanelRect.left + cut, cybergramPanelRect.bottom);
-            cybergramPanelPath.lineTo(cybergramPanelRect.left, cybergramPanelRect.bottom - cut);
-            cybergramPanelPath.lineTo(cybergramPanelRect.left, cybergramPanelRect.top + cut);
-            cybergramPanelPath.close();
+                    Math.min(cybergramPanelRect.width(), cybergramPanelRect.height()) * 0.22f);
+            CybergramTheme.buildInteractionPanelPath(
+                    cybergramPanelPath, cybergramPanelRect, CybergramTheme.MESSAGE_MENU_CUT_DP);
 
             cybergramPanelPaint.setStyle(Paint.Style.FILL);
             cybergramPanelPaint.setColor(CybergramTheme.PANEL_RAISED);
@@ -482,7 +474,8 @@ public class ActionBarPopupWindow extends PopupWindow {
             cybergramPanelStroke.setColor(CybergramTheme.DANGER);
             cybergramPanelStroke.setAlpha(CybergramTheme.MESSAGE_MENU_FLUFF_ALPHA * alpha / 255);
             canvas.drawLine(cybergramPanelRect.left + cut, cybergramPanelRect.top,
-                    cybergramPanelRect.left + cut + dp(18), cybergramPanelRect.top, cybergramPanelStroke);
+                    cybergramPanelRect.left + cut + dp(CybergramTheme.INTERACTION_PANEL_ACCENT_LENGTH_DP),
+                    cybergramPanelRect.top, cybergramPanelStroke);
         }
 
         @Override
@@ -587,7 +580,13 @@ public class ActionBarPopupWindow extends PopupWindow {
                         } else {
                             path.rewind();
                         }
-                        path.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);
+                        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                            cybergramPanelRect.set(AndroidUtilities.rectTmp);
+                            CybergramTheme.buildInteractionPanelPath(
+                                    path, cybergramPanelRect, CybergramTheme.MESSAGE_MENU_CUT_DP);
+                        } else {
+                            path.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);
+                        }
                         canvas.clipPath(path);
                         for (int i = 0; i < linearLayout.getChildCount(); i++) {
                             if (linearLayout.getChildAt(i) instanceof GapView && linearLayout.getChildAt(i).getVisibility() == View.VISIBLE) {
