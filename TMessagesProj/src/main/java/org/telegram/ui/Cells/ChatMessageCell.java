@@ -1966,16 +1966,35 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 Rect bubbleBounds = null;
                 float inset = 0f;
+                float safeLeft = Float.NaN;
+                float safeTop = Float.NaN;
+                float safeRight = Float.NaN;
+                float safeBottom = Float.NaN;
                 if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
                     // Telegram rewrites attachment X after measurement in several late layout branches.
                     // At draw time the bubble bounds are final, so force the receiver's real bounding box
                     // back inside the inner frame instead of merely clipping an oversized raster.
                     bubbleBounds = currentBackgroundDrawable.getBounds();
                     inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-                    final float safeLeft = bubbleBounds.left + inset;
-                    final float safeTop = bubbleBounds.top + inset;
-                    final float safeRight = bubbleBounds.right - inset;
-                    final float safeBottom = bubbleBounds.bottom - inset;
+                    final float framePadding = dp(2f);
+                    final boolean forceMediaByGroup = currentPosition != null
+                            && currentMessagesGroup != null && currentMessagesGroup.isDocuments
+                            && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && !drawPinnedBottom;
+                    final boolean textFrame = transitionParams.changePinnedBottomProgress >= 1f
+                            && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup;
+                    float frameLeftPadding = framePadding;
+                    float frameRightPadding = framePadding;
+                    if (textFrame) {
+                        if (currentMessageObject.isOutOwner()) {
+                            frameRightPadding = dp(8f);
+                        } else {
+                            frameLeftPadding = dp(8f);
+                        }
+                    }
+                    safeLeft = bubbleBounds.left + frameLeftPadding + inset;
+                    safeTop = bubbleBounds.top + framePadding + inset;
+                    safeRight = bubbleBounds.right - frameRightPadding - inset;
+                    safeBottom = bubbleBounds.bottom - framePadding - inset;
                     if (safeRight > safeLeft && safeBottom > safeTop) {
                         final float safeWidth = safeRight - safeLeft;
                         final float width = Math.min(getImageWidth(), safeWidth);
@@ -1993,9 +2012,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
                 final int save = canvas.save();
                 canvas.clipPath(rectPath);
-                if (bubbleBounds != null) {
-                    canvas.clipRect(bubbleBounds.left + inset, bubbleBounds.top + inset,
-                            bubbleBounds.right - inset, bubbleBounds.bottom - inset);
+                if (!Float.isNaN(safeLeft)) {
+                    canvas.clipRect(safeLeft, safeTop, safeRight, safeBottom);
                 }
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
