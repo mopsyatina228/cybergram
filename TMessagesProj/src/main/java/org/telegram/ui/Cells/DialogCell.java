@@ -2464,17 +2464,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameLeft += w;
             }
         } else if (drawCheck2) {
-            int w = Theme.dialogs_checkDrawable.getIntrinsicWidth() + dp(5);
+            final float checkScale = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.CHECK_SCALE : 1f;
+            int w = Math.round(Theme.dialogs_checkDrawable.getIntrinsicWidth() * checkScale) + dp(5);
             nameWidth -= w;
             if (drawCheck1) {
-                nameWidth -= Theme.dialogs_halfCheckDrawable.getIntrinsicWidth() - dp(8);
+                nameWidth -= Math.round(Theme.dialogs_halfCheckDrawable.getIntrinsicWidth() * checkScale) - dp(8);
                 if (!LocaleController.isRTL) {
                     halfCheckDrawLeft = timeLeft - timeLeftOffset - w;
                     checkDrawLeft = halfCheckDrawLeft - dp(5.5f);
                 } else {
                     checkDrawLeft = timeLeft + timeWidth + dp(5);
                     halfCheckDrawLeft = checkDrawLeft + dp(5.5f);
-                    nameLeft += w + Theme.dialogs_halfCheckDrawable.getIntrinsicWidth() - dp(8);
+                    nameLeft += w + Math.round(Theme.dialogs_halfCheckDrawable.getIntrinsicWidth() * checkScale) - dp(8);
                 }
             } else {
                 if (!LocaleController.isRTL) {
@@ -3230,6 +3232,28 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         return !isDialogFolder() && !insideCommunityListNoDialog && chat != null && (chat.forum || ChatObject.isMonoForum(chat) && ChatObject.canManageMonoForum(currentAccount, chat)) && !isTopic;
     }
 
+    private void scaleCybergramDialogCheckBounds(Drawable drawable) {
+        if (drawable == null || !CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            return;
+        }
+        final android.graphics.Rect bounds = drawable.getBounds();
+        final float scale = CybergramTheme.CHECK_SCALE;
+        final float cx = bounds.exactCenterX();
+        final float cy = bounds.exactCenterY();
+        final float halfW = bounds.width() * scale * 0.5f;
+        final float halfH = bounds.height() * scale * 0.5f;
+        drawable.setBounds(
+                Math.round(cx - halfW), Math.round(cy - halfH),
+                Math.round(cx + halfW), Math.round(cy + halfH));
+        drawable.getBounds().offset(0, -dp(CybergramTheme.CHECK_Y_OFFSET_DP));
+    }
+
+    private int cybergramDialogCheckAlpha(float alpha) {
+        final float factor = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.CHECK_ALPHA_SCALE : 1f;
+        return Math.round(255f * alpha * factor);
+    }
+
     private void drawCheckStatus(Canvas canvas, boolean drawClock, boolean drawCheck1, boolean drawCheck2, boolean moveCheck,  float alpha) {
         if (alpha == 0 && !moveCheck) {
             return;
@@ -3251,16 +3275,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         } else if (drawCheck2) {
             if (drawCheck1) {
                 setDrawableBounds(Theme.dialogs_halfCheckDrawable, halfCheckDrawLeft, checkDrawTop);
+                scaleCybergramDialogCheckBounds(Theme.dialogs_halfCheckDrawable);
                 if (moveCheck) {
                     canvas.save();
                     canvas.scale(scale, scale, Theme.dialogs_halfCheckDrawable.getBounds().centerX(), Theme.dialogs_halfCheckDrawable.getBounds().centerY());
-                    Theme.dialogs_halfCheckDrawable.setAlpha((int) (255 * alpha));
+                    Theme.dialogs_halfCheckDrawable.setAlpha(cybergramDialogCheckAlpha(alpha));
                 }
                 if (!moveCheck && alpha != 0) {
                     canvas.save();
                     canvas.scale(scale, scale, Theme.dialogs_halfCheckDrawable.getBounds().centerX(), Theme.dialogs_halfCheckDrawable.getBounds().centerY());
-                    Theme.dialogs_halfCheckDrawable.setAlpha((int) (255 * alpha));
-                    Theme.dialogs_checkReadDrawable.setAlpha((int) (255 * alpha));
+                    Theme.dialogs_halfCheckDrawable.setAlpha(cybergramDialogCheckAlpha(alpha));
+                    Theme.dialogs_checkReadDrawable.setAlpha(cybergramDialogCheckAlpha(alpha));
                 }
 
                 Theme.dialogs_halfCheckDrawable.draw(canvas);
@@ -3271,10 +3296,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     canvas.translate(dp(4) * (1f - alpha), 0);
                 }
                 setDrawableBounds(Theme.dialogs_checkReadDrawable, checkDrawLeft, checkDrawTop);
+                scaleCybergramDialogCheckBounds(Theme.dialogs_checkReadDrawable);
+                Theme.dialogs_checkReadDrawable.setAlpha(cybergramDialogCheckAlpha(alpha));
                 Theme.dialogs_checkReadDrawable.draw(canvas);
                 if (moveCheck) {
                     canvas.restore();
                     Theme.dialogs_halfCheckDrawable.setAlpha(255);
+                    Theme.dialogs_checkReadDrawable.setAlpha(255);
                 }
 
                 if (!moveCheck && alpha != 0) {
@@ -3284,16 +3312,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
             } else {
                 setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft1, checkDrawTop);
+                scaleCybergramDialogCheckBounds(Theme.dialogs_checkDrawable);
+                Theme.dialogs_checkDrawable.setAlpha(cybergramDialogCheckAlpha(alpha));
                 if (alpha != 1f) {
                     canvas.save();
                     canvas.scale(scale, scale, Theme.dialogs_checkDrawable.getBounds().centerX(), Theme.dialogs_halfCheckDrawable.getBounds().centerY());
-                    Theme.dialogs_checkDrawable.setAlpha((int) (255 * alpha));
                 }
                 Theme.dialogs_checkDrawable.draw(canvas);
                 if (alpha != 1f) {
                     canvas.restore();
-                    Theme.dialogs_checkDrawable.setAlpha(255);
                 }
+                Theme.dialogs_checkDrawable.setAlpha(255);
             }
         }
     }
