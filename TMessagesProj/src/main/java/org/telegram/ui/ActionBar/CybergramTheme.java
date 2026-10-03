@@ -157,6 +157,15 @@ public final class CybergramTheme {
     public static final int HEADER_GLOW_ALPHA = 30;
     public static final int COMPOSER_GLOW_ALPHA = 28;
 
+    /** Round-video recorder: keep the circular media format, but use Cybergram HUD chrome. */
+    public static final float RECORDER_CONTROL_CUT_DP = 8f;
+    public static final float RECORDER_CONTROL_BORDER_WIDTH_DP = 0.85f;
+    public static final int RECORDER_CONTROL_BORDER_ALPHA = 196;
+    public static final int RECORDER_CONTROL_GLOW_ALPHA = 28;
+    public static final float RECORDER_PREVIEW_TRACK_WIDTH_DP = 1.15f;
+    public static final float RECORDER_PREVIEW_PROGRESS_WIDTH_DP = 2.35f;
+    public static final int RECORDER_PREVIEW_TRACK_ALPHA = 132;
+
     /** Radius, in dp, of the red-rail neon bloom (owner ruling D9.8). */
     public static final float RED_GLOW_RADIUS_DP = 4f;
 

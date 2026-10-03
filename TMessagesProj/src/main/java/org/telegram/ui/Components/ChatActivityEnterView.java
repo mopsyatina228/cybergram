@@ -1007,8 +1007,12 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         public void updateColors() {
-            int dotColor = getThemedColor(Theme.key_chat_recordedVoiceDot);
-            int background = getThemedColor(Theme.key_chat_messagePanelBackground);
+            int dotColor = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? ColorUtils.blendARGB(CybergramTheme.DANGER, Color.WHITE, 0.16f)
+                    : getThemedColor(Theme.key_chat_recordedVoiceDot);
+            int background = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.PANEL
+                    : getThemedColor(Theme.key_chat_messagePanelBackground);
             redDotPaint.setColor(dotColor);
             drawable.beginApplyLayerColors();
             drawable.setLayerColor("Cup Red", dotColor);
@@ -1185,6 +1189,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         Paint lockBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         Paint lockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         Paint lockOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramControlFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramControlStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramControlGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path cybergramControlPath = new Path();
 
         Path path = new Path();
         private Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1220,11 +1228,20 @@ public class ChatActivityEnterView extends FrameLayout implements
             lockOutlinePaint.setStrokeCap(Paint.Cap.ROUND);
             lockOutlinePaint.setStrokeWidth(dpf2(1.7f));
 
+            cybergramControlFillPaint.setStyle(Paint.Style.FILL);
+            cybergramControlStrokePaint.setStyle(Paint.Style.STROKE);
+            cybergramControlStrokePaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramControlStrokePaint.setStrokeCap(Paint.Cap.SQUARE);
+            cybergramControlGlowPaint.setStyle(Paint.Style.STROKE);
+            cybergramControlGlowPaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramControlGlowPaint.setStrokeCap(Paint.Cap.SQUARE);
+
             lockShadowDrawable = getResources().getDrawable(R.drawable.lock_round_shadow);
             lockShadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoiceLockShadow), PorterDuff.Mode.MULTIPLY));
             tooltipBackground = Theme.createRoundRectDrawable(dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground));
 
             tooltipPaint.setTextSize(dp(14));
+            tooltipPaint.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, null));
             tooltipBackgroundArrow = ContextCompat.getDrawable(context, R.drawable.tooltip_arrow);
             tooltipMessage = getString("SlideUpToLock", R.string.SlideUpToLock);
 
@@ -1349,6 +1366,29 @@ public class ChatActivityEnterView extends FrameLayout implements
         private final float[] radiiLeft = new float[8], radiiRight = new float[8];
 
         private AnimatedFloat hidePauseT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+        private boolean useCybergramRecorderControls() {
+            return isInVideoMode && CybergramTheme.isCybergramPresentation(resourcesProvider);
+        }
+
+        private void drawCybergramControlPlate(Canvas canvas, RectF bounds) {
+            CybergramTheme.buildInteractionPanelPath(
+                    cybergramControlPath, bounds, CybergramTheme.RECORDER_CONTROL_CUT_DP);
+            cybergramControlFillPaint.setColor(CybergramTheme.PANEL_RAISED);
+            cybergramControlFillPaint.setAlpha(238);
+            canvas.drawPath(cybergramControlPath, cybergramControlFillPaint);
+
+            cybergramControlGlowPaint.setColor(CybergramTheme.CYAN);
+            cybergramControlGlowPaint.setStrokeWidth(dpf2(4f));
+            cybergramControlGlowPaint.setAlpha(CybergramTheme.RECORDER_CONTROL_GLOW_ALPHA);
+            canvas.drawPath(cybergramControlPath, cybergramControlGlowPaint);
+
+            cybergramControlStrokePaint.setColor(CybergramTheme.CYAN);
+            cybergramControlStrokePaint.setStrokeWidth(
+                    dpf2(CybergramTheme.RECORDER_CONTROL_BORDER_WIDTH_DP));
+            cybergramControlStrokePaint.setAlpha(CybergramTheme.RECORDER_CONTROL_BORDER_ALPHA);
+            canvas.drawPath(cybergramControlPath, cybergramControlStrokePaint);
+        }
 
         @Override
         protected void onDraw(Canvas canvas) {
@@ -1532,7 +1572,9 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             rectF.set(cx - dpf2(18), lockY + dy, cx + dpf2(18), lockY + dy + lockSize);
 
-            if (lockBackgroundDrawable != null){
+            if (useCybergramRecorderControls()) {
+                drawCybergramControlPlate(canvas, rectF);
+            } else if (lockBackgroundDrawable != null){
                 lockBackgroundDrawable.setBounds(
                         (int) (rectF.left - dpf2(3)), (int) (rectF.top - dpf2(3)),
                         (int) (rectF.right + dpf2(3)), (int) (rectF.bottom + dpf2(3))
@@ -1662,7 +1704,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 final float s2 = controlsScale * (1f - exitTransition) * slideToCancelLockProgress * snapAnimationProgress;
                 canvas.scale(s2, s2, rectF.centerX(), rectF.centerY());
 
-                if (periodBackgroundDrawable != null) {
+                if (useCybergramRecorderControls()) {
+                    drawCybergramControlPlate(canvas, rectF);
+                } else if (periodBackgroundDrawable != null) {
                     periodBackgroundDrawable.setBounds(
                         (int) (rectF.left - dpf2(3)), (int) (rectF.top - dpf2(3)),
                         (int) (rectF.right + dpf2(3)), (int) (rectF.bottom + dpf2(3))
@@ -1721,22 +1765,37 @@ public class ChatActivityEnterView extends FrameLayout implements
                 periodBackgroundDrawable.updateColors();
             }
 
-            periodDrawable.updateColors(
-                getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock),
-                getThemedColor(Theme.key_chat_messagePanelVoiceBackground),
-                0xFFFFFFFF
-            );
+            if (useCybergramRecorderControls()) {
+                periodDrawable.updateColors(
+                        CybergramTheme.CYAN_SECONDARY,
+                        CybergramTheme.PANEL_RAISED,
+                        CybergramTheme.AMBER_HIGHLIGHT
+                );
+            } else {
+                periodDrawable.updateColors(
+                    getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock),
+                    getThemedColor(Theme.key_chat_messagePanelVoiceBackground),
+                    0xFFFFFFFF
+                );
+            }
 
             tooltipPaint.setColor(getThemedColor(Theme.key_chat_gifSaveHintText));
             tooltipBackground = Theme.createRoundRectDrawable(dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground));
             tooltipBackgroundArrow.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.SRC_IN));
 
-            lockBackgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelVoiceLockBackground));
-            lockPaint.setColor(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock));
-            lockOutlinePaint.setColor(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock));
-
-            micDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock), PorterDuff.Mode.SRC_IN));
-            vidDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock), PorterDuff.Mode.SRC_IN));
+            if (useCybergramRecorderControls()) {
+                lockBackgroundPaint.setColor(CybergramTheme.PANEL_RAISED);
+                lockPaint.setColor(CybergramTheme.CYAN_SECONDARY);
+                lockOutlinePaint.setColor(CybergramTheme.CYAN_SECONDARY);
+                micDrawable.setColorFilter(new PorterDuffColorFilter(CybergramTheme.CYAN_SECONDARY, PorterDuff.Mode.SRC_IN));
+                vidDrawable.setColorFilter(new PorterDuffColorFilter(CybergramTheme.CYAN_SECONDARY, PorterDuff.Mode.SRC_IN));
+            } else {
+                lockBackgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelVoiceLockBackground));
+                lockPaint.setColor(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock));
+                lockOutlinePaint.setColor(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock));
+                micDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock), PorterDuff.Mode.SRC_IN));
+                vidDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(useGlassDesign ? Theme.key_glass_defaultIcon : Theme.key_chat_messagePanelVoiceLock), PorterDuff.Mode.SRC_IN));
+            }
         }
 
         private void scale(RectF rect, float s) {
@@ -1972,6 +2031,11 @@ public class ChatActivityEnterView extends FrameLayout implements
         private float circleRadius = dpf2(41);
         private float circleRadiusAmplitude = dp(30);
         RectF rectF = new RectF();
+        private final RectF cybergramButtonRect = new RectF();
+        private final Path cybergramButtonPath = new Path();
+        private final Paint cybergramButtonFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramButtonStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cybergramButtonGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         boolean incIdle;
 
@@ -2007,6 +2071,14 @@ public class ChatActivityEnterView extends FrameLayout implements
             bigWaveDrawable.generateBlob();
             iconScale = 1f;
 
+            cybergramButtonFillPaint.setStyle(Paint.Style.FILL);
+            cybergramButtonStrokePaint.setStyle(Paint.Style.STROKE);
+            cybergramButtonStrokePaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramButtonStrokePaint.setStrokeCap(Paint.Cap.SQUARE);
+            cybergramButtonGlowPaint.setStyle(Paint.Style.STROKE);
+            cybergramButtonGlowPaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramButtonGlowPaint.setStrokeCap(Paint.Cap.SQUARE);
+
             final ViewConfiguration vc = ViewConfiguration.get(context);
             touchSlop = vc.getScaledTouchSlop();
             touchSlop *= touchSlop;
@@ -2032,6 +2104,39 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
             cameraOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        }
+
+        private boolean useCybergramVideoButton() {
+            return isInVideoMode() && CybergramTheme.isCybergramPresentation(resourcesProvider);
+        }
+
+        private void drawRecordButtonSurface(Canvas canvas, float cx, float cy, float radius) {
+            if (!useCybergramVideoButton()) {
+                canvas.drawCircle(cx, cy, radius, paint);
+                return;
+            }
+            final float half = Math.min(dpf2(28), Math.max(0f, radius * 0.68f));
+            cybergramButtonRect.set(cx - half, cy - half, cx + half, cy + half);
+            CybergramTheme.buildInteractionPanelPath(
+                    cybergramButtonPath, cybergramButtonRect, CybergramTheme.RECORDER_CONTROL_CUT_DP);
+            final int alpha = paint.getAlpha();
+
+            cybergramButtonFillPaint.setColor(CybergramTheme.PANEL_RAISED);
+            cybergramButtonFillPaint.setAlpha((int) (alpha * 0.96f));
+            canvas.drawPath(cybergramButtonPath, cybergramButtonFillPaint);
+
+            cybergramButtonGlowPaint.setColor(CybergramTheme.CYAN);
+            cybergramButtonGlowPaint.setStrokeWidth(dpf2(5f));
+            cybergramButtonGlowPaint.setAlpha(
+                    CybergramTheme.RECORDER_CONTROL_GLOW_ALPHA * alpha / 255);
+            canvas.drawPath(cybergramButtonPath, cybergramButtonGlowPaint);
+
+            cybergramButtonStrokePaint.setColor(CybergramTheme.CYAN);
+            cybergramButtonStrokePaint.setStrokeWidth(
+                    dpf2(CybergramTheme.RECORDER_CONTROL_BORDER_WIDTH_DP));
+            cybergramButtonStrokePaint.setAlpha(
+                    CybergramTheme.RECORDER_CONTROL_BORDER_ALPHA * alpha / 255);
+            canvas.drawPath(cybergramButtonPath, cybergramButtonStrokePaint);
         }
 
         public void setAmplitude(double value) {
@@ -2254,9 +2359,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                     replaceDrawable = isInVideoMode() ? cameraDrawable : micDrawable;
                 }
                 drawable = sendDrawable;
-                sendRect.set(cx - drawable.getIntrinsicWidth() / 2, cy - drawable.getIntrinsicHeight() / 2, cx + drawable.getIntrinsicWidth() / 2, cy + drawable.getIntrinsicHeight() / 2);
-                if (replaceDrawable != null) {
-                    replaceDrawable.setBounds(cx - replaceDrawable.getIntrinsicWidth() / 2, cy - replaceDrawable.getIntrinsicHeight() / 2, cx + replaceDrawable.getIntrinsicWidth() / 2, cy + replaceDrawable.getIntrinsicHeight() / 2);
+                if (useCybergramVideoButton()) {
+                    final int iconHalf = dp(11);
+                    sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
+                    if (replaceDrawable != null) {
+                        final int replaceHalf = dp(10);
+                        replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
+                    }
+                } else {
+                    sendRect.set(cx - drawable.getIntrinsicWidth() / 2, cy - drawable.getIntrinsicHeight() / 2, cx + drawable.getIntrinsicWidth() / 2, cy + drawable.getIntrinsicHeight() / 2);
+                    if (replaceDrawable != null) {
+                        replaceDrawable.setBounds(cx - replaceDrawable.getIntrinsicWidth() / 2, cy - replaceDrawable.getIntrinsicHeight() / 2, cx + replaceDrawable.getIntrinsicWidth() / 2, cy + replaceDrawable.getIntrinsicHeight() / 2);
+                    }
                 }
             } else {
                 drawable = isInVideoMode() ? cameraDrawable : micDrawable;
@@ -2278,7 +2392,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
 
-            if (LiteMode.isEnabled(LiteMode.FLAGS_CHAT)) {
+            if (LiteMode.isEnabled(LiteMode.FLAGS_CHAT) && !useCybergramVideoButton()) {
                 tinyWaveDrawable.minRadius = dp(47);
                 tinyWaveDrawable.maxRadius = dp(47) + dp(15) * BlobDrawable.FORM_SMALL_MAX;
 
@@ -2296,7 +2410,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             lastUpdateTime = System.currentTimeMillis();
             float slideToCancelProgress1 = slideToCancelProgress > 0.7f ? 1f : slideToCancelProgress / 0.7f;
 
-            if (LiteMode.isEnabled(LiteMode.FLAGS_CHAT) && progressToSeekbarStep2 != 1 && exitProgress2 < 0.4f && slideToCancelProgress1 > 0 && !canceledByGesture) {
+            if (LiteMode.isEnabled(LiteMode.FLAGS_CHAT) && !useCybergramVideoButton()
+                    && progressToSeekbarStep2 != 1 && exitProgress2 < 0.4f
+                    && slideToCancelProgress1 > 0 && !canceledByGesture) {
                 if (showWaves && wavesEnterAnimation != 1f) {
                     wavesEnterAnimation += 0.04f;
                     if (wavesEnterAnimation > 1f) {
@@ -2358,10 +2474,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                             rectF.set(left, top, right, bottom);
                             audioTimelineView.drawIn(canvas, rectF, progressToSeekbarStep3);
                         } else {
-                            canvas.drawCircle(cx + slideDelta, cy, radius * (1f - progressToSeekbarStep3), paint);
+                            drawRecordButtonSurface(canvas, cx + slideDelta, cy, radius * (1f - progressToSeekbarStep3));
                         }
                     } else {
-                        canvas.drawCircle(cx + slideDelta, cy, radius, paint);
+                        drawRecordButtonSurface(canvas, cx + slideDelta, cy, radius);
                     }
                     canvas.save();
                     float a = (1f - exitProgress2);
@@ -2372,7 +2488,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             if (scale != 1f) {
-                canvas.drawCircle(cx + slideDelta, cy, radius, paint);
+                drawRecordButtonSurface(canvas, cx + slideDelta, cy, radius);
                 float a = (canceledByGesture ? (1f - slideToCancelProgress) : 1);
                 canvas.save();
                 canvas.translate(slideDelta, 0);
@@ -2399,9 +2515,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                     replaceDrawable = isInVideoMode() ? cameraDrawable : micDrawable;
                 }
                 drawable = sendDrawable;
-                sendRect.set(cx - drawable.getIntrinsicWidth() / 2, cy - drawable.getIntrinsicHeight() / 2, cx + drawable.getIntrinsicWidth() / 2, cy + drawable.getIntrinsicHeight() / 2);
-                if (replaceDrawable != null) {
-                    replaceDrawable.setBounds(cx - replaceDrawable.getIntrinsicWidth() / 2, cy - replaceDrawable.getIntrinsicHeight() / 2, cx + replaceDrawable.getIntrinsicWidth() / 2, cy + replaceDrawable.getIntrinsicHeight() / 2);
+                if (useCybergramVideoButton()) {
+                    final int iconHalf = dp(11);
+                    sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
+                    if (replaceDrawable != null) {
+                        final int replaceHalf = dp(10);
+                        replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
+                    }
+                } else {
+                    sendRect.set(cx - drawable.getIntrinsicWidth() / 2, cy - drawable.getIntrinsicHeight() / 2, cx + drawable.getIntrinsicWidth() / 2, cy + drawable.getIntrinsicHeight() / 2);
+                    if (replaceDrawable != null) {
+                        replaceDrawable.setBounds(cx - replaceDrawable.getIntrinsicWidth() / 2, cy - replaceDrawable.getIntrinsicHeight() / 2, cx + replaceDrawable.getIntrinsicWidth() / 2, cy + replaceDrawable.getIntrinsicHeight() / 2);
+                    }
                 }
             } else {
                 drawable = isInVideoMode() ? cameraDrawable : micDrawable;
@@ -2655,15 +2780,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                 cybergramComposerFrame.draw(canvas);
 
                 final float dividerX = dp(47f);
-                final float dividerTop = frameTop + dp(7f);
-                final float dividerBottom = h - dp(7f);
+                final boolean cybergramRecorderActive = recordingAudioVideo && isInVideoMode();
+                final float dividerTop = cybergramRecorderActive ? h * 0.5f - dp(10f) : frameTop + dp(7f);
+                final float dividerBottom = cybergramRecorderActive ? h * 0.5f + dp(10f) : h - dp(7f);
                 cybergramComposerDividerPaint.setColor(frameColor);
                 cybergramComposerDividerPaint.setStrokeCap(Paint.Cap.SQUARE);
                 cybergramComposerDividerPaint.setStrokeWidth(dp(2f));
-                cybergramComposerDividerPaint.setAlpha(24);
+                cybergramComposerDividerPaint.setAlpha(cybergramRecorderActive ? 10 : 24);
                 canvas.drawLine(dividerX, dividerTop, dividerX, dividerBottom, cybergramComposerDividerPaint);
                 cybergramComposerDividerPaint.setStrokeWidth(Math.max(1f, dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP)));
-                cybergramComposerDividerPaint.setAlpha(CybergramTheme.COMPOSER_DIVIDER_ALPHA);
+                cybergramComposerDividerPaint.setAlpha(cybergramRecorderActive
+                        ? Math.max(60, CybergramTheme.COMPOSER_DIVIDER_ALPHA / 2)
+                        : CybergramTheme.COMPOSER_DIVIDER_ALPHA);
                 canvas.drawLine(dividerX, dividerTop, dividerX, dividerBottom, cybergramComposerDividerPaint);
                 final float ruleH = Math.max(1f, AndroidUtilities.density);
                 cybergramComposerRulePaint.setColor(CybergramTheme.SEPARATOR);
@@ -14140,11 +14268,12 @@ public class ChatActivityEnterView extends FrameLayout implements
             smallSize = AndroidUtilities.displaySize.x <= dp(320);
             grayPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             grayPaint.setTextSize(dp(smallSize ? 13 : 15));
+            grayPaint.setTypeface(CybergramTypography.chromeRegular(resourcesProvider, null));
 
             bluePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             bluePaint.setTextSize(dp(15));
 
-            bluePaint.setTypeface(AndroidUtilities.bold());
+            bluePaint.setTypeface(CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
 
             arrowPaint.setColor(getThemedColor(Theme.key_glass_defaultIcon));
             arrowPaint.setStyle(Paint.Style.STROKE);
@@ -14162,11 +14291,23 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         public void updateColors() {
-            grayPaint.setColor(getThemedColor(Theme.key_chat_recordTime));
-            bluePaint.setColor(getThemedColor(Theme.key_chat_recordVoiceCancel));
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                grayPaint.setColor(CybergramTheme.TEXT_MUTED);
+                bluePaint.setColor(CybergramTheme.CYAN_SECONDARY);
+                bluePaint.setAlpha(184);
+            } else {
+                grayPaint.setColor(getThemedColor(Theme.key_chat_recordTime));
+                bluePaint.setColor(getThemedColor(Theme.key_chat_recordVoiceCancel));
+            }
             slideToAlpha = grayPaint.getAlpha();
             cancelAlpha = bluePaint.getAlpha();
-            selectableBackground = Theme.createSimpleSelectorCircleDrawable(dp(60), 0, ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_recordVoiceCancel), 26));
+            selectableBackground = Theme.createSimpleSelectorCircleDrawable(
+                    dp(60), 0,
+                    ColorUtils.setAlphaComponent(
+                            CybergramTheme.isCybergramPresentation(resourcesProvider)
+                                    ? CybergramTheme.CYAN_SECONDARY
+                                    : getThemedColor(Theme.key_chat_recordVoiceCancel),
+                            CybergramTheme.isCybergramPresentation(resourcesProvider) ? 18 : 26));
             selectableBackground.setCallback(this);
         }
 
@@ -14373,9 +14514,11 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (textPaint == null) {
                 textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 textPaint.setTextSize(dp(15));
-                textPaint.setTypeface(AndroidUtilities.bold());
-                textPaint.setColor(getThemedColor(Theme.key_chat_recordTime));
             }
+            textPaint.setTypeface(CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
+            textPaint.setColor(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.TEXT
+                    : getThemedColor(Theme.key_chat_recordTime));
             long currentTimeMillis = System.currentTimeMillis();
             long t = isRunning ? (currentTimeMillis - startTime) : stopTime - startTime;
             long time = t / 1000;

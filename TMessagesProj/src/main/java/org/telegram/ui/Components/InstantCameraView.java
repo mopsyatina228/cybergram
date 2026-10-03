@@ -96,6 +96,8 @@ import org.telegram.messenger.video.MP4Builder;
 import org.telegram.messenger.video.Mp4Movie;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -134,6 +136,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private InstantViewCameraContainer cameraContainer;
     private Delegate delegate;
     private Paint paint;
+    private final Paint cybergramTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF rect;
     private final FlashViews.ImageViewInvertable switchCameraButton;
     private final FlashViews.ImageViewInvertable flashButton;
@@ -285,6 +288,15 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeWidth(dp(3));
         paint.setColor(0xffffffff);
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            paint.setStrokeCap(Paint.Cap.SQUARE);
+            paint.setStrokeWidth(dp(CybergramTheme.RECORDER_PREVIEW_PROGRESS_WIDTH_DP));
+            paint.setColor(CybergramTheme.CYAN);
+            cybergramTrackPaint.setStyle(Paint.Style.STROKE);
+            cybergramTrackPaint.setStrokeCap(Paint.Cap.SQUARE);
+            cybergramTrackPaint.setStrokeWidth(dp(CybergramTheme.RECORDER_PREVIEW_TRACK_WIDTH_DP));
+            cybergramTrackPaint.setColor(CybergramTheme.AMBER);
+        }
 
         rect = new RectF();
 
@@ -319,15 +331,19 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
 
         buttonsLayout = new LinearLayout(context);
-        buttonsLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
+        final boolean cybergramRecorder = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        final int controlsPadding = cybergramRecorder ? 4 : 6;
+        final int controlsHeight = cybergramRecorder ? 48 : 56;
+        final int controlsButtonSize = cybergramRecorder ? 40 : 44;
+        buttonsLayout.setPadding(dp(controlsPadding), dp(controlsPadding), dp(controlsPadding), dp(controlsPadding));
 
         buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 1, 0, 0, 0));
+        addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, controlsHeight, Gravity.LEFT | Gravity.BOTTOM, 1, 0, 0, 0));
 
         switchCameraButton = new FlashViews.ImageViewInvertable(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
         switchCameraButton.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
-        buttonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
+        buttonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(controlsButtonSize, controlsButtonSize));
         switchCameraButton.setOnClickListener(v -> {
             if (!cameraReady || !isCameraSessionInitiated() || cameraThread == null) {
                 return;
@@ -384,7 +400,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
         flashButton = new FlashViews.ImageViewInvertable(context);
         flashButton.setScaleType(ImageView.ScaleType.CENTER);
-        buttonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
+        buttonsLayout.addView(flashButton, LayoutHelper.createLinear(controlsButtonSize, controlsButtonSize));
         flashButton.setOnClickListener(v -> {
             flashing = !flashing;
             updateFlash();
@@ -397,6 +413,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         } else if (!resourcesProvider.isDark()) {
             switchCameraButton.setInvert(0.6f);
             flashButton.setInvert(0.6f);
+        }
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            switchCameraButton.setColorFilter(CybergramTheme.CYAN_SECONDARY, android.graphics.PorterDuff.Mode.SRC_IN);
+            flashButton.setColorFilter(CybergramTheme.CYAN_SECONDARY, android.graphics.PorterDuff.Mode.SRC_IN);
         }
 
         muteImageView = new ImageView(context);
@@ -432,6 +452,15 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     public void setButtonsBackground(BlurredBackgroundDrawableViewFactory factory, BlurredBackgroundColorProvider colorProvider) {
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            CybergramHudDrawable drawable = new CybergramHudDrawable();
+            drawable.setFillColor(ColorUtils.setAlphaComponent(CybergramTheme.PANEL_RAISED, 236));
+            drawable.setStroke(CybergramTheme.CYAN,
+                    dp(CybergramTheme.RECORDER_CONTROL_BORDER_WIDTH_DP), true);
+            drawable.setCornerCut(dp(CybergramTheme.RECORDER_CONTROL_CUT_DP));
+            buttonsLayout.setBackground(drawable);
+            return;
+        }
         BlurredBackgroundDrawable drawable = factory.create(buttonsLayout, colorProvider);
         drawable.setPadding(dp(6));
         drawable.setRadius(dp(21));
@@ -619,12 +648,21 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             invalidate();
         }
 
-        if (progress != 0) {
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        if (cybergram || progress != 0) {
             canvas.save();
             if (!flipAnimationInProgress) {
                 canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), rect.centerX(), rect.centerY());
             }
-            canvas.drawArc(rect, -90, 360 * progress, false, paint);
+            if (cybergram) {
+                final int ringAlpha = paint.getAlpha();
+                cybergramTrackPaint.setAlpha(
+                        CybergramTheme.RECORDER_PREVIEW_TRACK_ALPHA * ringAlpha / 255);
+                canvas.drawArc(rect, -90, 360, false, cybergramTrackPaint);
+            }
+            if (progress != 0) {
+                canvas.drawArc(rect, -90, 360 * progress, false, paint);
+            }
             canvas.restore();
         }
     }
