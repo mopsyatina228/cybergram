@@ -1423,7 +1423,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             float lockRotation;
             float transformToPauseProgress = 0;
             if (sendButtonVisible) {
-                lockSize = dp(36);
+                lockSize = dp(useCybergramRecorderControls()
+                        ? CybergramTheme.RECORDER_CONTROL_SIZE_DP : 36);
                 lockY = dp(60) + multilinTooltipOffset + dpf2(30) * (1.0f - sc) - yAdd + dpf2(14f) * moveProgress;
 
                 lockMiddleY = lockY + lockSize / 2f - dpf2(8) + dpf2(2);
@@ -1440,7 +1441,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     lockTopY += cybergramRowShift;
                 }
             } else {
-                lockSize = dp(36) + (int) (dp(14) * moveProgress);
+                lockSize = dp(useCybergramRecorderControls()
+                        ? CybergramTheme.RECORDER_CONTROL_SIZE_DP : 36)
+                        + (int) (dp(14) * moveProgress);
                 lockY = dp(60) + multilinTooltipOffset + (int) (dp(30) * (1.0f - sc)) - (int) yAdd + (moveProgress) * idleProgress * -dp(8);
                 lockMiddleY = lockY + lockSize / 2f - dpf2(8) + dpf2(2) + dpf2(2) * moveProgress;
                 lockTopY =    lockY + lockSize / 2f - dpf2(16) + dpf2(2) + dpf2(2) * moveProgress;
@@ -1576,7 +1579,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             float s = (1f - hidePause) * controlsScale * (1f - exitProgress2) * slideToCancelLockProgress;
             canvas.scale(s, s, cx, lockMiddleY + dy);
 
-            rectF.set(cx - dpf2(18), lockY + dy, cx + dpf2(18), lockY + dy + lockSize);
+            final float controlHalf = useCybergramRecorderControls()
+                    ? lockSize * 0.5f : dpf2(18);
+            rectF.set(cx - controlHalf, lockY + dy, cx + controlHalf, lockY + dy + lockSize);
 
             if (useCybergramRecorderControls()) {
                 drawCybergramControlPlate(canvas, rectF);
@@ -1694,7 +1699,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             canvas.restore();
 
             final float cy = lerp(lockY, getMeasuredHeight() - dp(118), Math.max(exitTransition, Math.min(progressToSeekbarStep1, slideToCancelLockProgress))) + dy + dp(38) * hidePause;
-            rectF.set(cx - dpf2(18), cy, cx + dpf2(18), cy + lockSize);
+            final float lowerControlHalf = useCybergramRecorderControls()
+                    ? lockSize * 0.5f : dpf2(18);
+            rectF.set(cx - lowerControlHalf, cy, cx + lowerControlHalf, cy + lockSize);
             onceVisible = delegate != null && delegate.onceVoiceAvailable();
             if (onceVisible) {
                 final float onceOffset = dpf2(12);
@@ -2121,8 +2128,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 canvas.drawCircle(cx, cy, radius, paint);
                 return;
             }
-            // Match the Cybergram pause plate: both controls are 36dp square at rest.
-            final float half = Math.min(dpf2(18), Math.max(0f, radius * 0.45f));
+            // Same 40dp module as pause; composer frame is 44dp, leaving a 2dp inset.
+            final float half = Math.min(
+                    dpf2(CybergramTheme.RECORDER_CONTROL_SIZE_DP * 0.5f),
+                    Math.max(0f, radius * 0.50f));
             cybergramButtonRect.set(cx - half, cy - half, cx + half, cy + half);
             CybergramTheme.buildInteractionPanelPath(
                     cybergramButtonPath, cybergramButtonRect, CybergramTheme.RECORDER_CONTROL_CUT_DP);
@@ -2367,10 +2376,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 drawable = sendDrawable;
                 if (useCybergramVideoButton()) {
-                    final int iconHalf = dp(9);
+                    final int iconHalf = dp(10);
                     sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
                     if (replaceDrawable != null) {
-                        final int replaceHalf = dp(8);
+                        final int replaceHalf = dp(9);
                         replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
                     }
                 } else {
@@ -2523,10 +2532,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 drawable = sendDrawable;
                 if (useCybergramVideoButton()) {
-                    final int iconHalf = dp(9);
+                    final int iconHalf = dp(10);
                     sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
                     if (replaceDrawable != null) {
-                        final int replaceHalf = dp(8);
+                        final int replaceHalf = dp(9);
                         replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
                     }
                 } else {

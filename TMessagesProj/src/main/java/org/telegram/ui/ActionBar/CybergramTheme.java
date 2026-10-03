@@ -158,6 +158,7 @@ public final class CybergramTheme {
     public static final int COMPOSER_GLOW_ALPHA = 28;
 
     /** Round-video recorder: keep the circular media format, but use Cybergram HUD chrome. */
+    public static final float RECORDER_CONTROL_SIZE_DP = 40f;
     public static final float RECORDER_CONTROL_CUT_DP = 8f;
     public static final float RECORDER_CONTROL_BORDER_WIDTH_DP = 0.85f;
     public static final int RECORDER_CONTROL_BORDER_ALPHA = 196;
