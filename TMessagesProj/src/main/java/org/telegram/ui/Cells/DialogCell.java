@@ -686,13 +686,24 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (currentDialogFolderId != 0) {
             paint.setTypeface(CybergramTypography.chromeRegular());
-            paint.setTextSize(dpf2(13.5f));
+            paint.setTextSize(dpf2(13.25f));
         } else {
-            paint.setTypeface(CybergramTypography.chromeBold());
-            mirrorUpstreamTextSize(paint, upstream);
+            // Read rows should not shout with the same weight as attention rows.
+            // Keep the database label compact, and let unread state carry the stronger weight.
+            final boolean attention = unreadCount > 0 || markUnread || mentionCount > 0
+                    || reactionMentionCount > 0 || pollVotesMentionCount > 0;
+            paint.setTypeface(attention
+                    ? CybergramTypography.chromeBold()
+                    : CybergramTypography.chromeRegular());
+            paint.setTextSize(dpf2(15.5f));
         }
-        paint.setColor(upstream.getColor());
-        paint.linkColor = upstream.linkColor;
+        final boolean attention = unreadCount > 0 || markUnread || mentionCount > 0
+                || reactionMentionCount > 0 || pollVotesMentionCount > 0;
+        final int titleColor = currentDialogFolderId != 0
+                ? CybergramTheme.DIALOGS_TEXT_READ
+                : attention ? CybergramTheme.DIALOGS_TEXT_UNREAD : CybergramTheme.DIALOGS_TEXT_READ;
+        paint.setColor(titleColor);
+        paint.linkColor = titleColor;
         paint.setAlpha(upstream.getAlpha());
         return paint;
     }
@@ -725,7 +736,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         mirrorUpstreamTextSize(paint, upstream);
         // Raj has a tall x-height; a slightly smaller preview restores the Journal/Database
         // hierarchy where the secondary line clearly yields to the entry title.
-        paint.setTextSize(dpf2(paintIndex == 1 ? 14f : 15f));
+        paint.setTextSize(dpf2(paintIndex == 1 ? 13f : 13.5f));
         final int color = printing
                 ? CybergramTheme.DIALOGS_TEXT_SENDER
                 : CybergramTheme.DIALOGS_TEXT_PREVIEW;
@@ -746,6 +757,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             cybergramMessageNamePaint.setTypeface(CybergramTypography.chromeBold());
         }
         mirrorUpstreamTextSize(cybergramMessageNamePaint, upstream);
+        cybergramMessageNamePaint.setTextSize(dpf2(13.5f));
         cybergramMessageNamePaint.setColor(CybergramTheme.DIALOGS_TEXT_SENDER);
         cybergramMessageNamePaint.linkColor = CybergramTheme.DIALOGS_TEXT_SENDER;
         cybergramMessageNamePaint.setAlpha(upstream.getAlpha());
@@ -762,7 +774,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             cybergramCountTextPaint = new TextPaint(upstream);
             cybergramCountTextPaint.setTypeface(CybergramTypography.chromeBold());
         }
-        cybergramCountTextPaint.setTextSize(dpf2(12.5f));
+        cybergramCountTextPaint.setTextSize(dpf2(11.5f));
         return cybergramCountTextPaint;
     }
 
@@ -818,7 +830,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         Theme.createDialogsResources(context);
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
-        avatarImage.setRoundRadius(dp(26));
+        avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? dp(10) : dp(26));
         for (int i = 0; i < thumbImage.length; ++i) {
             thumbImage[i] = new ImageReceiver(this);
             thumbImage[i].ignoreNotifications = true;
@@ -2423,11 +2435,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             timeWidth += timeLeftOffset;
         }
 
+        // Cybergram treats time / pin state as a real metadata column instead of letting the
+        // title width breathe with every timestamp. This makes long lists scan as a grid.
+        final int titleMetaReserve = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? Math.max(timeWidth, dp(46))
+                : timeWidth;
         if (!LocaleController.isRTL) {
-            nameWidth = getMeasuredWidth() - nameLeft - dp(14 + 8) - timeWidth;
+            nameWidth = getMeasuredWidth() - nameLeft - dp(14 + 8) - titleMetaReserve;
         } else {
-            nameWidth = getMeasuredWidth() - nameLeft - dp(messagePaddingStart + 5 + 8) - timeWidth;
-            nameLeft += timeWidth;
+            nameWidth = getMeasuredWidth() - nameLeft - dp(messagePaddingStart + 5 + 8) - titleMetaReserve;
+            nameLeft += titleMetaReserve;
         }
         if (drawNameLock) {
             nameWidth -= dp(LocaleController.isRTL ? 8 : 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
@@ -3376,7 +3393,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             drawMonoforumAvatar = false;
             drawCommunityAvatar = false;
-            avatarImage.setRoundRadius(dp(26));
+            avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? dp(10) : dp(26));
             drawUnmute = false;
         } else {
             int oldUnreadCount = unreadCount;
@@ -3821,7 +3838,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             drawMonoforumAvatar = !isFolderCell() && chat != null && chat.monoforum;
 
             final int avatarRadius;
-            if (drawMonoforumAvatar) {
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    && !drawMonoforumAvatar && !drawCommunityAvatar) {
+                // A rounded-square portrait belongs to the same clipped-card grammar as the row.
+                avatarRadius = dp(10);
+            } else if (drawMonoforumAvatar) {
                 avatarRadius = 1;
             } else if (drawCommunityAvatar) {
                 avatarRadius = dp(12);
@@ -3830,7 +3851,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             } else {
                 avatarRadius = dp(28);
             }
-
             avatarImage.setRoundRadius(avatarRadius);
         }
         if (!isTopic && (getMeasuredWidth() != 0 || getMeasuredHeight() != 0)) {
@@ -5163,6 +5183,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             paint.setTypeface(variant == 0 ? CybergramTypography.chromeRegular() : CybergramTypography.chromeBold());
         }
         mirrorUpstreamTextSize(paint, upstream);
+        paint.setTextSize(dpf2(11.5f));
         return paint;
     }
 
@@ -5215,8 +5236,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         // Database entries separate plate, frame and content. Mirror the incoming bubble material
         // inside the existing text column; retain the avatar gutter and upstream row measurements.
-        final boolean active = isSelected || currentDialogFolderId != 0;
+        final boolean archiveRow = currentDialogFolderId != 0;
+        final boolean active = isSelected;
         final int frameAlpha = active ? CybergramTheme.DIALOGS_ROW_FRAME_SELECTED_ALPHA
+                : archiveRow ? Math.max(CybergramTheme.DIALOGS_ROW_FRAME_ALPHA, 30)
                 : hasUnread && !muted ? CybergramTheme.DIALOGS_ROW_FRAME_UNREAD_ALPHA
                 : CybergramTheme.DIALOGS_ROW_FRAME_ALPHA;
         final int frameColor = hasMention ? CybergramTheme.DIALOGS_ALERT : CybergramTheme.AMBER;

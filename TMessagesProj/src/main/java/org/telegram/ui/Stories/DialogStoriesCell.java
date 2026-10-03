@@ -1497,6 +1497,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         boolean progressWasDrawn;
 
         private final AnimatedFloat failT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private final Paint cybergramStoryRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         public StoryCell(Context context) {
             super(context);
@@ -1700,6 +1701,19 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             }
             if (progressToCollapsed != 0) {
                 canvas.drawCircle(cx, cy, radius + dpf2(1.5f), backgroundPaint);
+            }
+
+            if (CybergramTheme.isCybergramPresentation(
+                    fragment != null ? fragment.getResourceProvider() : null)
+                    && progressToCollapsed < 0.5f) {
+                final boolean unreadStory = !isSelf && storiesController.hasUnreadStories(dialogId);
+                cybergramStoryRingPaint.setStyle(Paint.Style.STROKE);
+                cybergramStoryRingPaint.setStrokeWidth(dpf2(unreadStory ? 1.5f : 1f));
+                cybergramStoryRingPaint.setColor(unreadStory
+                        ? CybergramTheme.CYAN
+                        : CybergramTheme.TEXT_MUTED);
+                cybergramStoryRingPaint.setAlpha(unreadStory ? 230 : 120);
+                canvas.drawCircle(cx, cy, radius + dpf2(2.25f), cybergramStoryRingPaint);
             }
 
             canvas.save();

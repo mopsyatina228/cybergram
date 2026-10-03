@@ -8923,7 +8923,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
 
         if (floatingButton3 != null) {
-            floatingButton3.setButtonVisible(isVisible, animated);
+            // Cybergram keeps creation actions in the navigation/menu hierarchy instead of
+            // floating a Material compose affordance over the database-style dialog list.
+            floatingButton3.setButtonVisible(
+                    isVisible && !CybergramTheme.isCybergramPresentation(resourceProvider),
+                    animated);
         }
         if (floatingButtonStories != null) {
             floatingButtonStories.setButtonVisible(

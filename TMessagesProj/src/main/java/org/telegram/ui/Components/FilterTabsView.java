@@ -487,11 +487,14 @@ public class FilterTabsView extends FrameLayout {
                     titleWidth = animateFromTitleWidth * (1f - changeProgress) + currentTab.titleWidth * changeProgress;
                 }
                 if (animateTextChange && titleAnimateOutLayout == null) {
-                    x = textX - titleXOffset + titleOffsetX + titleWidth + dp(5);
+                    x = textX - titleXOffset + titleOffsetX + titleWidth + dp(useCybergramPresentation() ? 3.5f : 5f);
                 } else {
-                    x = textX + titleWidth + dp(5);
+                    x = textX + titleWidth + dp(useCybergramPresentation() ? 3.5f : 5f);
                 }
                 int countTop = (getMeasuredHeight() - dp(TAB_COUNTER_HEIGHT)) / 2;
+                if (useCybergramPresentation()) {
+                    countTop -= dp(2);
+                }
 
                 if (showRemove && (isEditing || editingStartAnimationProgress != 0) && counterText == null) {
                     counterPaint.setAlpha((int) (editingStartAnimationProgress * 255));
@@ -561,7 +564,8 @@ public class FilterTabsView extends FrameLayout {
                         if (showRemove) {
                             textCounterPaint.setAlpha((int) (255 * (1.0f - editingStartAnimationProgress)));
                         }
-                        canvas.drawText(counterText, rect.left + (rect.width() - counterWidth) / 2, countTop + dp(12.5f), textCounterPaint);
+                        canvas.drawText(counterText, rect.left + (rect.width() - counterWidth) / 2,
+                                countTop + dp(useCybergramPresentation() ? 11f : 12.5f), textCounterPaint);
                     }
                 }
 
@@ -933,7 +937,7 @@ public class FilterTabsView extends FrameLayout {
     public FilterTabsView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        textCounterPaint.setTextSize(dpf2(11f));
+        textCounterPaint.setTextSize(dpf2(useCybergramPresentation() ? 9.5f : 11f));
         textCounterPaint.setTypeface(chromeLabelTypeface());
         textPaint.setTextSize(dpf2(14f));
         textPaint.setTypeface(chromeLabelTypeface());
@@ -1649,6 +1653,7 @@ public class FilterTabsView extends FrameLayout {
         applyPresentationBackground();
         rebuildClipPath(getWidth(), getHeight());
         textCounterPaint.setTypeface(chromeLabelTypeface());
+        textCounterPaint.setTextSize(dpf2(useCybergramPresentation() ? 9.5f : 11f));
         textPaint.setTypeface(chromeLabelTypeface());
         invalidate();
     }

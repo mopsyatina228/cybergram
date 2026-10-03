@@ -128,6 +128,11 @@ chats_sentErrorIcon=-1640449
 chats_pinnedIcon=-7764622
 chats_muteIcon=-7764622
 chats_pinnedOverlay=404627477
+# Stories: Cybergram identity rail uses cool cyan state color, not Telegram blue.
+stories_circle1=-9446936
+stories_circle2=-7410958
+stories_circle_dialog1=-9446936
+stories_circle_dialog2=-7410958
 chats_tabletSelectedOverlay=639508501
 chats_menuBackground=-16052974
 chats_menuItemText=-1640449
