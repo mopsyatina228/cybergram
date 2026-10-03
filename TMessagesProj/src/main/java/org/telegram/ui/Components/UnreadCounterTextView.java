@@ -15,6 +15,7 @@ import android.view.View;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 
 public class UnreadCounterTextView extends View {
@@ -57,6 +58,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setText(CharSequence text, boolean animatedFromBottom) {
+        updateCybergramTypeface(false);
         if (lastText == text) {
             return;
         }
@@ -87,7 +89,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setText(CharSequence text) {
-        layoutPaint.setTypeface(AndroidUtilities.bold());
+        updateCybergramTypeface(false);
         layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
@@ -96,7 +98,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setTextInfo(CharSequence text) {
-        layoutPaint.setTypeface(null);
+        updateCybergramTypeface(true);
         layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth + 1, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
@@ -105,7 +107,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setTextInfo(Drawable icon, CharSequence text) {
-        layoutPaint.setTypeface(null);
+        updateCybergramTypeface(true);
         layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
         this.icon = icon;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth + 1, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
@@ -137,6 +139,14 @@ public class UnreadCounterTextView extends View {
         }
     }
 
+    private void updateCybergramTypeface(boolean info) {
+        final Theme.ResourcesProvider provider = getResourceProvider();
+        textPaint.setTypeface(CybergramTypography.chromeBold(provider, AndroidUtilities.bold()));
+        layoutPaint.setTypeface(info
+                ? CybergramTypography.chromeRegular(provider, null)
+                : CybergramTypography.chromeBold(provider, AndroidUtilities.bold()));
+    }
+
     protected Theme.ResourcesProvider getResourceProvider() {
         return null;
     }
@@ -149,6 +159,7 @@ public class UnreadCounterTextView extends View {
     }
 
     public void setCounter(int newCount) {
+        updateCybergramTypeface(false);
         if (currentCounter != newCount) {
             currentCounter = newCount;
             if (currentCounter == 0) {
@@ -168,6 +179,7 @@ public class UnreadCounterTextView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        updateCybergramTypeface(false);
         Layout layout = textLayout;
         int color = Theme.getColor(isEnabled() ? textColorKey : Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
         if (textColor != color) {

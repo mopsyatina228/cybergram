@@ -17157,6 +17157,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         quoteLine = new ReplyMessageLine(this);
                     }
                     quoteLine.check(currentMessageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        final boolean dark = resourcesProvider != null
+                                ? resourcesProvider.isDark()
+                                : Theme.isCurrentThemeDark();
+                        quoteLine.setSimpleColor(currentMessageObject.isOutOwner()
+                                ? CybergramTheme.CYAN_SECONDARY
+                                : CybergramTheme.CYAN, dark);
+                    }
 
                     AndroidUtilities.rectTmp.set(0, -block.padTop + dp(block.first ? 3 + 1.66f : 3), width, block.height(transitionParams) + dp(4));
                     AndroidUtilities.rectTmp.offset(blockRtl, 0);
@@ -22364,6 +22372,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     Theme.chat_namePaint.setColor(getThemedColor(Theme.key_chat_inForwardedNameText));
                 }
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    Theme.chat_namePaint.setColor(currentMessageObject.isOutOwner()
+                            ? CybergramTheme.CYAN_SECONDARY
+                            : CybergramTheme.CYAN);
+                }
                 nameY = dp(drawPinnedTop ? 9 : 10);
                 if (viaSpan1 != null || viaSpan2 != null) {
                     int color = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outViaBotNameText : Theme.key_chat_inViaBotNameText);
@@ -22519,6 +22532,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else {
                         color = getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_inAdminSelectedText : Theme.key_chat_inAdminText);
                     }
+                }
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    color = CybergramTheme.AMBER_HIGHLIGHT;
                 }
                 Theme.chat_adminPaint.setColor(color);
 

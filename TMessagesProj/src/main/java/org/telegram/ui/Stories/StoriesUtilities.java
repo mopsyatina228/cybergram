@@ -635,7 +635,9 @@ public class StoriesUtilities {
             storyCellGreyPaint[index].setStrokeWidth(AndroidUtilities.dpf2(1.3f));
             storyCellGreyPaint[index].setStrokeCap(Paint.Cap.ROUND);
         }
-        int color = Theme.getColor(!isArchive ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived, resourcesProvider);
+        int color = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.AMBER
+                : Theme.getColor(!isArchive ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived, resourcesProvider);
         if (storyCellGrayLastColor[index] != color) {
             storyCellGrayLastColor[index] = color;
             float brightness = AndroidUtilities.computePerceivedBrightness(color);
@@ -659,7 +661,9 @@ public class StoriesUtilities {
             grayPaint.setStrokeWidth(AndroidUtilities.dpf2(1.3f));
             grayPaint.setStrokeCap(Paint.Cap.ROUND);
         }
-        int color = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
+        int color = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.AMBER
+                : Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
         if (grayLastColor != color) {
             grayLastColor = color;
             float brightness = AndroidUtilities.computePerceivedBrightness(color);
@@ -797,10 +801,10 @@ public class StoriesUtilities {
             liveGradientTools.setColors(Theme.getColor(Theme.key_stories_circle_live1), Theme.getColor(Theme.key_stories_circle_live2));
         }
         if (storiesGradientTools[0] != null) {
-            storiesGradientTools[0].setColors(Theme.getColor(Theme.key_stories_circle_dialog1), Theme.getColor(Theme.key_stories_circle_dialog2));
+            storiesGradientTools[0].setColors(Theme.getColor(Theme.key_stories_circle1), Theme.getColor(Theme.key_stories_circle2));
         }
         if (storiesGradientTools[1] != null) {
-            storiesGradientTools[1].setColors(Theme.getColor(Theme.key_stories_circle1), Theme.getColor(Theme.key_stories_circle2));
+            storiesGradientTools[1].setColors(Theme.getColor(Theme.key_stories_circle_dialog1), Theme.getColor(Theme.key_stories_circle_dialog2));
         }
         if (errorGradientTools != null) {
             int orange = Theme.getColor(Theme.key_color_orange);

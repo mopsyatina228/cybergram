@@ -1708,11 +1708,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     && progressToCollapsed < 0.5f) {
                 final boolean unreadStory = !isSelf && storiesController.hasUnreadStories(dialogId);
                 cybergramStoryRingPaint.setStyle(Paint.Style.STROKE);
-                cybergramStoryRingPaint.setStrokeWidth(dpf2(unreadStory ? 1.5f : 1f));
+                cybergramStoryRingPaint.setStrokeWidth(dpf2(unreadStory ? 1.65f : 1.25f));
                 cybergramStoryRingPaint.setColor(unreadStory
                         ? CybergramTheme.CYAN
-                        : CybergramTheme.TEXT_MUTED);
-                cybergramStoryRingPaint.setAlpha(unreadStory ? 230 : 120);
+                        : CybergramTheme.AMBER);
+                cybergramStoryRingPaint.setAlpha(unreadStory ? 255 : 176);
                 canvas.drawCircle(cx, cy, radius + dpf2(2.25f), cybergramStoryRingPaint);
             }
 

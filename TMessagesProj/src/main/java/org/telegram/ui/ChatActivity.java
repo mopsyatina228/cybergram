@@ -8475,7 +8475,7 @@ public class ChatActivity extends BaseFragment implements
         bottomOverlayStartButton.setText(LocaleController.getString(R.string.BotStart2));
         bottomOverlayStartButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         bottomOverlayStartButton.setGravity(Gravity.CENTER);
-        bottomOverlayStartButton.setTypeface(AndroidUtilities.bold());
+        bottomOverlayStartButton.setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
         bottomOverlayStartButton.setVisibility(View.INVISIBLE);
         bottomOverlayStartButton.setOnClickListener(v -> bottomOverlayChatText.callOnClick());
         bottomOverlayStartButton.setPadding(dp(31), 0, dp(31), 0);
@@ -8494,6 +8494,7 @@ public class ChatActivity extends BaseFragment implements
         bottomOverlayLinksText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         bottomOverlayLinksText.setTextColor(getThemedColor(Theme.key_graySectionText));
         bottomOverlayLinksText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        bottomOverlayLinksText.setTypeface(CybergramTypography.chromeRegular(getResourceProvider(), null));
         bottomChannelButtonsLayout.getContainer().addView(bottomOverlayLinksText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
         bottomOverlayLinksText.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
         bottomOverlayLinksText.setOnClickListener(v -> {
