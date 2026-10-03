@@ -333,8 +333,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         buttonsLayout = new LinearLayout(context);
         final boolean cybergramRecorder = CybergramTheme.isCybergramPresentation(resourcesProvider);
         final int controlsPadding = cybergramRecorder ? 4 : 6;
-        final int controlsHeight = cybergramRecorder ? 48 : 56;
-        final int controlsButtonSize = cybergramRecorder ? 40 : 44;
+        final int controlsHeight = cybergramRecorder ? 40 : 56;
+        final int controlsButtonSize = cybergramRecorder ? 32 : 44;
         buttonsLayout.setPadding(dp(controlsPadding), dp(controlsPadding), dp(controlsPadding), dp(controlsPadding));
 
         buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);

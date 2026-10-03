@@ -1433,6 +1433,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                 lockRotation = 9 * (1f - moveProgress) * (1f - snapAnimationProgress) - 15 * snapAnimationProgress * (1f - snapRotateBackProgress);
 
                 transformToPauseProgress = moveProgress;
+                if (useCybergramRecorderControls()) {
+                    final float cybergramRowShift = dp(30);
+                    lockY += cybergramRowShift;
+                    lockMiddleY += cybergramRowShift;
+                    lockTopY += cybergramRowShift;
+                }
             } else {
                 lockSize = dp(36) + (int) (dp(14) * moveProgress);
                 lockY = dp(60) + multilinTooltipOffset + (int) (dp(30) * (1.0f - sc)) - (int) yAdd + (moveProgress) * idleProgress * -dp(8);
@@ -2115,7 +2121,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 canvas.drawCircle(cx, cy, radius, paint);
                 return;
             }
-            final float half = Math.min(dpf2(28), Math.max(0f, radius * 0.68f));
+            final float half = Math.min(dpf2(24), Math.max(0f, radius * 0.60f));
             cybergramButtonRect.set(cx - half, cy - half, cx + half, cy + half);
             CybergramTheme.buildInteractionPanelPath(
                     cybergramButtonPath, cybergramButtonRect, CybergramTheme.RECORDER_CONTROL_CUT_DP);
@@ -2254,7 +2260,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 //                multilinTooltipOffset = tooltipLayout.getHeight() - tooltipLayout.getLineBottom(0);
 //            }
             int cx = getMeasuredWidth() - AndroidUtilities.dp2(26);
-            int cy = (int) (dp(170) + multilinTooltipOffset);
+            int cy = (int) (dp(useCybergramVideoButton() ? 166 : 170) + multilinTooltipOffset);
 //            float yAdd = 0;
 //            if (lockAnimatedTranslation != 10000) {
 //                yAdd = Math.max(0, (int) (startTranslation - lockAnimatedTranslation));
