@@ -2121,7 +2121,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                 canvas.drawCircle(cx, cy, radius, paint);
                 return;
             }
-            final float half = Math.min(dpf2(24), Math.max(0f, radius * 0.60f));
+            // Match the Cybergram pause plate: both controls are 36dp square at rest.
+            final float half = Math.min(dpf2(18), Math.max(0f, radius * 0.45f));
             cybergramButtonRect.set(cx - half, cy - half, cx + half, cy + half);
             CybergramTheme.buildInteractionPanelPath(
                     cybergramButtonPath, cybergramButtonRect, CybergramTheme.RECORDER_CONTROL_CUT_DP);
@@ -2366,10 +2367,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 drawable = sendDrawable;
                 if (useCybergramVideoButton()) {
-                    final int iconHalf = dp(11);
+                    final int iconHalf = dp(9);
                     sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
                     if (replaceDrawable != null) {
-                        final int replaceHalf = dp(10);
+                        final int replaceHalf = dp(8);
                         replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
                     }
                 } else {
@@ -2522,10 +2523,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 drawable = sendDrawable;
                 if (useCybergramVideoButton()) {
-                    final int iconHalf = dp(11);
+                    final int iconHalf = dp(9);
                     sendRect.set(cx - iconHalf, cy - iconHalf, cx + iconHalf, cy + iconHalf);
                     if (replaceDrawable != null) {
-                        final int replaceHalf = dp(10);
+                        final int replaceHalf = dp(8);
                         replaceDrawable.setBounds(cx - replaceHalf, cy - replaceHalf, cx + replaceHalf, cy + replaceHalf);
                     }
                 } else {
