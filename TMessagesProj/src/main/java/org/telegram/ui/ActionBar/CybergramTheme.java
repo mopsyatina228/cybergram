@@ -219,7 +219,7 @@ public final class CybergramTheme {
     public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 64;
     public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 138;
     public static final int DIALOGS_RULE = 0xFF47121C;
-    public static final int DIALOGS_ACTIVE = CYAN;
+    public static final int DIALOGS_ACTIVE = AMBER_HIGHLIGHT;
     public static final int DIALOGS_ATTENTION = AMBER_HIGHLIGHT;
     public static final int DIALOGS_ALERT = DANGER;
 

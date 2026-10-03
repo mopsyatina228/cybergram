@@ -2608,12 +2608,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 thumbLeft = avatarLeft + dp(56 + 13);
             }
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
-                final float avatarInset = dp(5);
+                final float frameGap = dpf2(CybergramTheme.DIALOGS_AVATAR_OUTER_GAP_DP);
+                final float moduleSize = dp(heightThreeLines - 6);
+                final float avatarSize = moduleSize - frameGap * 2f;
+                final float gutterWidth = dp(messagePaddingStart);
+                final float moduleLeft = LocaleController.isRTL
+                        ? getMeasuredWidth() - gutterWidth + (gutterWidth - moduleSize) * 0.5f
+                        : (gutterWidth - moduleSize) * 0.5f;
+                final float avatarX = moduleLeft + frameGap;
+                final float avatarY = dp(3) + frameGap;
                 storyParams.originalAvatarRect.set(
-                        avatarLeft + avatarInset, avatarTop + avatarInset,
-                        avatarLeft + avatarInset + dp(46), avatarTop + avatarInset + dp(46));
+                        avatarX, avatarY, avatarX + avatarSize, avatarY + avatarSize);
             } else {
-                storyParams.originalAvatarRect.set(avatarLeft, avatarTop, avatarLeft + dp(56), avatarTop + dp(56));
+                storyParams.originalAvatarRect.set(
+                        avatarLeft, avatarTop,
+                        avatarLeft + dp(56), avatarTop + dp(56));
             }
             for (int i = 0; i < thumbImage.length; ++i) {
                 thumbImage[i].setImageCoords(thumbLeft + (thumbSize + 2) * i, avatarTop + dp(31) + (twoLinesForName ? dp(20) : 0) - (!(useForceThreeLines || SharedConfig.useThreeLinesLayout) && tags != null && !tags.isEmpty() ? dp(9) : 0), dp(18), dp(18));
@@ -2638,12 +2647,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 thumbLeft = avatarLeft + dp(56 + 11);
             }
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
-                final float avatarInset = dp(4);
+                final float frameGap = dpf2(CybergramTheme.DIALOGS_AVATAR_OUTER_GAP_DP);
+                final float moduleSize = dp(heightDefault - 6);
+                final float avatarSize = moduleSize - frameGap * 2f;
+                final float gutterWidth = dp(messagePaddingStart);
+                final float moduleLeft = LocaleController.isRTL
+                        ? getMeasuredWidth() - gutterWidth + (gutterWidth - moduleSize) * 0.5f
+                        : (gutterWidth - moduleSize) * 0.5f;
+                final float avatarX = moduleLeft + frameGap;
+                final float avatarY = dp(3) + frameGap;
                 storyParams.originalAvatarRect.set(
-                        avatarLeft + avatarInset, avatarTop + avatarInset,
-                        avatarLeft + avatarInset + dp(44), avatarTop + avatarInset + dp(44));
+                        avatarX, avatarY, avatarX + avatarSize, avatarY + avatarSize);
             } else {
-                storyParams.originalAvatarRect.set(avatarLeft, avatarTop, avatarLeft + dp(52), avatarTop + dp(52));
+                storyParams.originalAvatarRect.set(
+                        avatarLeft, avatarTop,
+                        avatarLeft + dp(52), avatarTop + dp(52));
             }
             for (int i = 0; i < thumbImage.length; ++i) {
                 thumbImage[i].setImageCoords(thumbLeft + (thumbSize + 2) * i, avatarTop + dp(30) + (twoLinesForName ? dp(20) : 0) - (!(useForceThreeLines || SharedConfig.useThreeLinesLayout) && tags != null && !tags.isEmpty() ? dp(9) : 0), dp(thumbSize), dp(thumbSize));

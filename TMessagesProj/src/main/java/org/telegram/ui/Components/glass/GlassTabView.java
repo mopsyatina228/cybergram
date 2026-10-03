@@ -211,7 +211,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.save();
             canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
             if (useCybergramMainTabsPlate()) {
-                paintCounterBackground.setColor(CybergramTheme.CYAN);
+                paintCounterBackground.setColor(CybergramTheme.DIALOGS_ACTIVE);
                 paintCounterBackground.setAlpha((int) (224 * alpha));
                 canvas.drawRect(
                         tmpRectF.left + dp(12), tmpRectF.top,

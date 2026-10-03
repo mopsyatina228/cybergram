@@ -952,11 +952,11 @@ public class FilterTabsView extends FrameLayout {
 
         cybergramSelectorDrawable = new CybergramHudDrawable()
                 .setFillColor(CybergramTheme.PANEL_RAISED)
-                .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.44f), dpf2(1f), true)
+                .setStroke(Theme.multAlpha(CybergramTheme.DIALOGS_ACTIVE, 0.44f), dpf2(1f), true)
                 .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
         cybergramPanelDrawable = new CybergramHudDrawable()
                 .setFillColor(CybergramTheme.PANEL)
-                .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.24f), dpf2(1f), true)
+                .setStroke(Theme.multAlpha(CybergramTheme.DIALOGS_ACTIVE, 0.24f), dpf2(1f), true)
                 .setCornerCut(dpf2(CybergramTheme.BUBBLE_CORNER_CUT_DP));
 
         setHorizontalScrollBarEnabled(false);
