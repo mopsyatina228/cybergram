@@ -2270,7 +2270,12 @@ public class ChatActivityEnterView extends FrameLayout implements
 //                multilinTooltipOffset = tooltipLayout.getHeight() - tooltipLayout.getLineBottom(0);
 //            }
             int cx = getMeasuredWidth() - AndroidUtilities.dp2(26);
-            int cy = (int) (dp(useCybergramVideoButton() ? 166 : 170) + multilinTooltipOffset);
+            // Cybergram send is a segment of the 44dp composer frame, not a floating
+            // voice-record circle. Center it on that frame so the 40dp module leaves
+            // a deliberate 2dp inset at the top and bottom.
+            int cy = useCybergramVideoButton()
+                    ? getMeasuredHeight() - dp(DEFAULT_HEIGHT / 2f)
+                    : (int) (dp(170) + multilinTooltipOffset);
 //            float yAdd = 0;
 //            if (lockAnimatedTranslation != 10000) {
 //                yAdd = Math.max(0, (int) (startTranslation - lockAnimatedTranslation));
