@@ -1681,6 +1681,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int pressedSideButton;
     private boolean inQuickShareMode;
     private Path sideButtonPath1, sideButtonPath2;
+    private final Path cybergramSideButtonPath = new Path();
+    private final Paint cybergramSideButtonStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float[] sideButtonPathCorners1, sideButtonPathCorners2;
     private static final int SIDE_BUTTON_SPONSORED_CLOSE = 4;
     private static final int SIDE_BUTTON_SPONSORED_MORE = 5;
@@ -21819,6 +21821,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private void drawCybergramSideButtonPlate(Canvas canvas, RectF bounds, Paint fill, boolean stroke) {
+        CybergramTheme.buildInteractionPanelPath(cybergramSideButtonPath, bounds, 5f);
+        canvas.drawPath(cybergramSideButtonPath, fill);
+        if (stroke) {
+            cybergramSideButtonStrokePaint.setStyle(Paint.Style.STROKE);
+            cybergramSideButtonStrokePaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramSideButtonStrokePaint.setStrokeWidth(dp(0.7f));
+            cybergramSideButtonStrokePaint.setColor(CybergramTheme.CYAN);
+            cybergramSideButtonStrokePaint.setAlpha(96);
+            canvas.drawPath(cybergramSideButtonPath, cybergramSideButtonStrokePaint);
+        }
+    }
+
     public void drawSideButton(Canvas canvas) {
         drawSideButton(canvas, false);
     }
@@ -21910,42 +21925,65 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
 
             applyServiceShaderMatrix();
+            final boolean cybergramSideButtons = CybergramTheme.useAngularMessageGeometry(resourcesProvider);
             if (drawSideButton == SIDE_BUTTON_SPONSORED_CLOSE && drawSideButton2 == SIDE_BUTTON_SPONSORED_MORE && sideButtonPressed) {
-                if (sideButtonPath1 == null) {
-                    sideButtonPath1 = new Path();
+                if (cybergramSideButtons) {
+                    AndroidUtilities.rectTmp.set(sideStartX, sideStartY, sideStartX + dp(32), sideStartY + dp(32));
+                    drawCybergramSideButtonPlate(canvas, AndroidUtilities.rectTmp,
+                            getThemedPaint(pressedSideButton == SIDE_BUTTON_SPONSORED_CLOSE
+                                    ? Theme.key_paint_chatActionBackgroundSelected
+                                    : Theme.key_paint_chatActionBackground), true);
+                    AndroidUtilities.rectTmp.set(sideStartX, sideStartY + dp(32), sideStartX + dp(32), sideStartY + dp(64));
+                    drawCybergramSideButtonPlate(canvas, AndroidUtilities.rectTmp,
+                            getThemedPaint(pressedSideButton == SIDE_BUTTON_SPONSORED_MORE
+                                    ? Theme.key_paint_chatActionBackgroundSelected
+                                    : Theme.key_paint_chatActionBackground), true);
                 } else {
-                    sideButtonPath1.rewind();
-                }
-                if (sideButtonPath2 == null) {
-                    sideButtonPath2 = new Path();
-                } else {
-                    sideButtonPath2.rewind();
-                }
-                if (sideButtonPathCorners1 == null) {
-                    sideButtonPathCorners1 = new float[8];
-                    sideButtonPathCorners1[0] = sideButtonPathCorners1[1] = sideButtonPathCorners1[2] = sideButtonPathCorners1[3] = dp(16);
-                }
-                if (sideButtonPathCorners2 == null) {
-                    sideButtonPathCorners2 = new float[8];
-                    sideButtonPathCorners2[4] = sideButtonPathCorners2[5] = sideButtonPathCorners2[6] = sideButtonPathCorners2[7] = dp(16);
-                }
-                AndroidUtilities.rectTmp.set(sideStartX, sideStartY, sideStartX + dp(32), sideStartY + dp(32));
-                sideButtonPath1.addRoundRect(AndroidUtilities.rectTmp, sideButtonPathCorners1, Path.Direction.CW);
+                    if (sideButtonPath1 == null) {
+                        sideButtonPath1 = new Path();
+                    } else {
+                        sideButtonPath1.rewind();
+                    }
+                    if (sideButtonPath2 == null) {
+                        sideButtonPath2 = new Path();
+                    } else {
+                        sideButtonPath2.rewind();
+                    }
+                    if (sideButtonPathCorners1 == null) {
+                        sideButtonPathCorners1 = new float[8];
+                        sideButtonPathCorners1[0] = sideButtonPathCorners1[1] = sideButtonPathCorners1[2] = sideButtonPathCorners1[3] = dp(16);
+                    }
+                    if (sideButtonPathCorners2 == null) {
+                        sideButtonPathCorners2 = new float[8];
+                        sideButtonPathCorners2[4] = sideButtonPathCorners2[5] = sideButtonPathCorners2[6] = sideButtonPathCorners2[7] = dp(16);
+                    }
+                    AndroidUtilities.rectTmp.set(sideStartX, sideStartY, sideStartX + dp(32), sideStartY + dp(32));
+                    sideButtonPath1.addRoundRect(AndroidUtilities.rectTmp, sideButtonPathCorners1, Path.Direction.CW);
 
-                AndroidUtilities.rectTmp.set(sideStartX, sideStartY + dp(32), sideStartX + dp(32), sideStartY + dp(64));
-                sideButtonPath2.addRoundRect(AndroidUtilities.rectTmp, sideButtonPathCorners2, Path.Direction.CW);
-                if (pressedSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
-                    canvas.drawPath(sideButtonPath1, getThemedPaint(Theme.key_paint_chatActionBackgroundSelected));
-                    canvas.drawPath(sideButtonPath2, getThemedPaint(Theme.key_paint_chatActionBackground));
-                } else {
-                    canvas.drawPath(sideButtonPath1, getThemedPaint(Theme.key_paint_chatActionBackground));
-                    canvas.drawPath(sideButtonPath2, getThemedPaint(Theme.key_paint_chatActionBackgroundSelected));
+                    AndroidUtilities.rectTmp.set(sideStartX, sideStartY + dp(32), sideStartX + dp(32), sideStartY + dp(64));
+                    sideButtonPath2.addRoundRect(AndroidUtilities.rectTmp, sideButtonPathCorners2, Path.Direction.CW);
+                    if (pressedSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
+                        canvas.drawPath(sideButtonPath1, getThemedPaint(Theme.key_paint_chatActionBackgroundSelected));
+                        canvas.drawPath(sideButtonPath2, getThemedPaint(Theme.key_paint_chatActionBackground));
+                    } else {
+                        canvas.drawPath(sideButtonPath1, getThemedPaint(Theme.key_paint_chatActionBackground));
+                        canvas.drawPath(sideButtonPath2, getThemedPaint(Theme.key_paint_chatActionBackgroundSelected));
+                    }
                 }
+            } else if (cybergramSideButtons) {
+                drawCybergramSideButtonPlate(canvas, rect,
+                        getThemedPaint(sideButtonPressed
+                                ? Theme.key_paint_chatActionBackgroundSelected
+                                : Theme.key_paint_chatActionBackground), true);
             } else {
                 canvas.drawRoundRect(rect, dp(16), dp(16), getThemedPaint(sideButtonPressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
             }
             if (hasGradientService()) {
-                canvas.drawRoundRect(rect, dp(16), dp(16), Theme.chat_actionBackgroundGradientDarkenPaint);
+                if (cybergramSideButtons) {
+                    drawCybergramSideButtonPlate(canvas, rect, Theme.chat_actionBackgroundGradientDarkenPaint, false);
+                } else {
+                    canvas.drawRoundRect(rect, dp(16), dp(16), Theme.chat_actionBackgroundGradientDarkenPaint);
+                }
             }
 
             if (drawSideButton == 2) {
@@ -21996,9 +22034,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             rect.set(summarizeButtonX, summarizeButtonY, summarizeButtonX + dp(32), summarizeButtonY + dp(32));
 
             applyServiceShaderMatrix();
-            canvas.drawRoundRect(rect, dp(16), dp(16), getThemedPaint(sideButtonPressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
-            if (hasGradientService()) {
-                canvas.drawRoundRect(rect, dp(16), dp(16), Theme.chat_actionBackgroundGradientDarkenPaint);
+            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
+                drawCybergramSideButtonPlate(canvas, rect,
+                        getThemedPaint(sideButtonPressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground), true);
+                if (hasGradientService()) {
+                    drawCybergramSideButtonPlate(canvas, rect, Theme.chat_actionBackgroundGradientDarkenPaint, false);
+                }
+            } else {
+                canvas.drawRoundRect(rect, dp(16), dp(16), getThemedPaint(sideButtonPressed ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
+                if (hasGradientService()) {
+                    canvas.drawRoundRect(rect, dp(16), dp(16), Theme.chat_actionBackgroundGradientDarkenPaint);
+                }
             }
 
             if (summarizeIcon == null) {
