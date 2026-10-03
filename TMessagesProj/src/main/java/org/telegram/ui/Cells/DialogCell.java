@@ -645,6 +645,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     private boolean isSelected;
     private final Paint cybergramSeparatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cybergramOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path cybergramRowFramePath = new Path();
+    private final Path cybergramAvatarFramePath = new Path();
+    private final RectF cybergramRowFrameRect = new RectF();
+    private final RectF cybergramAvatarFrameRect = new RectF();
     private final CybergramHudDrawable cybergramRowPanel = new CybergramHudDrawable();
 
     /**
@@ -830,7 +835,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         Theme.createDialogsResources(context);
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
-        avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? dp(10) : dp(26));
+        avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : dp(26));
         for (int i = 0; i < thumbImage.length; ++i) {
             thumbImage[i] = new ImageReceiver(this);
             thumbImage[i].ignoreNotifications = true;
@@ -3393,7 +3398,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             drawMonoforumAvatar = false;
             drawCommunityAvatar = false;
-            avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? dp(10) : dp(26));
+            avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(resourcesProvider) ? 0 : dp(26));
             drawUnmute = false;
         } else {
             int oldUnreadCount = unreadCount;
@@ -3840,8 +3845,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             final int avatarRadius;
             if (CybergramTheme.isCybergramPresentation(resourcesProvider)
                     && !drawMonoforumAvatar && !drawCommunityAvatar) {
-                // A rounded-square portrait belongs to the same clipped-card grammar as the row.
-                avatarRadius = dp(10);
+                // Cybergram avatars are true squares; the chamfer is applied as a path clip at draw time.
+                avatarRadius = 0;
             } else if (drawMonoforumAvatar) {
                 avatarRadius = 1;
             } else if (drawCommunityAvatar) {
@@ -4961,12 +4966,18 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     avatarImage.getCenterX(), avatarImage.getCenterY(), dp(48));
                 avatarImage.draw(canvas);
             } else {
+                final boolean cybergramAvatar = CybergramTheme.isCybergramPresentation(resourcesProvider);
+                storyParams.avatarChamferCutDp = cybergramAvatar
+                        ? CybergramTheme.DIALOGS_AVATAR_CUT_DP : 0f;
                 storyParams.drawHiddenStoriesAsSegments = isShareToStoryCell || currentDialogFolderId != 0;
                 int s = storyParams.forceState;
                 if (isShareToStoryCell) {
                     storyParams.forceState = StoriesUtilities.STATE_HAS_UNREAD;
                 }
                 StoriesUtilities.drawAvatarWithStory(currentDialogId, canvas, avatarImage, storyParams);
+                if (cybergramAvatar) {
+                    drawCybergramAvatarOutline(canvas);
+                }
                 if (storyParams.drawnLive) {
                     checkTtl();
                 }
@@ -5221,6 +5232,39 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int starBgColor;
     private Drawable starFg, starBg;
 
+    private void drawCybergramAmberOutline(Canvas canvas, Path path, boolean selected) {
+        cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
+        cybergramOutlinePaint.setStrokeJoin(Paint.Join.MITER);
+        cybergramOutlinePaint.setStrokeCap(Paint.Cap.SQUARE);
+        cybergramOutlinePaint.setColor(CybergramTheme.AMBER);
+
+        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
+        cybergramOutlinePaint.setAlpha(selected
+                ? CybergramTheme.BUBBLE_GLOW_SELECTED_ALPHA
+                : CybergramTheme.BUBBLE_GLOW_ALPHA);
+        canvas.drawPath(path, cybergramOutlinePaint);
+
+        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_MID_GLOW_WIDTH_DP));
+        cybergramOutlinePaint.setAlpha(selected
+                ? CybergramTheme.BUBBLE_MID_GLOW_SELECTED_ALPHA
+                : CybergramTheme.BUBBLE_MID_GLOW_ALPHA);
+        canvas.drawPath(path, cybergramOutlinePaint);
+
+        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP));
+        cybergramOutlinePaint.setAlpha(CybergramTheme.BUBBLE_BORDER_ALPHA);
+        canvas.drawPath(path, cybergramOutlinePaint);
+    }
+
+    private void drawCybergramAvatarOutline(Canvas canvas) {
+        cybergramAvatarFrameRect.set(
+                avatarImage.getImageX(), avatarImage.getImageY(),
+                avatarImage.getImageX2(), avatarImage.getImageY2());
+        CybergramTheme.buildInteractionPanelPath(
+                cybergramAvatarFramePath, cybergramAvatarFrameRect,
+                CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+        drawCybergramAmberOutline(canvas, cybergramAvatarFramePath, false);
+    }
+
     private void drawCybergramRowTreatment(Canvas canvas) {
         final int w = getMeasuredWidth();
         final int h = getMeasuredHeight();
@@ -5236,21 +5280,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         // Database entries separate plate, frame and content. Mirror the incoming bubble material
         // inside the existing text column; retain the avatar gutter and upstream row measurements.
-        final boolean archiveRow = currentDialogFolderId != 0;
         final boolean active = isSelected;
-        final int frameAlpha = active ? CybergramTheme.DIALOGS_ROW_FRAME_SELECTED_ALPHA
-                : archiveRow ? Math.max(CybergramTheme.DIALOGS_ROW_FRAME_ALPHA, 30)
-                : hasUnread && !muted ? CybergramTheme.DIALOGS_ROW_FRAME_UNREAD_ALPHA
-                : CybergramTheme.DIALOGS_ROW_FRAME_ALPHA;
-        final int frameColor = hasMention ? CybergramTheme.DIALOGS_ALERT : CybergramTheme.AMBER;
-        cybergramRowPanel.setBounds(LocaleController.isRTL ? dp(10) : dp(72), dp(3),
-                w - (LocaleController.isRTL ? dp(72) : dp(10)), h - dp(3));
+        final int panelLeft = LocaleController.isRTL ? dp(10) : dp(72);
+        final int panelRight = w - (LocaleController.isRTL ? dp(72) : dp(10));
+        cybergramRowPanel.setBounds(panelLeft, dp(3), panelRight, h - dp(3));
         cybergramRowPanel.setCornerCut(dpf2(CybergramTheme.DIALOGS_ROW_CUT_DP));
         cybergramRowPanel.setFillColor(active ? CybergramTheme.DIALOGS_ROW_SURFACE_ACTIVE
                 : CybergramTheme.DIALOGS_ROW_SURFACE);
-        cybergramRowPanel.setStroke((frameAlpha << 24) | (frameColor & 0x00FFFFFF),
-                dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP), true);
+        cybergramRowPanel.setStroke(0, 0, false);
         cybergramRowPanel.draw(canvas);
+
+        // Match incoming message bubbles: same amber core and the same restrained two-pass bloom.
+        cybergramRowFrameRect.set(panelLeft, dp(3), panelRight, h - dp(3));
+        CybergramTheme.buildInteractionPanelPath(
+                cybergramRowFramePath, cybergramRowFrameRect, CybergramTheme.DIALOGS_ROW_CUT_DP);
+        drawCybergramAmberOutline(canvas, cybergramRowFramePath, active);
 
         // State color is semantic rather than decorative. Incoming attention is amber, explicit
         // mentions/errors are red. Normal and pinned rows receive no gratuitous rail.

@@ -51,6 +51,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedColor;
@@ -193,7 +194,7 @@ public class StoriesUtilities {
             avatarImage.setImageCoords(params.originalAvatarRect);
             canvas.save();
             canvas.scale(scale, scale, params.originalAvatarRect.centerX(), params.originalAvatarRect.centerY());
-            avatarImage.draw(canvas);
+            drawAvatarImage(canvas, avatarImage, params);
             canvas.restore();
             return;
         }
@@ -377,7 +378,7 @@ public class StoriesUtilities {
             }
         }
 
-        avatarImage.draw(canvas);
+        drawAvatarImage(canvas, avatarImage, params);
         params.drawnLive = drawLive > 0.5f;
         if (drawLive > 0) {
             insetTo += params.additionalInset;
@@ -399,6 +400,22 @@ public class StoriesUtilities {
         if (restoreCount != 0) {
             canvas.restoreToCount(restoreCount);
         }
+    }
+
+    private static void drawAvatarImage(Canvas canvas, ImageReceiver avatarImage, AvatarStoryParams params) {
+        if (params.avatarChamferCutDp <= 0f) {
+            avatarImage.draw(canvas);
+            return;
+        }
+        params.avatarClipRect.set(
+                avatarImage.getImageX(), avatarImage.getImageY(),
+                avatarImage.getImageX2(), avatarImage.getImageY2());
+        CybergramTheme.buildInteractionPanelPath(
+                params.avatarClipPath, params.avatarClipRect, params.avatarChamferCutDp);
+        final int save = canvas.save();
+        canvas.clipPath(params.avatarClipPath);
+        avatarImage.draw(canvas);
+        canvas.restoreToCount(save);
     }
 
     public static void drawLive(Canvas canvas, RectF rect, float alpha, boolean drawText, float large) {
@@ -1239,6 +1256,11 @@ public class StoriesUtilities {
         public final boolean isStoryCell;
         public RectF originalAvatarRect = new RectF();
         public float additionalInset;
+
+        /** Optional avatar-only clip; story ring geometry remains untouched. */
+        public float avatarChamferCutDp;
+        private final Path avatarClipPath = new Path();
+        private final RectF avatarClipRect = new RectF();
 
         ButtonBounce buttonBounce;
         public boolean allowLongress = false;

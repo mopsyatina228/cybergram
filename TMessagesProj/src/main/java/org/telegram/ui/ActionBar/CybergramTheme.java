@@ -210,6 +210,8 @@ public final class CybergramTheme {
     public static final int DIALOGS_ROW_SURFACE = IN_BUBBLE;
     public static final int DIALOGS_ROW_SURFACE_ACTIVE = IN_BUBBLE_SELECTED;
     public static final float DIALOGS_ROW_CUT_DP = 5f;
+    /** Dialog-list avatar silhouette: square body with small 45-degree corner chamfers. */
+    public static final float DIALOGS_AVATAR_CUT_DP = 6f;
     public static final int DIALOGS_ROW_FRAME_ALPHA = 18;
     public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 64;
     public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 138;
