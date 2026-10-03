@@ -2465,7 +2465,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else if (drawCheck2) {
             final float checkScale = CybergramTheme.isCybergramPresentation(resourcesProvider)
-                    ? CybergramTheme.CHECK_SCALE : 1f;
+                    ? CybergramTheme.DIALOG_CHECK_SCALE : 1f;
             int w = Math.round(Theme.dialogs_checkDrawable.getIntrinsicWidth() * checkScale) + dp(5);
             nameWidth -= w;
             if (drawCheck1) {
@@ -3237,7 +3237,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return;
         }
         final android.graphics.Rect bounds = drawable.getBounds();
-        final float scale = CybergramTheme.CHECK_SCALE;
+        final float scale = CybergramTheme.DIALOG_CHECK_SCALE;
         final float cx = bounds.exactCenterX();
         final float cy = bounds.exactCenterY();
         final float halfW = bounds.width() * scale * 0.5f;

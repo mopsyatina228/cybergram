@@ -172,6 +172,13 @@ public final class CybergramTheme {
     /** Optical scale of outgoing delivery checks. Raj makes the metadata cluster visually smaller. */
     public static final float CHECK_SCALE = 0.84f;
 
+    /**
+     * Dialog-list assets are 42px wide versus the chat check assets' 36px.
+     * Scale by 6/7 on top of the chat optical scale so both surfaces render
+     * delivery status at the same visual size.
+     */
+    public static final float DIALOG_CHECK_SCALE = 0.72f;
+
     /** Metadata checks should sit behind the time instead of becoming a cyan badge. */
     public static final float CHECK_ALPHA_SCALE = 0.86f;
 
