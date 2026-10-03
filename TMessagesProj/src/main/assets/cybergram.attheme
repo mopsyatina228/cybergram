@@ -179,6 +179,10 @@ chat_inFileNameText=-1381659
 chat_inFileInfoText=-5656405
 chat_inAudioTitleText=-1381659
 chat_inAudioDurationText=-5656405
+# Channel/message interaction accent: use Cybergram primary cyan, not Telegram blue.
+chat_inInstant=-9446936
+chat_inInstantSelected=-7410958
+chat_inPreviewInstantText=-9446936
 
 # Outgoing message (owner ruling D9.2, 2026-09-17): dark blue-green surface, thin blue outline,
 # pale-blue foreground. The surface is a translucent dark blue-green material.
@@ -209,6 +213,9 @@ chat_outFileNameText=-13379841
 chat_outFileInfoText=-8987160
 chat_outAudioTitleText=-13379841
 chat_outAudioDurationText=-8987160
+chat_outInstant=-9446936
+chat_outInstantSelected=-7410958
+chat_outPreviewInstantText=-9446936
 
 # Reactions: explicit user-chosen cyan accent, never Telegram green
 chat_inReactionButtonBackground=-15252662

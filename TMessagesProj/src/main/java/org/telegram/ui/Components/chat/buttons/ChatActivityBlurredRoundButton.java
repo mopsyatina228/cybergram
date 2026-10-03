@@ -19,6 +19,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -48,16 +50,29 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     private @Nullable ImageView loadingIndicatorView;
     private CircularProgressDrawable loadingIndicatorDrawable;
     private Theme.ResourcesProvider resourcesProvider;
+    private final CybergramHudDrawable cybergramBackgroundDrawable = new CybergramHudDrawable();
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        backgroundDrawable.setBounds(0, 0, w, h);
+        if (backgroundDrawable != null) {
+            backgroundDrawable.setBounds(0, 0, w, h);
+        }
+        cybergramBackgroundDrawable.setBounds(dp(CLICK_ZONE_MARGIN), dp(CLICK_ZONE_MARGIN),
+                w - dp(CLICK_ZONE_MARGIN), h - dp(CLICK_ZONE_MARGIN));
     }
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        backgroundDrawable.draw(canvas);
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            cybergramBackgroundDrawable
+                    .setCornerCut(dp(6))
+                    .setFillColor(Theme.multAlpha(CybergramTheme.PANEL_RAISED, 0.94f))
+                    .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.42f), dp(0.7f), true);
+            cybergramBackgroundDrawable.draw(canvas);
+        } else if (backgroundDrawable != null) {
+            backgroundDrawable.draw(canvas);
+        }
         super.draw(canvas);
     }
 
@@ -166,14 +181,18 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     ) {
         ChatActivityBlurredRoundButton button;
 
-        final int color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+        final int color = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.ICON_PALE
+                : Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
         button = new ChatActivityBlurredRoundButton(context);
         button.resourcesProvider = resourcesProvider;
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
         button.setIconColor(color);
         int rad = dp(22);
         int pressedColor = Theme.multAlpha(color, .15f);
-        button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        button.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, .10f), Theme.RIPPLE_MASK_ALL)
+                : Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
         return button;
     }
@@ -188,7 +207,9 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
     ) {
         ChatActivityBlurredRoundButton button;
 
-        final int color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+        final int color = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.ICON_PALE
+                : Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
         button = new ChatActivityBlurredRoundButton(context);
         button.resourcesProvider = resourcesProvider;
         button.setBlurredBackgroundDrawable(factory.create(button, colorProvider));
@@ -196,7 +217,9 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
         button.setIconColor(color);
         int rad = dp(22);
         int pressedColor = Theme.multAlpha(color, .15f);
-        button.setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        button.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, .10f), Theme.RIPPLE_MASK_ALL)
+                : Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
 
         return button;
     }
@@ -207,11 +230,15 @@ public class ChatActivityBlurredRoundButton extends FrameLayout implements Facto
             invalidate();
         }
 
-        final int color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
-        setIconColor(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider));
+        final int color = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.ICON_PALE
+                : Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+        setIconColor(color);
         int rad = dp(22);
         int pressedColor = Theme.multAlpha(color, .15f);
-        setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+        setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, .10f), Theme.RIPPLE_MASK_ALL)
+                : Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
     }
 
     private void checkUi_IconViewVisibility() {

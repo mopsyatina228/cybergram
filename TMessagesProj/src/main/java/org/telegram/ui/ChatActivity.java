@@ -11548,7 +11548,7 @@ public class ChatActivity extends BaseFragment implements
         pinnedCounterTextView.setAddNumber();
         pinnedCounterTextView.setTextSize(14);
         pinnedCounterTextView.setTextColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
-                ? CybergramTheme.CYAN_SECONDARY : getThemedColor(Theme.key_chat_topPanelTitle));
+                ? CybergramTheme.CYAN : getThemedColor(Theme.key_chat_topPanelTitle));
         pinnedCounterTextView.setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
         pinnedMessageView.addView(pinnedCounterTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, 7, 44 + possibleLeftMarginDp, 0));
 
@@ -11556,7 +11556,7 @@ public class ChatActivity extends BaseFragment implements
             pinnedNameTextView[a] = new TrackingWidthSimpleTextView(getContext());
             pinnedNameTextView[a].setTextSize(14);
             pinnedNameTextView[a].setTextColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
-                    ? CybergramTheme.CYAN_SECONDARY : getThemedColor(Theme.key_chat_topPanelTitle));
+                    ? CybergramTheme.CYAN : getThemedColor(Theme.key_chat_topPanelTitle));
             pinnedNameTextView[a].setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
             pinnedMessageView.addView(pinnedNameTextView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, 7.3f, 44 + possibleLeftMarginDp, 0));
 
@@ -11661,7 +11661,7 @@ public class ChatActivity extends BaseFragment implements
         pinnedProgress.setSize(AndroidUtilities.dp(16));
         pinnedProgress.setStrokeWidth(2f);
         pinnedProgress.setProgressColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
-                ? CybergramTheme.CYAN_SECONDARY
+                ? CybergramTheme.CYAN
                 : getThemedColor(Theme.key_chat_topPanelLine));
         pinnedMessageView.addView(pinnedProgress, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
 

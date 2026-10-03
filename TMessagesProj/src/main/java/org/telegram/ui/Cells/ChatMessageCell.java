@@ -1253,6 +1253,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final MaskDrawable[] selectorMaskDrawable = new MaskDrawable[2];
     private int[] selectorDrawableMaskType = new int[2];
     private RectF instantButtonRect = new RectF();
+    private final Path cybergramSponsoredButtonPath = new Path();
     private LoadingDrawable instantButtonLoading;
     private final int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private float animatingLoadingProgressProgress;
@@ -16324,7 +16325,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     instantButtonLoading.draw(canvas);
                     invalidate();
                 }
-                canvas.drawRoundRect(instantButtonRect, dp(6), dp(6), Theme.chat_instantViewButtonPaint);
+                if (currentMessageObject.isSponsored()
+                        && CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
+                    CybergramTheme.buildInteractionPanelPath(
+                            cybergramSponsoredButtonPath, instantButtonRect, 5f);
+                    canvas.drawPath(cybergramSponsoredButtonPath, Theme.chat_instantViewButtonPaint);
+                } else {
+                    canvas.drawRoundRect(instantButtonRect, dp(6), dp(6), Theme.chat_instantViewButtonPaint);
+                }
                 if (drawInstantViewType == 0) {
                     setDrawableBounds(instantDrawable, instantTextLeftX + instantTextX + linkX - dp(15), instantY + dp(11.5f), dp(9), dp(13));
                     instantDrawable.setAlpha((int) (0xFF * alpha));

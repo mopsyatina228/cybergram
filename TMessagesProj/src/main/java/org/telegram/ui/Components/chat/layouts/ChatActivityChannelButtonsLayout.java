@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.View;
@@ -19,6 +20,8 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
+import org.telegram.ui.ActionBar.CybergramHudDrawable;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -81,8 +84,12 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
         this.resourcesProvider = resourcesProvider;
 
         container = new FrameLayout(context);
-        container.setClipToOutline(true);
-        container.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(22)));
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            container.setClipToOutline(false);
+        } else {
+            container.setClipToOutline(true);
+            container.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(22)));
+        }
         addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.CENTER_VERTICAL));
     }
 
@@ -152,6 +159,8 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
     }
 
     private BlurredBackgroundDrawable containerDrawable;
+    private final CybergramHudDrawable cybergramContainerDrawable = new CybergramHudDrawable();
+    private final Path cybergramAccentPath = new Path();
     public void setupDrawableForContainer() {
         containerDrawable = blurredBackgroundDrawableViewFactory.create(this)
             .setColorProvider(colorProvider)
@@ -413,15 +422,28 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
 
     @Override
     protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
-        if (child == container && containerDrawable != null) {
-            tmpRect.set(
-                totalWidthLeft + dp(1), 0,
-                getMeasuredWidth() - dp(1) - totalWidthRight,
-                getMeasuredHeight());
+        if (child == container) {
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                final int left = Math.round(totalWidthLeft + dp(7));
+                final int right = Math.round(getMeasuredWidth() - totalWidthRight - dp(7));
+                final int top = dp(6);
+                final int bottom = getMeasuredHeight() - dp(6);
+                cybergramContainerDrawable.setBounds(left, top, right, bottom);
+                cybergramContainerDrawable
+                        .setCornerCut(dp(7))
+                        .setFillColor(Theme.multAlpha(CybergramTheme.PANEL_RAISED, 0.94f))
+                        .setStroke(Theme.multAlpha(CybergramTheme.CYAN, 0.36f), dp(0.7f), true);
+                cybergramContainerDrawable.draw(canvas);
+            } else if (containerDrawable != null) {
+                tmpRect.set(
+                    totalWidthLeft + dp(1), 0,
+                    getMeasuredWidth() - dp(1) - totalWidthRight,
+                    getMeasuredHeight());
 
-            tmpRect.round(AndroidUtilities.rectTmp2);
-            containerDrawable.setBounds(AndroidUtilities.rectTmp2);
-            containerDrawable.draw(canvas);
+                tmpRect.round(AndroidUtilities.rectTmp2);
+                containerDrawable.setBounds(AndroidUtilities.rectTmp2);
+                containerDrawable.draw(canvas);
+            }
         }
 
         return super.drawChild(canvas, child, drawingTime);
@@ -439,7 +461,12 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
             );
             backgroundAccentPaint.setColor(accentColor);
             backgroundAccentPaint.setAlpha(accentAlpha);
-            canvas.drawRoundRect(tmpRect, dp(19), dp(19), backgroundAccentPaint);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                CybergramTheme.buildInteractionPanelPath(cybergramAccentPath, tmpRect, 5f);
+                canvas.drawPath(cybergramAccentPath, backgroundAccentPaint);
+            } else {
+                canvas.drawRoundRect(tmpRect, dp(19), dp(19), backgroundAccentPaint);
+            }
         }
 
         super.dispatchDraw(canvas);
