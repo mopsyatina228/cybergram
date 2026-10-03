@@ -154,6 +154,7 @@ import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
@@ -7377,6 +7378,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                     }
+                    Theme.chat_commentTextPaint.setTypeface(
+                            CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
                     commentWidth = totalCommentWidth = (int) Math.ceil(Theme.chat_commentTextPaint.measureText(comment));
                     commentLayout = new StaticLayout(comment, Theme.chat_commentTextPaint, commentWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     if (commentCount != 0 && !LocaleController.isRTL) {
@@ -7400,6 +7403,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     if (!isRepliesChat && commentCount > 0) {
                         String comment = LocaleController.formatShortNumber(commentCount, null);
+                        Theme.chat_stickerCommentCountPaint.setTypeface(
+                                CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
                         commentWidth = totalCommentWidth = (int) Math.ceil(Theme.chat_stickerCommentCountPaint.measureText(comment));
                         commentLayout = new StaticLayout(comment, Theme.chat_stickerCommentCountPaint, commentWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     } else {
