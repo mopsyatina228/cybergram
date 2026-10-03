@@ -212,6 +212,9 @@ public final class CybergramTheme {
     public static final float DIALOGS_ROW_CUT_DP = 5f;
     /** Dialog-list avatar silhouette: square body with small 45-degree corner chamfers. */
     public static final float DIALOGS_AVATAR_CUT_DP = 6f;
+    public static final float DIALOGS_AVATAR_OUTER_GAP_DP = 3.5f;
+    public static final float DIALOGS_AVATAR_OUTER_CUT_DP = 8f;
+    public static final int DIALOGS_AVATAR_OUTER_ALPHA = 88;
     public static final int DIALOGS_ROW_FRAME_ALPHA = 18;
     public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 64;
     public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 138;

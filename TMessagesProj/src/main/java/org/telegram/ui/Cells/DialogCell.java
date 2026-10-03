@@ -648,8 +648,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final Paint cybergramOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path cybergramRowFramePath = new Path();
     private final Path cybergramAvatarFramePath = new Path();
+    private final Path cybergramAvatarOuterFramePath = new Path();
     private final RectF cybergramRowFrameRect = new RectF();
     private final RectF cybergramAvatarFrameRect = new RectF();
+    private final RectF cybergramAvatarOuterFrameRect = new RectF();
     private final CybergramHudDrawable cybergramRowPanel = new CybergramHudDrawable();
 
     /**
@@ -5259,6 +5261,27 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         cybergramAvatarFrameRect.set(
                 avatarImage.getImageX(), avatarImage.getImageY(),
                 avatarImage.getImageX2(), avatarImage.getImageY2());
+
+        // A second, quieter chamfered rail gives the avatar the same layered frame grammar
+        // as Cybergram message surfaces without inflating the portrait itself.
+        final float outerGap = dpf2(CybergramTheme.DIALOGS_AVATAR_OUTER_GAP_DP);
+        cybergramAvatarOuterFrameRect.set(
+                cybergramAvatarFrameRect.left - outerGap,
+                cybergramAvatarFrameRect.top - outerGap,
+                cybergramAvatarFrameRect.right + outerGap,
+                cybergramAvatarFrameRect.bottom + outerGap);
+        CybergramTheme.buildInteractionPanelPath(
+                cybergramAvatarOuterFramePath, cybergramAvatarOuterFrameRect,
+                CybergramTheme.DIALOGS_AVATAR_OUTER_CUT_DP);
+
+        cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
+        cybergramOutlinePaint.setStrokeJoin(Paint.Join.MITER);
+        cybergramOutlinePaint.setStrokeCap(Paint.Cap.SQUARE);
+        cybergramOutlinePaint.setColor(CybergramTheme.AMBER);
+        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP));
+        cybergramOutlinePaint.setAlpha(CybergramTheme.DIALOGS_AVATAR_OUTER_ALPHA);
+        canvas.drawPath(cybergramAvatarOuterFramePath, cybergramOutlinePaint);
+
         CybergramTheme.buildInteractionPanelPath(
                 cybergramAvatarFramePath, cybergramAvatarFrameRect,
                 CybergramTheme.DIALOGS_AVATAR_CUT_DP);
