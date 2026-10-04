@@ -2998,6 +2998,18 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             attachButton = new ImageView(context) {
                 @Override
+                protected void onDraw(Canvas canvas) {
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        canvas.save();
+                        canvas.translate(0, -dp(2));
+                        super.onDraw(canvas);
+                        canvas.restore();
+                    } else {
+                        super.onDraw(canvas);
+                    }
+                }
+
+                @Override
                 public boolean dispatchTouchEvent(MotionEvent event) {
                     if (getAlpha() < 0.5f) return false;
                     return super.dispatchTouchEvent(event);
@@ -3633,9 +3645,13 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (audioVideoButtonContainerForbidden || CybergramTheme.isCybergramPresentation(resourcesProvider)) {
                     tmpRectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     tmpRectF.inset(dp(7.5f), dp(7.5f));
-                    if (CybergramTheme.isCybergramPresentation(resourcesProvider) && getCurrentState() != State.VIDEO) {
-                        // input_mic is optically bottom-heavy even when its bounds are mathematically centred.
-                        tmpRectF.offset(0, -dp(1.5f));
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        // Lift the mic/video glyphs inside the fixed hit target without moving the button.
+                        tmpRectF.offset(0, -dp(2));
+                        if (getCurrentState() != State.VIDEO) {
+                            // input_mic remains optically bottom-heavy even after the common lift.
+                            tmpRectF.offset(0, -dp(1.5f));
+                        }
                     }
                     Drawable d = getCurrentState() == State.VIDEO ? cameraOutline : micOutline;
                     d.setBounds(tmpRectF);
