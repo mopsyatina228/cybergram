@@ -2003,10 +2003,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 float safeTop = Float.NaN;
                 float safeRight = Float.NaN;
                 float safeBottom = Float.NaN;
-                if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
-                    // Telegram rewrites attachment X after measurement in several late layout branches.
-                    // At draw time the bubble bounds are final, so force the receiver's real bounding box
-                    // back inside the inner frame instead of merely clipping an oversized raster.
+                if (!isCybergramGroupedAlbum()
+                        && currentBackgroundDrawable != null
+                        && !currentBackgroundDrawable.getBounds().isEmpty()) {
+                    // Single-media messages can safely clamp to their final bubble bounds. Album cells
+                    // cannot: ChatActivity reuses one representative cell to draw the *aggregate* group
+                    // background, so that cell's drawable bounds may describe the whole gallery by the
+                    // time its individual tile is rendered. Trust the mosaic layout for grouped media.
                     bubbleBounds = currentBackgroundDrawable.getBounds();
                     inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
                     // Media owns the full inner frame. Telegram's asymmetric text/tail gutters are
@@ -10654,9 +10657,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     final float cybergramMediaInset = CybergramTheme.useAngularMessageGeometry(resourcesProvider) && drawPhotoImage
                             ? dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP) : 0f;
-                    photoImage.setImageCoords(cybergramMediaInset, y + namesOffset + additionalTop + cybergramMediaInset,
-                            Math.max(1f, photoWidth - 2f * cybergramMediaInset),
-                            Math.max(1f, photoHeight - 2f * cybergramMediaInset));
+                    final boolean cybergramAlbum = isCybergramGroupedAlbum();
+                    // Only the gallery perimeter reserves the half-stroke safety inset. Internal
+                    // tile joins stay edge-to-edge, so a multi-photo post reads as one instrument
+                    // panel rather than several independently padded mini-bubbles.
+                    final float mediaInsetLeft = cybergramAlbum
+                            && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0 ? 0f : cybergramMediaInset;
+                    final float mediaInsetRight = cybergramAlbum
+                            && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0 ? 0f : cybergramMediaInset;
+                    final float mediaInsetTop = cybergramAlbum
+                            && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 ? 0f : cybergramMediaInset;
+                    final float mediaInsetBottom = cybergramAlbum
+                            && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 ? 0f : cybergramMediaInset;
+                    photoImage.setImageCoords(mediaInsetLeft, y + namesOffset + additionalTop + mediaInsetTop,
+                            Math.max(1f, photoWidth - mediaInsetLeft - mediaInsetRight),
+                            Math.max(1f, photoHeight - mediaInsetTop - mediaInsetBottom));
                 }
                 if (messageObject.hasMediaSpoilers() && SpoilerEffect2.supports()) {
                     if (mediaSpoilerEffect2 == null && attachedToWindow) {
@@ -13891,6 +13906,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.isDocuments;
     }
 
+    private boolean isCybergramGroupedAlbum() {
+        return CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                && currentPosition != null
+                && currentMessagesGroup != null
+                && !currentMessagesGroup.isDocuments
+                && drawPhotoImage;
+    }
+
     private boolean useCybergramAngularMediaClip() {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
                 || currentMessageObject == null || !drawPhotoImage || isRoundVideo || isSmallImage
@@ -13917,13 +13940,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         // mosaic gutter remains the separator.
         final boolean grouped = currentPosition != null && currentMessagesGroup != null
                 && !currentMessagesGroup.isDocuments;
-        final boolean topLeft = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
+        // If the album continues into a shared caption plate, the media/caption join is an inner
+        // seam, not an outer gallery corner. Keep that edge square and reserve chamfers for the
+        // actual aggregate bubble perimeter.
+        final boolean captionContinuesAbove = grouped && currentMessagesGroup.hasCaption && captionAbove;
+        final boolean captionContinuesBelow = grouped && currentMessagesGroup.hasCaption && !captionAbove;
+        final boolean topLeft = !grouped || !captionContinuesAbove
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
-        final boolean topRight = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
+        final boolean topRight = !grouped || !captionContinuesAbove
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
-        final boolean bottomRight = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
+        final boolean bottomRight = !grouped || !captionContinuesBelow
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
-        final boolean bottomLeft = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
+        final boolean bottomLeft = !grouped || !captionContinuesBelow
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
 
         path.rewind();
@@ -14333,14 +14365,31 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (drawInstantViewType == 17) {
                 x += dp(10) + (instantWidth - photoImage.getImageWidth()) / 2;
             }
+            float finalMediaWidth = photoImage.getImageWidth();
             if (CybergramTheme.useAngularMessageGeometry(resourcesProvider)
                     && useCybergramAngularMediaClip()) {
-                // Same correction for generic media/link-preview positioning.
-                x += dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                final int mediaEdgeInset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                if (isCybergramGroupedAlbum()) {
+                    // Grouped media is positioned in a full-width cell. Snap only the *outer*
+                    // gallery edges to the aggregate bubble frame; internal tiles keep Telegram's
+                    // span/leftSpanOffset placement and meet without a second Cybergram gutter.
+                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                        finalMediaWidth += x - targetLeft;
+                        x = targetLeft;
+                    }
+                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
+                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                        finalMediaWidth = Math.max(1f, targetRight - x);
+                    }
+                } else {
+                    // Same correction for generic single media/link-preview positioning.
+                    x += mediaEdgeInset;
+                }
             }
             if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
                 transitionParams.updatePhotoImageX = false;
-                photoImage.setImageCoords((float) x, photoImage.getImageY(), photoImage.getImageWidth(), photoImage.getImageHeight());
+                photoImage.setImageCoords((float) x, photoImage.getImageY(), Math.max(1f, finalMediaWidth), photoImage.getImageHeight());
             }
             buttonX = (int) (x + (photoImage.getImageWidth() - dp(48)) / 2.0f);
             buttonY = (int) (photoImage.getImageY() + (photoImage.getImageHeight() - dp(48)) / 2);

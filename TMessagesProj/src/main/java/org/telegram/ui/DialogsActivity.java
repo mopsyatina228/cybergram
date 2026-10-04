@@ -1632,7 +1632,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void updateStoriesViewAlpha(float alpha) {
         final float factorSearch = Utilities.clamp(searchAnimationProgress * 2, 1f, 0f);
-        dialogStoriesCell.setAlpha((1f - progressToActionMode) * alpha * progressToDialogStoriesCell * (1f - factorSearch));
+        final float baseStoriesAlpha = (1f - progressToActionMode) * alpha
+                * progressToDialogStoriesCell * (1f - factorSearch);
+        dialogStoriesCell.setAlpha(baseStoriesAlpha);
         float containersAlpha;
 
         if (hasStories || animateToHasStories) {
@@ -1649,7 +1651,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 dialogStoriesCell.setTranslationY(Math.max(scrollYOffset, -getMaxScrollYOffsetWithoutSearch()) + storiesYOffset + storiesOverscroll / 2f - dp(8));
                 dialogStoriesCell.setProgressToCollapse(p, !rightSlidingDialogContainer.hasFragment());
-                if (!animateToHasStories) {
+                if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+                    // Keep Telegram's proven scroll/collapse geometry, but do not let collapsed
+                    // stories morph into stacked avatar chips on top of Cybergram's title band.
+                    // The rail fades out while it travels upward and reappears on pull-down.
+                    final float railCollapse = Utilities.clamp((p - 0.06f) / 0.40f, 1f, 0f);
+                    dialogStoriesCell.setAlpha(baseStoriesAlpha * (1f - railCollapse));
+                    containersAlpha = 1f;
+                } else if (!animateToHasStories) {
                     containersAlpha = 1f - progressToDialogStoriesCell;
                 } else {
                     containersAlpha = (1f - pHalf);
