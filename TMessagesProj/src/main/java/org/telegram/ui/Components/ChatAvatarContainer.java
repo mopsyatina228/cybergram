@@ -20,6 +20,8 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
@@ -189,6 +191,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         final boolean avatarClickable = parentFragment != null && (parentFragment.getChatMode() == 0 || parentFragment.getChatMode() == ChatActivity.MODE_SUGGESTIONS) && !UserObject.isReplyUser(parentFragment.getCurrentUser()) && (parentFragment.getCurrentUser() == null || parentFragment.getCurrentUser().id != UserObject.VERIFY);
         avatarImageView = new BackupImageView(context) {
 
+            private final Path cybergramAnalogPath = new Path();
+            private final RectF cybergramAnalogRect = new RectF();
+
             StoriesUtilities.AvatarStoryParams params = new StoriesUtilities.AvatarStoryParams(true) {
                 @Override
                 public void openStory(long dialogId, Runnable onDone) {
@@ -238,6 +243,18 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                     StoriesUtilities.drawAvatarWithStory(dialogId, canvas, imageReceiver, params);
                 } else {
                     super.onDraw(canvas);
+                }
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    cybergramAnalogRect.set(
+                            imageReceiver.getImageX(), imageReceiver.getImageY(),
+                            imageReceiver.getImageX2(), imageReceiver.getImageY2());
+                    cybergramAnalogPath.rewind();
+                    final int[] radii = imageReceiver.getRoundRadius();
+                    final float radius = radii != null && radii.length > 0 ? radii[0] : 0f;
+                    cybergramAnalogPath.addRoundRect(
+                            cybergramAnalogRect, radius, radius, Path.Direction.CW);
+                    CybergramTheme.drawAnalogDisplayOverlay(
+                            canvas, cybergramAnalogRect, cybergramAnalogPath);
                 }
             }
 

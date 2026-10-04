@@ -28,6 +28,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
@@ -165,6 +166,14 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             dayNightCell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
             dayNightCell.imageLeft = 21;
             addView(dayNightCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            if (CybergramTheme.isCybergramPresentation(
+                    parentFragment != null ? parentFragment.getResourceProvider() : null)) {
+                // Keep Telegram's day/night machinery intact for other themes, but Cybergram is a
+                // fixed dark presentation and must not expose a one-tap escape hatch in settings.
+                dayNightCell.setVisibility(GONE);
+                dayNightCell.setClickable(false);
+                dayNightCell.setFocusable(false);
+            }
 
             browseThemesCell = new TextCell(context);
             browseThemesCell.setTextAndIcon(LocaleController.getString(R.string.SettingsBrowseThemes), R.drawable.msg_colors, false);

@@ -1088,14 +1088,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             updateContextViewPosition();
-            if (CybergramTheme.isCybergramPresentation(resourceProvider) && hasStories) {
-                // Cybergram keeps stories as a dedicated contact rail instead of collapsing them
-                // into the title. Fade that rail before it reaches the search/filter planes so
-                // partial avatar circles never leak between the terminal-style ribbons.
-                final float railExit = Utilities.clamp(
-                        (-scrollYOffset - dp(6f)) / dp(18f), 1f, 0f);
-                storiesAlpha *= 1f - railExit;
-            }
             updateStoriesViewAlpha(storiesAlpha);
             super.dispatchDraw(canvas);
             drawHeaderShadow(canvas, top + actionBarHeight);
@@ -1292,10 +1284,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         childTop = lp.topMargin;
                 }
 
-                final boolean cybergramStoryRailVisible =
-                        CybergramTheme.isCybergramPresentation(resourceProvider)
-                                && dialogStoriesCellVisible;
-
                 if (child == fragmentSearchField || child == searchTabsAndFiltersLayout || child == dialogStoriesCell) {
                     childTop = actionBar.getMeasuredHeight();
                     if (child != fragmentSearchField && child != dialogStoriesCell && child != searchTabsAndFiltersLayout) {
@@ -1304,12 +1292,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     //if (rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment() && (child == searchTabsView || child == filtersView)) {
                     //    childTop -= dp(SEARCH_FIELD_HEIGHT);
                     //}
-                    if (child == fragmentSearchField) {
-                        if (cybergramStoryRailVisible) {
-                            childTop += dp(DialogStoriesCell.HEIGHT_IN_DP + 8);
-                        } else if (hasStories) {
-                            childTop += dp(DialogStoriesCell.HEIGHT_IN_DP);
-                        }
+                    if (child == fragmentSearchField && hasStories) {
+                        childTop += dp(DialogStoriesCell.HEIGHT_IN_DP);
                     }
                     if (child == dialogStoriesCell && dialogStoriesCell.getPremiumHint() != null) {
                         dialogStoriesCell.getPremiumHint().layout(childLeft, childTop - dp(24 + 8 + 22) + height, childLeft + width, childTop - dp(24 + 8 + 22) + height + dialogStoriesCell.getPremiumHint().getMeasuredHeight());
@@ -1650,19 +1634,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factorSearch = Utilities.clamp(searchAnimationProgress * 2, 1f, 0f);
         dialogStoriesCell.setAlpha((1f - progressToActionMode) * alpha * progressToDialogStoriesCell * (1f - factorSearch));
         float containersAlpha;
-        final boolean cybergramStoryRail = CybergramTheme.isCybergramPresentation(resourceProvider)
-                && (hasStories || animateToHasStories);
 
-        if (cybergramStoryRail) {
-            // Cybergram keeps identity and contacts as two explicit hierarchy bands. Telegram's
-            // upstream collapse animation moves stories into the action bar and fades its title;
-            // that is exactly the stacked-avatar composition we do not want here.
-            dialogStoriesCell.setClipTop(0);
-            dialogStoriesCell.setTranslationY(0);
-            dialogStoriesCell.setProgressToCollapse(0f, false);
-            containersAlpha = 1f;
-            actionBar.setTranslationY(0);
-        } else if (hasStories || animateToHasStories) {
+        if (hasStories || animateToHasStories) {
             float p = Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
             if (progressToActionMode == 1f) {
                 p = 1f;
@@ -13762,48 +13735,50 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
 
-        final boolean isCurrentThemeDark;
-        if (resourceProvider != null) {
-            isCurrentThemeDark = resourceProvider.isDark();
-        } else {
-            isCurrentThemeDark = Theme.isCurrentThemeDark();
-        }
-        io.add(isCurrentThemeDark ? R.drawable.menu_day_mode_24 : R.drawable.menu_night_mode_24,
-                getString(isCurrentThemeDark ? R.string.SwitchThemeToDay : R.string.SwitchThemeToNight), () -> {
-            if (switchingTheme) {
-                return;
+        if (!CybergramTheme.isCybergramPresentation(resourceProvider)) {
+            final boolean isCurrentThemeDark;
+            if (resourceProvider != null) {
+                isCurrentThemeDark = resourceProvider.isDark();
+            } else {
+                isCurrentThemeDark = Theme.isCurrentThemeDark();
             }
-            switchingTheme = true;
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
-            String dayThemeName = preferences.getString("lastDayTheme", "Blue");
-            if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
-                dayThemeName = "Blue";
-            }
-            String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
-            if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
-                nightThemeName = "Dark Blue";
-            }
-            Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
-            if (dayThemeName.equals(nightThemeName)) {
-                if (themeInfo.isDark() || dayThemeName.equals("Dark Blue") || dayThemeName.equals("Night")) {
+            io.add(isCurrentThemeDark ? R.drawable.menu_day_mode_24 : R.drawable.menu_night_mode_24,
+                    getString(isCurrentThemeDark ? R.string.SwitchThemeToDay : R.string.SwitchThemeToNight), () -> {
+                if (switchingTheme) {
+                    return;
+                }
+                switchingTheme = true;
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+                String dayThemeName = preferences.getString("lastDayTheme", "Blue");
+                if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
                     dayThemeName = "Blue";
-                } else {
+                }
+                String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
+                if (Theme.getTheme(nightThemeName) == null || !Theme.getTheme(nightThemeName).isDark()) {
                     nightThemeName = "Dark Blue";
                 }
-            }
+                Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
+                if (dayThemeName.equals(nightThemeName)) {
+                    if (themeInfo.isDark() || dayThemeName.equals("Dark Blue") || dayThemeName.equals("Night")) {
+                        dayThemeName = "Blue";
+                    } else {
+                        nightThemeName = "Dark Blue";
+                    }
+                }
 
-            boolean toDark;
-            if (toDark = dayThemeName.equals(themeInfo.getKey())) {
-                themeInfo = Theme.getTheme(nightThemeName);
-            } else {
-                themeInfo = Theme.getTheme(dayThemeName);
-            }
-            switchTheme(themeInfo, toDark);
-            Theme.turnOffAutoNight(BulletinFactory.of(this), () -> {
-                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
+                boolean toDark;
+                if (toDark = dayThemeName.equals(themeInfo.getKey())) {
+                    themeInfo = Theme.getTheme(nightThemeName);
+                } else {
+                    themeInfo = Theme.getTheme(dayThemeName);
+                }
+                switchTheme(themeInfo, toDark);
+                Theme.turnOffAutoNight(BulletinFactory.of(this), () -> {
+                    presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
+                });
             });
-        });
-        io.addGap();
+            io.addGap();
+        }
         io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
             Bundle args = new Bundle();
             presentFragment(new GroupCreateActivity(args));

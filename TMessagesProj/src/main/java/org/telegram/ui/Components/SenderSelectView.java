@@ -7,6 +7,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -22,6 +24,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SenderSelectView extends View {
@@ -36,6 +39,9 @@ public class SenderSelectView extends View {
     private Drawable selectorDrawable;
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint menuPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cybergramFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path cybergramPath = new Path();
+    private final RectF cybergramRect = new RectF();
 
     private SpringAnimation menuSpring;
     private ValueAnimator menuAnimator;
@@ -45,7 +51,7 @@ public class SenderSelectView extends View {
 
     public SenderSelectView(Context context) {
         super(context);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(28));
+        avatarImage.setRoundRadius(CybergramTheme.isCybergramPresentation(null) ? 0 : AndroidUtilities.dp(28));
         menuPaint.setStrokeWidth(AndroidUtilities.dp(2));
         menuPaint.setStrokeCap(Paint.Cap.ROUND);
         menuPaint.setStyle(Paint.Style.STROKE);
@@ -95,11 +101,34 @@ public class SenderSelectView extends View {
 
         super.onDraw(canvas);
 
-        avatarImage.draw(canvas);
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(null);
+        if (cybergram) {
+            cybergramRect.set(0, 0, getWidth(), getHeight());
+            CybergramTheme.buildInteractionPanelPath(
+                    cybergramPath, cybergramRect, CybergramTheme.MESSAGE_AVATAR_CUT_DP);
+            final int avatarSave = canvas.save();
+            canvas.clipPath(cybergramPath);
+            avatarImage.draw(canvas);
+            CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramRect, cybergramPath);
+            canvas.restoreToCount(avatarSave);
+
+            cybergramFramePaint.setStyle(Paint.Style.STROKE);
+            cybergramFramePaint.setStrokeJoin(Paint.Join.MITER);
+            cybergramFramePaint.setStrokeWidth(AndroidUtilities.dpf2(CybergramTheme.MESSAGE_AVATAR_FRAME_WIDTH_DP));
+            cybergramFramePaint.setColor(CybergramTheme.CYAN);
+            cybergramFramePaint.setAlpha(CybergramTheme.MESSAGE_AVATAR_FRAME_ALPHA);
+            canvas.drawPath(cybergramPath, cybergramFramePaint);
+        } else {
+            avatarImage.draw(canvas);
+        }
 
         int alpha = (int) (menuProgress * 0xFF);
         backgroundPaint.setAlpha(alpha);
-        canvas.drawCircle(getWidth() / 2f, getHeight() / 2f, Math.min(getWidth(), getHeight()) / 2f, backgroundPaint);
+        if (cybergram) {
+            canvas.drawPath(cybergramPath, backgroundPaint);
+        } else {
+            canvas.drawCircle(getWidth() / 2f, getHeight() / 2f, Math.min(getWidth(), getHeight()) / 2f, backgroundPaint);
+        }
 
         canvas.save();
         menuPaint.setAlpha(alpha);

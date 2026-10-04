@@ -16,10 +16,12 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -1048,14 +1050,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     AnimatorSet storiesAnimatorSet;
     public void setProgressToCollapse(float progress, boolean animated) {
-        if (CybergramTheme.isCybergramPresentation(
-                fragment != null ? fragment.getResourceProvider() : null)) {
-            // Keep stories as a dedicated contact rail below the header. Collapsing them into the
-            // title identity zone recreates Telegram's stacked-avatar grammar and fights the
-            // dossier-style hierarchy used by the Cybergram chat header.
-            progress = 0f;
-            animated = false;
-        }
         if (collapsedProgress1 == progress) {
             return;
         }
@@ -1498,6 +1492,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
         private final AnimatedFloat failT = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         private final Paint cybergramStoryRingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path cybergramStoryPath = new Path();
+        private final RectF cybergramStoryRect = new RectF();
 
         public StoryCell(Context context) {
             super(context);
@@ -1688,6 +1684,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 params.progressToSegments = 1f - collapsedProgress2;
             }
             params.originalAvatarRect.set(x, y, x + finalSize, y + finalSize);
+            final boolean cybergramStory = CybergramTheme.isCybergramPresentation(
+                    fragment != null ? fragment.getResourceProvider() : null);
+            params.avatarChamferCutDp = cybergramStory
+                    ? CybergramTheme.DIALOGS_AVATAR_CUT_DP * (1f - progressToCollapsed)
+                    : 0f;
             params.additionalInset = dpf2(1.33f) * progressToCollapsed;
             avatarImage.setAlpha(1f);
             avatarImage.setRoundRadius((int) radius);
@@ -1703,17 +1704,22 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 canvas.drawCircle(cx, cy, radius + dpf2(1.5f), backgroundPaint);
             }
 
-            if (CybergramTheme.isCybergramPresentation(
-                    fragment != null ? fragment.getResourceProvider() : null)
-                    && progressToCollapsed < 0.5f) {
+            if (cybergramStory && progressToCollapsed < 0.5f) {
                 final boolean unreadStory = !isSelf && storiesController.hasUnreadStories(dialogId);
+                cybergramStoryRect.set(params.originalAvatarRect);
+                cybergramStoryRect.inset(-dpf2(2.25f), -dpf2(2.25f));
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramStoryPath,
+                        cybergramStoryRect,
+                        CybergramTheme.DIALOGS_AVATAR_CUT_DP * (1f - progressToCollapsed));
                 cybergramStoryRingPaint.setStyle(Paint.Style.STROKE);
-                cybergramStoryRingPaint.setStrokeWidth(dpf2(unreadStory ? 1.65f : 1.25f));
+                cybergramStoryRingPaint.setStrokeJoin(Paint.Join.MITER);
+                cybergramStoryRingPaint.setStrokeWidth(dpf2(unreadStory ? 1.4f : 1.0f));
                 cybergramStoryRingPaint.setColor(unreadStory
                         ? CybergramTheme.CYAN
                         : CybergramTheme.AMBER);
-                cybergramStoryRingPaint.setAlpha(unreadStory ? 255 : 176);
-                canvas.drawCircle(cx, cy, radius + dpf2(2.25f), cybergramStoryRingPaint);
+                cybergramStoryRingPaint.setAlpha(unreadStory ? 232 : 150);
+                canvas.drawPath(cybergramStoryPath, cybergramStoryRingPaint);
             }
 
             canvas.save();
@@ -1811,7 +1817,17 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     } else {
                         StoriesUtilities.drawAvatarWithStory(dialogId, canvas, avatarImage, storiesController.hasStories(dialogId), params);
                     }
-
+                    if (cybergramStory) {
+                        cybergramStoryRect.set(
+                                avatarImage.getImageX(), avatarImage.getImageY(),
+                                avatarImage.getImageX2(), avatarImage.getImageY2());
+                        CybergramTheme.buildInteractionPanelPath(
+                                cybergramStoryPath,
+                                cybergramStoryRect,
+                                Math.max(0.1f, params.avatarChamferCutDp));
+                        CybergramTheme.drawAnalogDisplayOverlay(
+                                canvas, cybergramStoryRect, cybergramStoryPath);
+                    }
 
                     if (failT > 0) {
                         final Paint paint = StoriesUtilities.getErrorPaint(avatarImage);

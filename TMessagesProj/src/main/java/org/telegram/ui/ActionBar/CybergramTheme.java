@@ -1,5 +1,7 @@
 package org.telegram.ui.ActionBar;
 
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 
@@ -204,9 +206,18 @@ public final class CybergramTheme {
     /** Extra internal space below attachment/media content before the angular frame closes. */
     public static final float ATTACHMENT_BOTTOM_PAD_DP = 6f;
 
-    /** Inset, in dp, between photo/video payload and the Cybergram media frame. */
-    public static final float ATTACHMENT_MEDIA_INSET_DP = 2.5f;
+    /**
+     * Media is intentionally edge-to-edge inside the Cybergram frame. Keep only the half-stroke
+     * safety inset so the raster reaches the visible outline without painting over it.
+     */
+    public static final float ATTACHMENT_MEDIA_INSET_DP = 0.4f;
     public static final float ATTACHMENT_MEDIA_CUT_DP = 4f;
+
+    /** Subtle phosphor/CRT treatment shared by avatars and image previews. */
+    public static final int ANALOG_TINT_ALPHA = 18;
+    public static final int ANALOG_SCANLINE_ALPHA = 17;
+    public static final float ANALOG_SCANLINE_STEP_DP = 3f;
+    public static final float ANALOG_SCANLINE_HEIGHT_DP = 0.55f;
 
     /** Additional top breathing room for forwarded headers and their media payloads. */
     public static final float FORWARDED_TOP_PAD_DP = 3f;
@@ -301,6 +312,39 @@ public final class CybergramTheme {
     public static final int BOT_BUTTON_BORDER_ALPHA = 126;
     public static final int BOT_BUTTON_FILL_ALPHA = 236;
     public static final int BOT_BUTTON_PRESSED_FILL_ALPHA = 252;
+
+    private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    /**
+     * Draw a deliberately restrained analog-display wash: a pale cyan phosphor tint plus fine
+     * horizontal scan lines. This is an overlay, not a destructive bitmap filter, so source media
+     * keeps its contrast and remains readable.
+     */
+    public static void drawAnalogDisplayOverlay(Canvas canvas, RectF bounds, Path clipPath) {
+        if (canvas == null || bounds == null || bounds.isEmpty()) {
+            return;
+        }
+        final int save = canvas.save();
+        if (clipPath != null) {
+            canvas.clipPath(clipPath);
+        } else {
+            canvas.clipRect(bounds);
+        }
+
+        ANALOG_OVERLAY_PAINT.setStyle(Paint.Style.FILL);
+        ANALOG_OVERLAY_PAINT.setColor(CYAN_SECONDARY);
+        ANALOG_OVERLAY_PAINT.setAlpha(ANALOG_TINT_ALPHA);
+        canvas.drawRect(bounds, ANALOG_OVERLAY_PAINT);
+
+        ANALOG_OVERLAY_PAINT.setColor(0xFF000000);
+        ANALOG_OVERLAY_PAINT.setAlpha(ANALOG_SCANLINE_ALPHA);
+        final float step = Math.max(1f, AndroidUtilities.dpf2(ANALOG_SCANLINE_STEP_DP));
+        final float line = Math.max(0.5f, AndroidUtilities.dpf2(ANALOG_SCANLINE_HEIGHT_DP));
+        for (float y = bounds.top; y < bounds.bottom; y += step) {
+            canvas.drawRect(bounds.left, y, bounds.right, Math.min(bounds.bottom, y + line), ANALOG_OVERLAY_PAINT);
+        }
+        canvas.restoreToCount(save);
+    }
 
     /** Build the shared eight-segment chamfer used by Cybergram interaction surfaces. */
     public static void buildInteractionPanelPath(Path path, RectF bounds, float cutDp) {

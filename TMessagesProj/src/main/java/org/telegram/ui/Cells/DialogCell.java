@@ -4934,6 +4934,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     //        thumbBackgroundPaint
                     //);
                     thumbImage[i].draw(canvas);
+                    if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                        if (thumbPath == null) {
+                            thumbPath = new Path();
+                        } else {
+                            thumbPath.rewind();
+                        }
+                        thumbPath.addRoundRect(
+                                AndroidUtilities.rectTmp,
+                                thumbImage[i].getRoundRadius()[0],
+                                thumbImage[i].getRoundRadius()[1],
+                                Path.Direction.CW);
+                        CybergramTheme.drawAnalogDisplayOverlay(
+                                canvas, AndroidUtilities.rectTmp, thumbPath);
+                    }
                     if (drawSpoiler[i]) {
                         if (thumbPath == null) {
                             thumbPath = new Path();
@@ -5017,6 +5031,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
                 StoriesUtilities.drawAvatarWithStory(currentDialogId, canvas, avatarImage, storyParams);
                 if (cybergramAvatar) {
+                    cybergramAvatarFrameRect.set(
+                            avatarImage.getImageX(), avatarImage.getImageY(),
+                            avatarImage.getImageX2(), avatarImage.getImageY2());
+                    CybergramTheme.buildInteractionPanelPath(
+                            cybergramAvatarFramePath, cybergramAvatarFrameRect,
+                            CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+                    CybergramTheme.drawAnalogDisplayOverlay(
+                            canvas, cybergramAvatarFrameRect, cybergramAvatarFramePath);
                     drawCybergramAvatarOutline(canvas);
                 }
                 if (storyParams.drawnLive) {

@@ -1955,6 +1955,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 canvas.clipPath(cybergramAvatarPath);
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
+                CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramAvatarRect, cybergramAvatarPath);
                 setRoundRadiusEnabled(true);
                 canvas.restoreToCount(save);
 
@@ -2008,31 +2009,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     // back inside the inner frame instead of merely clipping an oversized raster.
                     bubbleBounds = currentBackgroundDrawable.getBounds();
                     inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-                    final float framePadding = dp(2f);
-                    final boolean forceMediaByGroup = currentPosition != null
-                            && currentMessagesGroup != null && currentMessagesGroup.isDocuments
-                            && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && !drawPinnedBottom;
-                    final boolean textFrame = transitionParams.changePinnedBottomProgress >= 1f
-                            && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup;
-                    float frameLeftPadding = framePadding;
-                    float frameRightPadding = framePadding;
-                    if (textFrame) {
-                        if (currentMessageObject.isOutOwner()) {
-                            frameRightPadding = dp(8f);
-                        } else {
-                            frameLeftPadding = dp(8f);
-                        }
-                    }
-                    safeLeft = bubbleBounds.left + frameLeftPadding + inset;
+                    // Media owns the full inner frame. Telegram's asymmetric text/tail gutters are
+                    // correct for text, but leave attachments looking like a card inside another card.
+                    final float framePadding = dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
+                    safeLeft = bubbleBounds.left + framePadding + inset;
                     safeTop = bubbleBounds.top + framePadding + inset;
-                    safeRight = bubbleBounds.right - frameRightPadding - inset;
+                    safeRight = bubbleBounds.right - framePadding - inset;
                     safeBottom = bubbleBounds.bottom - framePadding - inset;
                     if (safeRight > safeLeft && safeBottom > safeTop) {
                         final float safeWidth = safeRight - safeLeft;
-                        final float width = Math.min(getImageWidth(), safeWidth);
-                        // Keep a narrower Telegram receiver optically centered in the Cybergram frame.
-                        // Oversized media is still reduced to the safe width, never enlarged.
-                        final float x = safeLeft + (safeWidth - width) * 0.5f;
+                        final float width = safeWidth;
+                        final float x = safeLeft;
                         final float y = Math.max(getImageY(), safeTop);
                         final float height = Math.min(getImageHeight(), Math.max(1f, safeBottom - y));
                         if (Math.abs(x - getImageX()) > 0.5f || Math.abs(y - getImageY()) > 0.5f
@@ -2049,6 +2036,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
+                final RectF analogBounds = new RectF(getImageX(), getImageY(), getImageX2(), getImageY2());
+                CybergramTheme.drawAnalogDisplayOverlay(canvas, analogBounds, rectPath);
                 setRoundRadiusEnabled(true);
                 canvas.restoreToCount(save);
                 return result;
@@ -13922,15 +13911,39 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private void buildCybergramMediaPath(Path path, float left, float top, float right, float bottom) {
         final float cut = Math.min(dp(CybergramTheme.ATTACHMENT_MEDIA_CUT_DP),
                 Math.max(0f, Math.min(right - left, bottom - top) * 0.16f));
+
+        // A grouped album is one gallery, not a stack of miniature cards. Only corners on the
+        // gallery perimeter get chamfers; internal tile joins stay square and Telegram's existing
+        // mosaic gutter remains the separator.
+        final boolean grouped = currentPosition != null && currentMessagesGroup != null
+                && !currentMessagesGroup.isDocuments;
+        final boolean topLeft = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
+        final boolean topRight = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
+        final boolean bottomRight = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
+        final boolean bottomLeft = !grouped || (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
+
         path.rewind();
-        path.moveTo(left + cut, top);
-        path.lineTo(right - cut, top);
-        path.lineTo(right, top + cut);
-        path.lineTo(right, bottom - cut);
-        path.lineTo(right - cut, bottom);
-        path.lineTo(left + cut, bottom);
-        path.lineTo(left, bottom - cut);
-        path.lineTo(left, top + cut);
+        path.moveTo(left + (topLeft ? cut : 0f), top);
+        path.lineTo(right - (topRight ? cut : 0f), top);
+        if (topRight) {
+            path.lineTo(right, top + cut);
+        }
+        path.lineTo(right, bottom - (bottomRight ? cut : 0f));
+        if (bottomRight) {
+            path.lineTo(right - cut, bottom);
+        }
+        path.lineTo(left + (bottomLeft ? cut : 0f), bottom);
+        if (bottomLeft) {
+            path.lineTo(left, bottom - cut);
+        }
+        path.lineTo(left, top + (topLeft ? cut : 0f));
+        if (topLeft) {
+            path.lineTo(left + cut, top);
+        }
         path.close();
     }
 
@@ -14938,7 +14951,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND) {
-            if (currentMessageObject.isOutOwner()) {
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                final boolean out = currentMessageObject.isOutOwner();
+                final int accent = out ? CybergramTheme.CYAN : CybergramTheme.AMBER_HIGHLIGHT;
+                final int body = out ? CybergramTheme.OUT_TEXT : CybergramTheme.IN_TEXT;
+                final int surface = out ? CybergramTheme.OUT_BUBBLE : CybergramTheme.IN_BUBBLE;
+                Theme.chat_audioTimePaint.setColor(out ? CybergramTheme.OUT_TIME : CybergramTheme.IN_TIME);
+                radialProgress.setProgressColor(accent);
+                radialProgress.setColors(
+                        ColorUtils.blendARGB(surface, accent, buttonPressed != 0 ? 0.42f : 0.30f),
+                        ColorUtils.blendARGB(surface, accent, 0.46f),
+                        body,
+                        CybergramTheme.TEXT);
+            } else if (currentMessageObject.isOutOwner()) {
                 Theme.chat_audioTimePaint.setColor(getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_outAudioDurationSelectedText : Theme.key_chat_outAudioDurationText));
                 radialProgress.setProgressColor(getThemedColor(isDrawSelectionBackground() || buttonPressed != 0 ? Theme.key_chat_outAudioSelectedProgress : Theme.key_chat_outAudioProgress));
             } else if (hasLinkPreview && linkLine != null) {
@@ -20285,7 +20310,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         if (documentAttach != null) {
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND) {
-                if (currentMessageObject.isOutOwner()) {
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    final boolean out = currentMessageObject.isOutOwner();
+                    final int accent = out ? CybergramTheme.CYAN : CybergramTheme.AMBER_HIGHLIGHT;
+                    final int body = out ? CybergramTheme.OUT_TEXT : CybergramTheme.IN_TEXT;
+                    final int dim = ColorUtils.setAlphaComponent(body, 118);
+                    seekBarWaveform.setColors(dim, accent, accent);
+                    seekBar.setColors(dim, dim, accent, accent, accent);
+                    radialProgress.setProgressColor(accent);
+                    final int surface = out ? CybergramTheme.OUT_BUBBLE : CybergramTheme.IN_BUBBLE;
+                    radialProgress.setColors(
+                            ColorUtils.blendARGB(surface, accent, 0.30f),
+                            ColorUtils.blendARGB(surface, accent, 0.42f),
+                            body,
+                            CybergramTheme.TEXT);
+                } else if (currentMessageObject.isOutOwner()) {
                     seekBarWaveform.setColors(getThemedColor(Theme.key_chat_outVoiceSeekbar), getThemedColor(Theme.key_chat_outVoiceSeekbarFill), getThemedColor(Theme.key_chat_outVoiceSeekbarSelected));
                     seekBar.setColors(getThemedColor(Theme.key_chat_outAudioSeekbar), getThemedColor(Theme.key_chat_outAudioCacheSeekbar), getThemedColor(Theme.key_chat_outAudioSeekbarFill), getThemedColor(Theme.key_chat_outAudioSeekbarFill), getThemedColor(Theme.key_chat_outAudioSeekbarSelected));
                 } else if (hasLinkPreview && linkLine != null) {
