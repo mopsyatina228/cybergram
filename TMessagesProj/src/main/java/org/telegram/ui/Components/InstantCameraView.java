@@ -342,7 +342,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         addView(buttonsLayout, LayoutHelper.createFrame(
                 LayoutHelper.WRAP_CONTENT, controlsHeight,
                 Gravity.LEFT | Gravity.BOTTOM,
-                cybergramRecorder ? 5 : 1, 0, 0, 0));
+                cybergramRecorder ? 7 : 1, 0, 0, 0));
 
         switchCameraButton = new FlashViews.ImageViewInvertable(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);

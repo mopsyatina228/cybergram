@@ -2274,7 +2274,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             // voice-record circle. Center it on that frame so the 40dp module leaves
             // a deliberate 2dp inset at the top and bottom.
             int cy = useCybergramVideoButton()
-                    ? getMeasuredHeight() - dp(DEFAULT_HEIGHT / 2f)
+                    ? getMeasuredHeight() - dp(DEFAULT_HEIGHT / 2f) - dp(1)
                     : (int) (dp(170) + multilinTooltipOffset);
 //            float yAdd = 0;
 //            if (lockAnimatedTranslation != 10000) {
@@ -4926,7 +4926,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             final float separatorY = getMeasuredHeight() - animatorInputFieldHeight.getFactor();
             canvas.save();
             if (child == textFieldContainer) {
-                canvas.clipRect(0, separatorY, getMeasuredWidth(), getMeasuredHeight());
+                final float clipTop = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                        ? separatorY - dp(4)
+                        : separatorY;
+                canvas.clipRect(0, clipTop, getMeasuredWidth(), getMeasuredHeight());
             }
             if (child == topView) {
                 canvas.clipRect(0, 0, getMeasuredWidth(), separatorY);
