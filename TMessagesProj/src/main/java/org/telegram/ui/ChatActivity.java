@@ -11391,6 +11391,8 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         final int possibleLeftMarginDp = 0; // isSideMenued() ? SIDE_MENU_WIDTH : 0;
+        final boolean cybergramPinnedStyle = CybergramTheme.isCybergramPresentation(getResourceProvider());
+        final int pinnedPanelHeightDp = cybergramPinnedStyle ? CybergramTheme.PINNED_PANEL_HEIGHT_DP : 48;
         pinnedMessageView = new FrameLayout(getContext()) {
 
             float lastY;
@@ -11490,7 +11492,7 @@ public class ChatActivity extends BaseFragment implements
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
                 if (child == pinnedLineView) {
                     canvas.save();
-                    canvas.clipRect(0, 0, getMeasuredWidth(), AndroidUtilities.dp(48));
+                    canvas.clipRect(0, 0, getMeasuredWidth(), AndroidUtilities.dp(pinnedPanelHeightDp));
                 }
                 boolean result;
                 if (child == pinnedMessageTextView[0] || child == pinnedMessageTextView[1]) {
@@ -11509,7 +11511,7 @@ public class ChatActivity extends BaseFragment implements
             }
         };
         pinnedMessageView.setTag(1);
-        topPanelLayout.addView(pinnedMessageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        topPanelLayout.addView(pinnedMessageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, pinnedPanelHeightDp));
         topPanelLayout.setPriority(pinnedMessageView, 1);
         topPanelLayout.setDebugName(pinnedMessageView, "pinned message view");
         pinnedMessageView.setOnClickListener(v -> {
@@ -11542,24 +11544,25 @@ public class ChatActivity extends BaseFragment implements
                 ? null : Theme.getSelectorDrawable(false));
 
         pinnedLineView = new PinnedLineView(getContext(), themeDelegate);
-        pinnedMessageView.addView(pinnedLineView, LayoutHelper.createFrame(3, 48, Gravity.LEFT | Gravity.TOP, 13, 0, 0, 0));
+        pinnedMessageView.addView(pinnedLineView, LayoutHelper.createFrame(
+                3, pinnedPanelHeightDp, Gravity.LEFT | Gravity.TOP, 13, 0, 0, 0));
         pinnedMessageView.setClipChildren(false);
 
         pinnedCounterTextView = new NumberTextView(getContext());
         pinnedCounterTextView.setAddNumber();
-        pinnedCounterTextView.setTextSize(14);
+        pinnedCounterTextView.setTextSize(cybergramPinnedStyle ? CybergramTheme.PINNED_PANEL_TEXT_SIZE_DP : 14);
         pinnedCounterTextView.setTextColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
                 ? CybergramTheme.CYAN : getThemedColor(Theme.key_chat_topPanelTitle));
         pinnedCounterTextView.setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
-        pinnedMessageView.addView(pinnedCounterTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, 7, 44 + possibleLeftMarginDp, 0));
+        pinnedMessageView.addView(pinnedCounterTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, cybergramPinnedStyle ? 5 : 7, 44 + possibleLeftMarginDp, 0));
 
         for (int a = 0; a < 2; a++) {
             pinnedNameTextView[a] = new TrackingWidthSimpleTextView(getContext());
-            pinnedNameTextView[a].setTextSize(14);
+            pinnedNameTextView[a].setTextSize(cybergramPinnedStyle ? CybergramTheme.PINNED_PANEL_TEXT_SIZE_DP : 14);
             pinnedNameTextView[a].setTextColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
                     ? CybergramTheme.CYAN : getThemedColor(Theme.key_chat_topPanelTitle));
             pinnedNameTextView[a].setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
-            pinnedMessageView.addView(pinnedNameTextView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, 7.3f, 44 + possibleLeftMarginDp, 0));
+            pinnedMessageView.addView(pinnedNameTextView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, cybergramPinnedStyle ? 5.3f : 7.3f, 44 + possibleLeftMarginDp, 0));
 
             pinnedMessageTextView[a] = new SimpleTextView(getContext()) {
                 @Override
@@ -11574,14 +11577,14 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
             };
-            pinnedMessageTextView[a].setTextSize(14);
+            pinnedMessageTextView[a].setTextSize(cybergramPinnedStyle ? CybergramTheme.PINNED_PANEL_TEXT_SIZE_DP : 14);
             pinnedMessageTextView[a].setTextColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
                     ? CybergramTheme.OUT_TEXT : getThemedColor(Theme.key_chat_topPanelMessage));
             pinnedMessageTextView[a].setTypeface(CybergramTypography.chromeRegular(getResourceProvider(), null));
-            pinnedMessageView.addView(pinnedMessageTextView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, 25.3f, 44 + possibleLeftMarginDp, 0));
+            pinnedMessageView.addView(pinnedMessageTextView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 23, cybergramPinnedStyle ? 22.3f : 25.3f, 44 + possibleLeftMarginDp, 0));
 
             pinnedMessageButton[a] = new PinnedMessageButton(getContext());
-            pinnedMessageView.addView(pinnedMessageButton[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 10, 14, 0));
+            pinnedMessageView.addView(pinnedMessageButton[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, cybergramPinnedStyle ? 8 : 10, 14, 0));
 
             pinnedMessageImageView[a] = new BackupImageView(getContext()) {
                 private SpoilerEffect spoilerEffect = new SpoilerEffect();
@@ -11618,7 +11621,7 @@ public class ChatActivity extends BaseFragment implements
             };
             pinnedMessageImageView[a].setBlurAllowed(true);
             pinnedMessageImageView[a].setRoundRadius(AndroidUtilities.dp(2));
-            pinnedMessageView.addView(pinnedMessageImageView[a], LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 22, 8, 0, 0));
+            pinnedMessageView.addView(pinnedMessageImageView[a], LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 22, cybergramPinnedStyle ? 6 : 8, 0, 0));
             if (a == 1) {
                 pinnedNameTextView[a].setVisibility(View.INVISIBLE);
                 pinnedMessageButton[a].setVisibility(View.INVISIBLE);
@@ -11643,7 +11646,7 @@ public class ChatActivity extends BaseFragment implements
         pinnedListButton.setBackgroundDrawable(CybergramTheme.isCybergramPresentation(getResourceProvider())
                 ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, 0.10f), Theme.RIPPLE_MASK_ALL)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff));
-        pinnedMessageView.addView(pinnedListButton, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 7, 0));
+        pinnedMessageView.addView(pinnedListButton, LayoutHelper.createFrame(36, pinnedPanelHeightDp, Gravity.RIGHT | Gravity.TOP, 0, 0, 7, 0));
         pinnedListButton.setOnClickListener(v -> openPinnedMessagesList(false));
 
         closePinned = new ImageView(getContext());
@@ -11664,12 +11667,12 @@ public class ChatActivity extends BaseFragment implements
         pinnedProgress.setProgressColor(CybergramTheme.isCybergramPresentation(getResourceProvider())
                 ? CybergramTheme.CYAN
                 : getThemedColor(Theme.key_chat_topPanelLine));
-        pinnedMessageView.addView(pinnedProgress, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
+        pinnedMessageView.addView(pinnedProgress, LayoutHelper.createFrame(36, pinnedPanelHeightDp, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
 
         closePinned.setBackgroundDrawable(CybergramTheme.isCybergramPresentation(getResourceProvider())
                 ? Theme.createSelectorDrawable(Theme.multAlpha(CybergramTheme.CYAN, 0.10f), Theme.RIPPLE_MASK_ALL)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
-        pinnedMessageView.addView(closePinned, LayoutHelper.createFrame(36, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
+        pinnedMessageView.addView(closePinned, LayoutHelper.createFrame(36, pinnedPanelHeightDp, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
         closePinned.setOnClickListener(v -> {
             if (getParentActivity() == null) {
                 return;
@@ -34732,7 +34735,13 @@ public class ChatActivity extends BaseFragment implements
                     }
                 });
                 builder.setNegativeButton(LocaleController.getString(R.string.Continue), null);
-                showDialog(builder.create());
+                final AlertDialog discardDialog = builder.create();
+                showDialog(discardDialog);
+                if (CybergramTheme.isCybergramPresentation(themeDelegate)) {
+                    // The right-hand action destroys the recording; make that semantic danger
+                    // explicit instead of rendering two indistinguishable cyan actions.
+                    discardDialog.redPositive();
+                }
             }
             return true;
         }

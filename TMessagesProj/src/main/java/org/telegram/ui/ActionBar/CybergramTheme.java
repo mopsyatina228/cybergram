@@ -286,6 +286,14 @@ public final class CybergramTheme {
     public static final int PINNED_PANEL_ACCENT_ALPHA = 186;
     public static final int PINNED_RAIL_IDLE_ALPHA = 72;
     public static final int PINNED_RAIL_ACTIVE_ALPHA = 214;
+    /** Compact top strip: dense enough for group chats without becoming a second action bar. */
+    public static final int PINNED_PANEL_HEIGHT_DP = 44;
+    public static final int PINNED_PANEL_TEXT_SIZE_DP = 13;
+
+    /** Sender avatars inside multi-user chats follow the same clipped-corner grammar as the rest of Cybergram. */
+    public static final float MESSAGE_AVATAR_CUT_DP = 6f;
+    public static final float MESSAGE_AVATAR_FRAME_WIDTH_DP = 0.65f;
+    public static final int MESSAGE_AVATAR_FRAME_ALPHA = 96;
 
     /** Build the shared eight-segment chamfer used by Cybergram interaction surfaces. */
     public static void buildInteractionPanelPath(Path path, RectF bounds, float cutDp) {

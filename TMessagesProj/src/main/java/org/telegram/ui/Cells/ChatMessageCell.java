@@ -1938,7 +1938,35 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         setClipToPadding(false);
 
         backgroundDrawable = new MessageBackgroundDrawable(this);
-        avatarImage = new ImageReceiver();
+        avatarImage = new ImageReceiver() {
+            private final Path cybergramAvatarPath = new Path();
+            private final RectF cybergramAvatarRect = new RectF();
+            private final Paint cybergramAvatarStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            @Override
+            public boolean draw(Canvas canvas) {
+                if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
+                    return super.draw(canvas);
+                }
+                cybergramAvatarRect.set(getImageX(), getImageY(), getImageX2(), getImageY2());
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramAvatarPath, cybergramAvatarRect, CybergramTheme.MESSAGE_AVATAR_CUT_DP);
+                final int save = canvas.save();
+                canvas.clipPath(cybergramAvatarPath);
+                setRoundRadiusEnabled(false);
+                final boolean result = super.draw(canvas);
+                setRoundRadiusEnabled(true);
+                canvas.restoreToCount(save);
+
+                cybergramAvatarStroke.setStyle(Paint.Style.STROKE);
+                cybergramAvatarStroke.setStrokeWidth(dp(CybergramTheme.MESSAGE_AVATAR_FRAME_WIDTH_DP));
+                cybergramAvatarStroke.setStrokeJoin(Paint.Join.MITER);
+                cybergramAvatarStroke.setColor(CybergramTheme.ICON_PALE);
+                cybergramAvatarStroke.setAlpha(CybergramTheme.MESSAGE_AVATAR_FRAME_ALPHA);
+                canvas.drawPath(cybergramAvatarPath, cybergramAvatarStroke);
+                return result;
+            }
+        };
         avatarImage.setAllowLoadingOnAttachedOnly(true);
         avatarImage.setRoundRadius(dp(21));
         avatarDrawable = new AvatarDrawable();
@@ -13855,6 +13883,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 || documentAttachType != DOCUMENT_ATTACH_TYPE_NONE || drawPhotoImage);
     }
 
+    private boolean useCybergramBubbleSideInset() {
+        if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
+            return false;
+        }
+        if (!mediaBackground) {
+            return true;
+        }
+        // Single attachments were still allowed to sit on Telegram's media gutter, visibly
+        // farther toward the screen edge than ordinary Cybergram text bubbles. Pull single media
+        // and document stacks onto the same horizontal rail, while leaving album mosaics alone:
+        // their span geometry is shared across several cells and must not be shifted independently.
+        return currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.isDocuments;
+    }
+
     private boolean useCybergramAngularMediaClip() {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
                 || currentMessageObject == null || !drawPhotoImage || isRoundVideo || isSmallImage
@@ -13989,7 +14031,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 }
             }
-            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+            if (useCybergramBubbleSideInset()) {
                 timeX += dp(currentMessageObject.isOutOwner()
                         ? -CybergramTheme.MESSAGE_SIDE_INSET_DP : CybergramTheme.MESSAGE_SIDE_INSET_DP);
             }
@@ -20765,7 +20807,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     additionalBottom += dp(SharedConfig.bubbleRadius + 3);
                 }
             }
-            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+            if (useCybergramBubbleSideInset()) {
                 final int sideInset = dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
                 backgroundLeft -= sideInset;
                 backgroundDrawableLeft -= sideInset;
@@ -20853,7 +20895,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     additionalBottom += dp(SharedConfig.bubbleRadius + 4);
                 }
             }
-            if (CybergramTheme.useAngularMessageGeometry(resourcesProvider) && !mediaBackground) {
+            if (useCybergramBubbleSideInset()) {
                 backgroundDrawableLeft += dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
             }
             int offsetBottom;

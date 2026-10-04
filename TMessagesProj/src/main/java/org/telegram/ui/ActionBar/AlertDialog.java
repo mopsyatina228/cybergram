@@ -31,6 +31,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Build;
 import android.os.Bundle;
@@ -233,7 +235,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     public void redPositive() {
         TextView button = (TextView) getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(getThemedColor(Theme.key_text_RedBold));
+            button.setTextColor(useCybergramDialogStyle()
+                    ? CybergramTheme.DANGER : getThemedColor(Theme.key_text_RedBold));
         }
     }
 
@@ -295,6 +298,53 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
     }
 
+    private boolean useCybergramDialogStyle() {
+        return progressViewStyle == ALERT_TYPE_MESSAGE
+                && CybergramTheme.isCybergramPresentation(resourcesProvider);
+    }
+
+    private Drawable createCybergramDialogBackground() {
+        final Drawable glow = new CybergramBubbleDrawable(
+                0x00000000,
+                ColorUtils.setAlphaComponent(CybergramTheme.CYAN, 18),
+                dp(CybergramTheme.INTERACTION_PANEL_CUT_DP),
+                dp(5.0f)
+        );
+        final Drawable core = new CybergramBubbleDrawable(
+                ColorUtils.setAlphaComponent(CybergramTheme.PANEL, 250),
+                ColorUtils.setAlphaComponent(CybergramTheme.CYAN, 158),
+                dp(CybergramTheme.INTERACTION_PANEL_CUT_DP),
+                dp(CybergramTheme.INTERACTION_PANEL_BORDER_WIDTH_DP)
+        );
+        return new LayerDrawable(new Drawable[] { glow, core });
+    }
+
+    private Drawable createDialogButtonBackground(int color) {
+        if (!useCybergramDialogStyle()) {
+            return Theme.getRoundRectSelectorDrawable(dp(20), color);
+        }
+        final StateListDrawable selector = new StateListDrawable();
+        selector.addState(
+                new int[] { android.R.attr.state_pressed },
+                new CybergramBubbleDrawable(
+                        ColorUtils.blendARGB(CybergramTheme.PANEL_RAISED, color, 0.16f),
+                        ColorUtils.setAlphaComponent(color, 220),
+                        dp(5),
+                        dp(0.8f)
+                )
+        );
+        selector.addState(
+                new int[] {},
+                new CybergramBubbleDrawable(
+                        ColorUtils.setAlphaComponent(CybergramTheme.PANEL_RAISED, 232),
+                        ColorUtils.setAlphaComponent(color, 142),
+                        dp(5),
+                        dp(0.65f)
+                )
+        );
+        return selector;
+    }
+
     public AlertDialog(Context context, int progressStyle) {
         this(context, progressStyle, null);
     }
@@ -308,6 +358,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         final boolean isDark = AndroidUtilities.computePerceivedBrightness(backgroundColor) < 0.721f;
         blurredNativeBackground = supportsNativeBlur() && progressViewStyle == ALERT_TYPE_MESSAGE;
         blurredBackground = (blurredNativeBackground || !supportsNativeBlur() && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR)) && isDark;
+        if (progressViewStyle == ALERT_TYPE_MESSAGE && CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            // Cybergram dialogs are opaque HUD plates. Telegram's soft glass/blur fights the
+            // established angular chrome and makes the outline look like an accidental overlay.
+            backgroundColor = CybergramTheme.PANEL;
+            blurredNativeBackground = false;
+            blurredBackground = false;
+        }
 
         backgroundPaddings = new Rect();
         if (progressStyle != ALERT_TYPE_SPINNER || blurredBackground) {
@@ -644,7 +701,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     protected View inflateContent(boolean setContent) {
         containerView = new AlertDialogView(getContext());
         containerView.setOrientation(LinearLayout.VERTICAL);
-        if ((blurredBackground || progressViewStyle == ALERT_TYPE_SPINNER) && progressViewStyle != ALERT_TYPE_LOADING) {
+        if (useCybergramDialogStyle()) {
+            containerView.setBackground(createCybergramDialogBackground());
+            containerView.setPadding(0, 0, 0, 0);
+            containerView.setClipToOutline(false);
+            drawBackground = false;
+        } else if ((blurredBackground || progressViewStyle == ALERT_TYPE_SPINNER) && progressViewStyle != ALERT_TYPE_LOADING) {
             containerView.setBackground(null);
             containerView.setPadding(0, 0, 0, 0);
             if (blurredBackground && !blurredNativeBackground) {
@@ -781,6 +843,14 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             containerView.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, topHeight, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
         }
 
+        if (useCybergramDialogStyle() && title != null && topView == null && topImageView == null) {
+            View cybergramRail = new View(getContext());
+            cybergramRail.setBackgroundColor(ColorUtils.setAlphaComponent(
+                    CybergramTheme.DANGER, CybergramTheme.HEADER_TECH_ALPHA));
+            containerView.addView(cybergramRail,
+                    LayoutHelper.createLinear(64, 1, Gravity.RIGHT, 0, 0, 20, 0));
+        }
+
         if (title != null) {
             titleContainer = new FrameLayout(getContext());
             containerView.addView(titleContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : 0, 24, 0, 24, 0));
@@ -789,9 +859,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             NotificationCenter.listenEmojiLoading(titleTextView);
             titleTextView.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW;
             titleTextView.setText(title);
-            titleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            titleTextView.setTypeface(AndroidUtilities.bold());
+            titleTextView.setTextColor(useCybergramDialogStyle()
+                    ? CybergramTheme.TEXT : getThemedColor(Theme.key_dialogTextBlack));
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 19 : 20);
+            titleTextView.setTypeface(useCybergramDialogStyle()
+                    ? CybergramTypography.chromeBold() : AndroidUtilities.bold());
             titleTextView.setGravity((topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             titleContainer.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 0, 19, 0, topAnimationIsNew ? 4 : (subtitle != null ? 2 : (items != null ? 14 : 10))));
         }
@@ -799,8 +871,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         if (secondTitle != null && title != null) {
             secondTitleTextView = new TextView(getContext());
             secondTitleTextView.setText(secondTitle);
-            secondTitleTextView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
-            secondTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            secondTitleTextView.setTextColor(useCybergramDialogStyle()
+                    ? CybergramTheme.TEXT_MUTED : getThemedColor(Theme.key_dialogTextGray3));
+            secondTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 18);
+            if (useCybergramDialogStyle()) {
+                secondTitleTextView.setTypeface(CybergramTypography.chromeRegular());
+            }
             secondTitleTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
             titleContainer.addView(secondTitleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 0, 21, 0, 0));
         }
@@ -808,8 +884,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         if (subtitle != null) {
             subtitleTextView = new TextView(getContext());
             subtitleTextView.setText(subtitle);
-            subtitleTextView.setTextColor(getThemedColor(Theme.key_dialogIcon));
-            subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            subtitleTextView.setTextColor(useCybergramDialogStyle()
+                    ? CybergramTheme.TEXT_MUTED : getThemedColor(Theme.key_dialogIcon));
+            subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 13 : 14);
+            if (useCybergramDialogStyle()) {
+                subtitleTextView.setTypeface(CybergramTypography.chromeRegular());
+            }
             subtitleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             containerView.addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 0, 24, items != null ? 14 : 10));
         }
@@ -848,8 +928,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         messageTextView = new EffectsTextView(getContext());
         NotificationCenter.listenEmojiLoading(messageTextView);
-        messageTextView.setTextColor(getThemedColor(topAnimationIsNew ? Theme.key_windowBackgroundWhiteGrayText : Theme.key_dialogTextBlack));
-        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        messageTextView.setTextColor(useCybergramDialogStyle()
+                ? ColorUtils.setAlphaComponent(CybergramTheme.TEXT, 224)
+                : getThemedColor(topAnimationIsNew ? Theme.key_windowBackgroundWhiteGrayText : Theme.key_dialogTextBlack));
+        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 16);
+        if (useCybergramDialogStyle()) {
+            messageTextView.setTypeface(CybergramTypography.chromeRegular());
+        }
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         messageTextView.setLinkTextColor(getThemedColor(Theme.key_dialogTextLink));
         if (!messageTextViewClickable) {
@@ -1120,17 +1205,17 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     @Override
                     public void setTextColor(int color) {
                         super.setTextColor(color);
-                        setBackground(Theme.getRoundRectSelectorDrawable(dp(20), color));
+                        setBackground(createDialogButtonBackground(color));
                     }
                 };
                 textView.setMinWidth(dp(64));
                 textView.setTag(Dialog.BUTTON_POSITIVE);
-                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 16);
                 textView.setTextColor(getThemedColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
-                textView.setTypeface(AndroidUtilities.bold());
+                textView.setTypeface(useCybergramDialogStyle() ? CybergramTypography.chromeBold() : AndroidUtilities.bold());
                 textView.setText(positiveButtonText);
-                textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
+                textView.setBackground(createDialogButtonBackground(getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
@@ -1159,19 +1244,19 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     @Override
                     public void setTextColor(int color) {
                         super.setTextColor(color);
-                        setBackground(Theme.getRoundRectSelectorDrawable(dp(20), color));
+                        setBackground(createDialogButtonBackground(color));
                     }
                 };
                 textView.setMinWidth(dp(64));
                 textView.setTag(Dialog.BUTTON_NEGATIVE);
-                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 16);
                 textView.setTextColor(getThemedColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
-                textView.setTypeface(AndroidUtilities.bold());
+                textView.setTypeface(useCybergramDialogStyle() ? CybergramTypography.chromeBold() : AndroidUtilities.bold());
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(negativeButtonText.toString());
-                textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
+                textView.setBackground(createDialogButtonBackground(getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
@@ -1200,19 +1285,19 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     @Override
                     public void setTextColor(int color) {
                         super.setTextColor(color);
-                        setBackground(Theme.getRoundRectSelectorDrawable(dp(20), color));
+                        setBackground(createDialogButtonBackground(color));
                     }
                 };
                 textView.setMinWidth(dp(64));
                 textView.setTag(Dialog.BUTTON_NEUTRAL);
-                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 16);
                 textView.setTextColor(getThemedColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
-                textView.setTypeface(AndroidUtilities.bold());
+                textView.setTypeface(useCybergramDialogStyle() ? CybergramTypography.chromeBold() : AndroidUtilities.bold());
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(neutralButtonText.toString());
-                textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
+                textView.setBackground(createDialogButtonBackground(getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
@@ -1241,19 +1326,19 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     @Override
                     public void setTextColor(int color) {
                         super.setTextColor(color);
-                        setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(dp(20), color));
+                        setBackgroundDrawable(createDialogButtonBackground(color));
                     }
                 };
                 textView.setMinWidth(dp(64));
                 textView.setTag(AlertDialog.BUTTON_NEGATIVE_2);
-                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, useCybergramDialogStyle() ? 15 : 16);
                 textView.setTextColor(getThemedColor(dialogButtonColorKey));
                 textView.setGravity(Gravity.CENTER);
-                textView.setTypeface(AndroidUtilities.bold());
+                textView.setTypeface(useCybergramDialogStyle() ? CybergramTypography.chromeBold() : AndroidUtilities.bold());
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(negative2ButtonText.toString());
-                textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
+                textView.setBackground(createDialogButtonBackground(getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
