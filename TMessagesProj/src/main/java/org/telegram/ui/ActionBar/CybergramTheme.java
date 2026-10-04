@@ -295,6 +295,13 @@ public final class CybergramTheme {
     public static final float MESSAGE_AVATAR_FRAME_WIDTH_DP = 0.65f;
     public static final int MESSAGE_AVATAR_FRAME_ALPHA = 96;
 
+    /** Inline message buttons: compact HUD plates instead of rounded Telegram service buttons. */
+    public static final float BOT_BUTTON_CUT_DP = 7f;
+    public static final float BOT_BUTTON_BORDER_WIDTH_DP = 0.65f;
+    public static final int BOT_BUTTON_BORDER_ALPHA = 126;
+    public static final int BOT_BUTTON_FILL_ALPHA = 236;
+    public static final int BOT_BUTTON_PRESSED_FILL_ALPHA = 252;
+
     /** Build the shared eight-segment chamfer used by Cybergram interaction surfaces. */
     public static void buildInteractionPanelPath(Path path, RectF bounds, float cutDp) {
         final float cut = Math.min(AndroidUtilities.dp(cutDp),

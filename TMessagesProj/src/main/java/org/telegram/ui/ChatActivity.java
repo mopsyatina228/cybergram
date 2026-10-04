@@ -6380,7 +6380,19 @@ public class ChatActivity extends BaseFragment implements
                             }
                         }
                         if (updateVisibility) {
-                            imageReceiver.setImageY(y - dp(44));
+                            if (CybergramTheme.isCybergramPresentation(getResourceProvider()) && child instanceof ChatMessageCell) {
+                                // Cybergram treats the avatar as a sender label, not a footer marker.
+                                // Anchor it to the top edge of the owning bubble instead of Telegram's
+                                // bottom/sticky baseline so tall messages keep a stable visual hierarchy.
+                                final ChatMessageCell avatarCell = (ChatMessageCell) child;
+                                final float avatarTop = (replaceAnimation ? child.getTop() : child.getY())
+                                        + avatarCell.getPaddingTopAnimated()
+                                        + avatarCell.getBackgroundDrawableTop()
+                                        + dp(2);
+                                imageReceiver.setImageY(avatarTop);
+                            } else {
+                                imageReceiver.setImageY(y - dp(44));
+                            }
                         }
                         if (mcell.shouldDrawAlphaLayer()) {
                             imageReceiver.setAlpha((1f - getSideMenuAlpha()) * mcell.getAlpha());

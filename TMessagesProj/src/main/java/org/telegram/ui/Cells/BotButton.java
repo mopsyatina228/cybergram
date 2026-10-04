@@ -22,6 +22,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_keyboard;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
@@ -84,17 +85,34 @@ class BotButton {
         if (s != 1) {
             canvas.scale(s, s, rect.centerX(), rect.centerY());
         }
-        Arrays.fill(radii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
-        if (hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
-            radii[6] = radii[7] = dp(SharedConfig.bubbleRadius);
-        }
-        if (hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
-            radii[4] = radii[5] = dp(SharedConfig.bubbleRadius);
-        }
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        if (cybergram) {
+            CybergramTheme.buildInteractionPanelPath(path, rect, CybergramTheme.BOT_BUTTON_CUT_DP);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(CybergramTheme.PANEL_RAISED);
+            paint.setAlpha(pressed ? CybergramTheme.BOT_BUTTON_PRESSED_FILL_ALPHA : CybergramTheme.BOT_BUTTON_FILL_ALPHA);
+            canvas.drawPath(path, paint);
 
-        path.rewind();
-        path.addRoundRect(rect, radii, Path.Direction.CW);
-        canvas.drawPath(path, Theme.getThemePaint(Theme.key_paint_chatActionBackground, resourcesProvider));
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(CybergramTheme.BOT_BUTTON_BORDER_WIDTH_DP));
+            paint.setStrokeJoin(Paint.Join.MITER);
+            paint.setColor(CybergramTheme.CYAN);
+            paint.setAlpha(CybergramTheme.BOT_BUTTON_BORDER_ALPHA);
+            canvas.drawPath(path, paint);
+            paint.setStyle(Paint.Style.FILL);
+        } else {
+            Arrays.fill(radii, dp(Math.min(6.75f, SharedConfig.bubbleRadius)));
+            if (hasPositionFlag(MessageObject.POSITION_FLAG_LEFT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                radii[6] = radii[7] = dp(SharedConfig.bubbleRadius);
+            }
+            if (hasPositionFlag(MessageObject.POSITION_FLAG_RIGHT | MessageObject.POSITION_FLAG_BOTTOM)) {
+                radii[4] = radii[5] = dp(SharedConfig.bubbleRadius);
+            }
+
+            path.rewind();
+            path.addRoundRect(rect, radii, Path.Direction.CW);
+            canvas.drawPath(path, Theme.getThemePaint(Theme.key_paint_chatActionBackground, resourcesProvider));
+        }
 
         final BotInlineKeyboard.BackgroundColor bgColor =
             buttonImpl != null ? buttonImpl.getColor() :
@@ -115,7 +133,7 @@ class BotButton {
             canvas.drawPath(path, paint);
         }
         final boolean hasGradientService = resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService();
-        if (hasGradientService && (bgColor == BotInlineKeyboard.BackgroundColor.NONE || resourcesProvider != null && resourcesProvider.isDark())) {
+        if (!cybergram && hasGradientService && (bgColor == BotInlineKeyboard.BackgroundColor.NONE || resourcesProvider != null && resourcesProvider.isDark())) {
             canvas.drawPath(path, Theme.chat_actionBackgroundGradientDarkenPaint);
         }
 

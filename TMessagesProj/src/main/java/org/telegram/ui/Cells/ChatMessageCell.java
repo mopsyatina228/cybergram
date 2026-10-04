@@ -10986,6 +10986,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                             CharSequence buttonText;
                             TextPaint botButtonPaint = (TextPaint) getThemedPaint(Theme.key_paint_chatBotButton);
+                            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                                botButtonPaint = new TextPaint(botButtonPaint);
+                                botButtonPaint.setTypeface(CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
+                                botButtonPaint.setColor(CybergramTheme.TEXT);
+                            }
                             if (TLKeyboardHelper.isType(botButton.button, TL_keyboard.TL_inlineButtonTypeBuy.class) && (MessageObject.getMedia(messageObject.messageOwner).flags & 4) != 0) {
                                 buttonText = getString(R.string.PaymentReceipt);
                             } else {
