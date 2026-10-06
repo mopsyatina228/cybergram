@@ -1691,15 +1691,11 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     : 0f;
             params.additionalInset = dpf2(1.33f) * progressToCollapsed;
             avatarImage.setAlpha(1f);
-            // Cybergram uses one silhouette only. The upstream circular ImageReceiver mask was
-            // surviving inside the chamfered story frame, producing a circle-in-a-square.
-            // Fade the radius back only while Telegram morphs the rail into its collapsed state.
-            avatarImage.setRoundRadius(cybergramStory
-                    ? (int) (radius * progressToCollapsed)
-                    : (int) radius);
-            crossfadeToAvatarImage.setRoundRadius(cybergramStory
-                    ? (int) (radius * progressToCollapsed)
-                    : (int) radius);
+            // Cybergram uses ONE silhouette only: the chamfer clip owns the shape in every collapse
+            // state. Letting the circular ImageReceiver mask fade back in while the rail morphs blends
+            // two geometries again (circle inscribed in the chamfer), so the radius stays suppressed.
+            avatarImage.setRoundRadius(cybergramStory ? 0 : (int) radius);
+            crossfadeToAvatarImage.setRoundRadius(cybergramStory ? 0 : (int) radius);
 
             cx = x + radius;
             cy = y + radius;
@@ -1764,18 +1760,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     canvas.save();
                     canvas.scale(params.getScale(), params.getScale(), params.originalAvatarRect.centerX(), params.originalAvatarRect.centerY());
                     avatarImage.setImageCoords(params.originalAvatarRect);
-                    if (cybergramStory) {
-                        cybergramStoryRect.set(params.originalAvatarRect);
-                        CybergramTheme.buildInteractionPanelPath(
-                                cybergramStoryPath, cybergramStoryRect,
-                                Math.max(0.1f, params.avatarChamferCutDp));
-                        final int avatarClipSave = canvas.save();
-                        canvas.clipPath(cybergramStoryPath);
-                        avatarImage.draw(canvas);
-                        canvas.restoreToCount(avatarClipSave);
-                    } else {
-                        avatarImage.draw(canvas);
-                    }
+                    // Uploading avatar shares the single StoriesUtilities silhouette; no local path.
+                    StoriesUtilities.drawAvatarImage(canvas, avatarImage, params);
                     canvas.restore();
                 }
                 Paint paint = closeFriends ?
@@ -1891,17 +1877,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             if (crossfadeToDialog && progressToCollapsed2 > 0) {
                 crossfadeToAvatarImage.setImageCoords(x, y, finalSize, finalSize);
                 crossfadeToAvatarImage.setAlpha(progressToCollapsed2);
-                if (cybergramStory && params.avatarChamferCutDp > 0f) {
-                    cybergramStoryRect.set(x, y, x + finalSize, y + finalSize);
-                    CybergramTheme.buildInteractionPanelPath(
-                            cybergramStoryPath, cybergramStoryRect, params.avatarChamferCutDp);
-                    final int crossfadeClipSave = canvas.save();
-                    canvas.clipPath(cybergramStoryPath);
-                    crossfadeToAvatarImage.draw(canvas);
-                    canvas.restoreToCount(crossfadeClipSave);
-                } else {
-                    crossfadeToAvatarImage.draw(canvas);
-                }
+                // Same single silhouette as the main avatar.
+                StoriesUtilities.drawAvatarImage(canvas, crossfadeToAvatarImage, params);
             }
             textViewContainer.setTranslationY(y + finalSize + dp(7) * (1f - progressToCollapsed));
             textViewContainer.setTranslationX(x - fromX);

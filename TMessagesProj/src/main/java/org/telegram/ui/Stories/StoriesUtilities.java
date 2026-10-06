@@ -411,7 +411,12 @@ public class StoriesUtilities {
         }
     }
 
-    private static void drawAvatarImage(Canvas canvas, ImageReceiver avatarImage, AvatarStoryParams params) {
+    /**
+     * The one place that puts a story avatar raster on screen. Shared with
+     * {@code DialogStoriesCell} so its upload/crossfade branches clip by the same chamfer polygon
+     * instead of rebuilding a local path (two silhouettes was the original regression).
+     */
+    static void drawAvatarImage(Canvas canvas, ImageReceiver avatarImage, AvatarStoryParams params) {
         if (params.avatarChamferCutDp <= 0f) {
             avatarImage.draw(canvas);
             return;

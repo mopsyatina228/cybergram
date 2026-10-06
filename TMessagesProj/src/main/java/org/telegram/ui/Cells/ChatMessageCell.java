@@ -1390,6 +1390,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private CharacterStyle progressLoadingLink;
 
     private Path rectPath = new Path();
+    private final RectF cybergramMediaInnerRect = new RectF();
     private static float[] radii = new float[8];
 
     private boolean useSeekBarWaveform;
@@ -1997,63 +1998,59 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (!useCybergramAngularMediaClip()) {
                     return super.draw(canvas);
                 }
-                // Bubble body geometry. MessageDrawable builds the Cybergram outline on
-                // CybergramTheme.BUBBLE_FRAME_PADDING_DP and ATTACHMENT_MEDIA_INSET_DP is exactly
-                // that padding plus half of the outline stroke, so a raster held inside this rect
-                // reaches the inner edge of the visible frame and can never paint over or past it.
+                // One immutable inner rect (shared with the measure/layout passes) defines the
+                // Cybergram media geometry. The draw phase clips by it and never re-lays-out the
+                // raster through setImageCoords, so draw can no longer fight the layout pass.
+                if (currentPosition == null && getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
+                    final boolean reshape = mediaBackground
+                            || currentMessageObject == null
+                            || currentMessageObject.type != MessageObject.TYPE_TEXT;
+                    if (reshape) {
+                        buildCybergramMediaPath(rectPath,
+                                cybergramMediaInnerRect.left, cybergramMediaInnerRect.top,
+                                cybergramMediaInnerRect.right, cybergramMediaInnerRect.bottom);
+                    } else {
+                        buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
+                    }
+                    final int save = canvas.save();
+                    canvas.clipPath(rectPath);
+                    if (!reshape) {
+                        // Link previews keep Telegram's text column and are only clipped.
+                        canvas.clipRect(cybergramMediaInnerRect.left, cybergramMediaInnerRect.top,
+                                cybergramMediaInnerRect.right, cybergramMediaInnerRect.bottom);
+                    }
+                    setRoundRadiusEnabled(false);
+                    final boolean result = super.draw(canvas);
+                    if (reshape) {
+                        CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramMediaInnerRect, rectPath);
+                    } else {
+                        final RectF analogBounds = new RectF(getImageX(), getImageY(), getImageX2(), getImageY2());
+                        CybergramTheme.drawAnalogDisplayOverlay(canvas, analogBounds, rectPath);
+                    }
+                    setRoundRadiusEnabled(true);
+                    canvas.restoreToCount(save);
+                    return result;
+                }
+                // Grouped album (or no valid frame yet): ChatActivity draws the aggregate group
+                // background through one representative cell, so the drawable bounds describe the
+                // whole gallery here. Keep the mosaic placement and only clip, and only when the rect
+                // really contains this tile, so a stale transition rect can never cut a tile away.
                 final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-                final boolean singleBubble = currentPosition == null;
                 float safeLeft = Float.NaN;
                 float safeTop = Float.NaN;
                 float safeRight = Float.NaN;
                 float safeBottom = Float.NaN;
                 if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
-                    if (singleBubble) {
-                        safeLeft = getBackgroundDrawableLeft() + transitionParams.deltaLeft + inset;
-                        safeTop = getBackgroundDrawableTop() + transitionParams.deltaTop + inset;
-                        safeRight = getBackgroundDrawableRight() + transitionParams.deltaRight - inset;
-                        safeBottom = getBackgroundDrawableBottom() + transitionParams.deltaBottom - inset;
-                        if (!mediaBackground) {
-                            // The bubble is drawn with the TEXT silhouette, which keeps Telegram's
-                            // tail allowance on the speaking side instead of the frame padding.
-                            final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
-                                    + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
-                            if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
-                                safeRight = getBackgroundDrawableRight() + transitionParams.deltaRight - gutter;
-                            } else {
-                                safeLeft = getBackgroundDrawableLeft() + transitionParams.deltaLeft + gutter;
-                            }
-                        }
-                    } else {
-                        // Grouped cells are a mosaic and ChatActivity draws the aggregate group
-                        // background through one representative cell, so the drawable bounds
-                        // describe the whole gallery here. Keep the mosaic placement and only clip,
-                        // and only when the rect really contains this tile, so a stale transition
-                        // rect can never cut a tile away.
-                        final Rect gallery = currentBackgroundDrawable.getBounds();
-                        if (gallery.left <= getImageX() && gallery.top <= getImageY()
-                                && gallery.right >= getImageX2() && gallery.bottom >= getImageY2()) {
-                            safeLeft = gallery.left + inset;
-                            safeTop = gallery.top + inset;
-                            safeRight = gallery.right - inset;
-                            safeBottom = gallery.bottom - inset;
-                        }
+                    final Rect gallery = currentBackgroundDrawable.getBounds();
+                    if (gallery.left <= getImageX() && gallery.top <= getImageY()
+                            && gallery.right >= getImageX2() && gallery.bottom >= getImageY2()) {
+                        safeLeft = gallery.left + inset;
+                        safeTop = gallery.top + inset;
+                        safeRight = gallery.right - inset;
+                        safeBottom = gallery.bottom - inset;
                     }
                     if (!(safeRight > safeLeft && safeBottom > safeTop)) {
                         safeLeft = safeTop = safeRight = safeBottom = Float.NaN;
-                    }
-                }
-                if (!Float.isNaN(safeLeft) && singleBubble
-                        && (mediaBackground || currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_TEXT)) {
-                    // A real attachment owns the bubble interior: fill it up to the frame. Link
-                    // previews inside a text bubble stay on Telegram's text column and are only
-                    // clipped, so a preview does not turn into a full-width plate.
-                    final float width = safeRight - safeLeft;
-                    final float y = Math.max(getImageY(), safeTop);
-                    final float height = Math.min(getImageHeight(), Math.max(1f, safeBottom - y));
-                    if (Math.abs(safeLeft - getImageX()) > 0.5f || Math.abs(y - getImageY()) > 0.5f
-                            || Math.abs(width - getImageWidth()) > 0.5f || Math.abs(height - getImageHeight()) > 0.5f) {
-                        setImageCoords(safeLeft, y, width, height);
                     }
                 }
                 buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
@@ -10700,9 +10697,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             && ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 || captionAboveSeam) ? 0f : cybergramMediaInset;
                     final float mediaInsetBottom = cybergramAlbum
                             && ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 || captionBelowSeam) ? 0f : cybergramMediaInset;
-                    photoImage.setImageCoords(mediaInsetLeft, y + namesOffset + additionalTop + mediaInsetTop,
-                            Math.max(1f, photoWidth - mediaInsetLeft - mediaInsetRight),
-                            Math.max(1f, photoHeight - mediaInsetTop - mediaInsetBottom));
+                    // Single media shares one frame-derived inner rect with the draw pass; albums keep
+                    // the perimeter/inset math above untouched.
+                    if (!cybergramAlbum
+                            && (mediaBackground || currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_TEXT)
+                            && getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
+                        photoImage.setImageCoords(cybergramMediaInnerRect.left, cybergramMediaInnerRect.top,
+                                Math.max(1f, cybergramMediaInnerRect.width()),
+                                Math.max(1f, cybergramMediaInnerRect.height()));
+                    } else {
+                        photoImage.setImageCoords(mediaInsetLeft, y + namesOffset + additionalTop + mediaInsetTop,
+                                Math.max(1f, photoWidth - mediaInsetLeft - mediaInsetRight),
+                                Math.max(1f, photoHeight - mediaInsetTop - mediaInsetBottom));
+                    }
                 }
                 if (messageObject.hasMediaSpoilers() && SpoilerEffect2.supports()) {
                     if (mediaSpoilerEffect2 == null && attachedToWindow) {
@@ -14021,6 +14028,45 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         path.close();
     }
 
+    /**
+     * The one immutable inner rect for Cybergram single-media. Derived only from the bubble frame
+     * bounds and the shared media inset, so the measure, layout and draw passes cannot disagree
+     * about where the raster sits. Returns false for grouped albums (upstream owns the mosaic), when
+     * the angular geometry is off, or when the frame bounds are not valid. Never mutates view state.
+     */
+    private boolean getCybergramMediaInnerRect(RectF out) {
+        if (out == null || currentPosition != null || !useCybergramAngularMediaClip()) {
+            return false;
+        }
+        if (currentBackgroundDrawable == null || currentBackgroundDrawable.getBounds().isEmpty()) {
+            return false;
+        }
+        // Bubble body geometry: the outline is built on BUBBLE_FRAME_PADDING_DP and the media inset is
+        // exactly that padding plus half of the outline stroke, so a raster held inside this rect
+        // reaches the inner edge of the visible frame and can never paint over or past it.
+        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+        float left = getBackgroundDrawableLeft() + transitionParams.deltaLeft + inset;
+        float top = getBackgroundDrawableTop() + transitionParams.deltaTop + inset;
+        float right = getBackgroundDrawableRight() + transitionParams.deltaRight - inset;
+        float bottom = getBackgroundDrawableBottom() + transitionParams.deltaBottom - inset;
+        if (!mediaBackground) {
+            // The bubble is drawn with the TEXT silhouette, which keeps Telegram's tail allowance
+            // on the speaking side instead of the frame padding.
+            final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
+                    + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
+            if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
+                right = getBackgroundDrawableRight() + transitionParams.deltaRight - gutter;
+            } else {
+                left = getBackgroundDrawableLeft() + transitionParams.deltaLeft + gutter;
+            }
+        }
+        if (!(right > left && bottom > top)) {
+            return false;
+        }
+        out.set(left, top, right, bottom);
+        return true;
+    }
+
     private void scaleCybergramCheckBounds(Drawable drawable) {
         if (drawable == null || !CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
             return;
@@ -14427,11 +14473,24 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else if (currentMessageObject.type != MessageObject.TYPE_TEXT) {
                     // A real attachment belongs to the bubble shell. Telegram's legacy media x
                     // includes tail/gutter compensation which becomes visible once Cybergram
-                    // removes the rounded mask. Clamp both edges to the actual bubble frame.
-                    final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
-                    final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
-                    x = targetLeft;
-                    finalMediaWidth = Math.max(1f, targetRight - targetLeft);
+                    // removes the rounded mask. Use the one shared frame-derived inner rect that the
+                    // draw pass clips by instead of recomputing left/right here.
+                    if (getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
+                        // The shared inner rect is the full media box. Layout is authoritative: set
+                        // x/y/width/height together here so the draw pass only clips by the same rect
+                        // and never has to re-lay-out the raster through setImageCoords.
+                        x = (int) cybergramMediaInnerRect.left;
+                        finalMediaWidth = Math.max(1f, cybergramMediaInnerRect.width());
+                        if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
+                            photoImage.setImageCoords(x, cybergramMediaInnerRect.top,
+                                    finalMediaWidth, Math.max(1f, cybergramMediaInnerRect.height()));
+                        }
+                    } else {
+                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                        x = targetLeft;
+                        finalMediaWidth = Math.max(1f, targetRight - targetLeft);
+                    }
                 } else {
                     // Link-preview media stays on Telegram's text-column layout.
                     x += mediaEdgeInset;
