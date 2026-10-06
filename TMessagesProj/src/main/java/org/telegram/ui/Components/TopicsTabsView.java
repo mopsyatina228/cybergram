@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -60,6 +61,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.ChatActivity;
@@ -107,6 +109,43 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     private long lastSelectedTopicId;
     private long animateFromSelectedTopicId;
 
+    /**
+     * Cybergram topic tab strip. The upstream strip is a Telegram-blue Material pill with blue
+     * selected text and round counters; Cybergram uses the shared eight-segment chamfer and the cyan
+     * accent so the strip belongs to the same HUD family as the dialog rows and the chat chrome.
+     * Everything is gated: a non-Cybergram provider keeps the exact upstream rendering.
+     */
+    private boolean isCybergramTabs() {
+        return isCybergramTabs(resourcesProvider);
+    }
+
+    private static boolean isCybergramTabs(Theme.ResourcesProvider provider) {
+        return CybergramTheme.isCybergramPresentation(provider);
+    }
+
+    private static int tabAccentColor(Theme.ResourcesProvider provider) {
+        return isCybergramTabs(provider)
+                ? CybergramTheme.CYAN
+                : Theme.getColor(Theme.key_featuredStickers_addButton, provider);
+    }
+
+    private static int tabTextColor(Theme.ResourcesProvider provider, float selectT, boolean forceAccent) {
+        return ColorUtils.blendARGB(
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, provider),
+                tabAccentColor(provider),
+                forceAccent ? 1.0f : selectT);
+    }
+
+    private static int counterAccentFor(Theme.ResourcesProvider provider, int counterBackgroundColorKey) {
+        if (counterBackgroundColorKey == Theme.key_dialogReactionMentionBackground) {
+            return CybergramTheme.DIALOGS_ALERT;
+        }
+        if (counterBackgroundColorKey == Theme.key_chats_unreadCounterMuted) {
+            return CybergramTheme.DIALOGS_BADGE_MUTED_ACCENT;
+        }
+        return CybergramTheme.DIALOGS_ATTENTION;
+    }
+
     public TopicsTabsView(Context context, BaseFragment fragment, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
@@ -135,6 +174,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             private final AnimatedFloat animatedClipR = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
             private final RectF lineRect = new RectF();
             private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Path cybergramTabPath = new Path();
             private final AnimatedFloat animateTab = new AnimatedFloat(this, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
             @Override
             protected void dispatchDraw(Canvas canvas) {
@@ -181,8 +221,22 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                             fromSelectedTab.getY() + getHeight() - dp(4));
                         lerp(AndroidUtilities.rectTmp, lineRect, animateTab.set(1.0f), lineRect);
                     }
-                    linePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 31));
-                    canvas.drawRoundRect(lineRect, dp(14), dp(14), linePaint);
+                    if (isCybergramTabs()) {
+                        // Selected topic: shared chamfer + cyan rim, not the Telegram-blue pill.
+                        CybergramTheme.buildInteractionPanelPath(cybergramTabPath, lineRect, CybergramTheme.TOPIC_TAB_CUT_DP);
+                        linePaint.setStyle(Paint.Style.FILL);
+                        linePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.TOPIC_TAB_SELECTED_FILL_ALPHA));
+                        canvas.drawPath(cybergramTabPath, linePaint);
+                        linePaint.setStyle(Paint.Style.STROKE);
+                        linePaint.setStrokeJoin(Paint.Join.MITER);
+                        linePaint.setStrokeCap(Paint.Cap.SQUARE);
+                        linePaint.setStrokeWidth(dp(CybergramTheme.TOPIC_TAB_SELECTED_BORDER_WIDTH_DP));
+                        linePaint.setColor(ColorUtils.setAlphaComponent(CybergramTheme.CYAN, CybergramTheme.TOPIC_TAB_SELECTED_BORDER_ALPHA));
+                        canvas.drawPath(cybergramTabPath, linePaint);
+                    } else {
+                        linePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 31));
+                        canvas.drawRoundRect(lineRect, dp(14), dp(14), linePaint);
+                    }
                 }
                 if (needClip) {
                     canvas.save();
@@ -223,7 +277,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 if (r > l) {
                     pinnedBackgroundPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.06f));
                     AndroidUtilities.rectTmp.set(l + dp(1), (getHeight() - dp(28)) / 2f, r - dp(1), (getHeight() + dp(28)) / 2f);
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(14), dp(14), pinnedBackgroundPaint);
+                    if (isCybergramTabs()) {
+                        CybergramTheme.buildInteractionPanelPath(cybergramTabPath, AndroidUtilities.rectTmp, CybergramTheme.TOPIC_TAB_CUT_DP);
+                        canvas.drawPath(cybergramTabPath, pinnedBackgroundPaint);
+                    } else {
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(14), dp(14), pinnedBackgroundPaint);
+                    }
 
                     if (pinIcon == null) {
                         pinIcon = getContext().getResources().getDrawable(R.drawable.msg_limit_pin).mutate();
@@ -280,6 +339,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         sideTabs = new UniversalRecyclerView(context, currentAccount, 0, this::fillVerticalTabs, this::onTabClick, this::onTabLongClick, resourcesProvider) {
             private final GradientClip clip = new GradientClip();
             private final AnimatedFloat animatedClip = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final Path cybergramTabPath = new Path();
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 final float clipAlpha = animatedClip.set(canScrollVertically(-1));
@@ -321,7 +381,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 if (b > t) {
                     pinnedBackgroundPaint.setColor(Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider));
                     AndroidUtilities.rectTmp.set((getWidth() - dp(56)) / 2f, t, (getWidth() + dp(56)) / 2f, b);
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), pinnedBackgroundPaint);
+                    if (isCybergramTabs()) {
+                        CybergramTheme.buildInteractionPanelPath(cybergramTabPath, AndroidUtilities.rectTmp, CybergramTheme.TOPIC_TAB_CUT_DP);
+                        canvas.drawPath(cybergramTabPath, pinnedBackgroundPaint);
+                    } else {
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), pinnedBackgroundPaint);
+                    }
 
                     if (pinIcon == null) {
                         pinIcon = getContext().getResources().getDrawable(R.drawable.msg_limit_pin).mutate();
@@ -480,13 +545,13 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     public void setSideMenuBackgroundDrawable(BlurredBackgroundDrawable sideMenuBackgroundDrawable) {
         this.sideMenuBackgroundDrawable = sideMenuBackgroundDrawable;
-        this.sideMenuBackgroundDrawable.setRadius(dp(16));
+        this.sideMenuBackgroundDrawable.setRadius(dp(isCybergramTabs() ? 4 : 16));
         this.sideMenuBackgroundDrawable.setPadding(dp(7));
     }
 
     public void setTopMenuBackgroundDrawable(BlurredBackgroundDrawable sideMenuBackgroundDrawable) {
         this.topMenuBackgroundDrawable = sideMenuBackgroundDrawable;
-        this.topMenuBackgroundDrawable.setRadius(dp(18));
+        this.topMenuBackgroundDrawable.setRadius(dp(isCybergramTabs() ? 4 : 18));
         this.topMenuBackgroundDrawable.setPadding(dp(7));
     }
 
@@ -1120,6 +1185,8 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             imageLayoutView = new FrameLayout(context) {
                 private final Paint clipPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 private final AnimatedPaint backgroundPaint = new AnimatedPaint(this, resourcesProvider);
+                private final Path cybergramCounterPath = new Path();
+                private final Paint cybergramCounterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 {
                     clipPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                     counterText.setCallback(this);
@@ -1146,7 +1213,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     if (counterVisible) {
                         AndroidUtilities.rectTmp.set(cx - w / 2f - dp(1.33f), cy - R, cx + w / 2f + dp(1.33f), cy + R);
                         AndroidUtilities.scaleRect(AndroidUtilities.rectTmp, counterAlpha);
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, R * counterAlpha, R * counterAlpha, clipPaint);
+                        if (isCybergramTabs(resourcesProvider)) {
+                            CybergramTheme.buildInteractionPanelPath(cybergramCounterPath, AndroidUtilities.rectTmp, CybergramTheme.DIALOGS_BADGE_CUT_DP * counterAlpha);
+                            canvas.drawPath(cybergramCounterPath, clipPaint);
+                        } else {
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, R * counterAlpha, R * counterAlpha, clipPaint);
+                        }
                         canvas.restore();
                     }
 
@@ -1154,7 +1226,23 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                         canvas.save();
                         canvas.scale(counterScale, counterScale, cx, cy);
                         AndroidUtilities.rectTmp.set(cx - w / 2f, cy - r, cx + w / 2f, cy + r);
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, backgroundPaint.setByKey(counterBackgroundColorKey, counterAlpha));
+                        if (isCybergramTabs(resourcesProvider)) {
+                            final int accent = counterAccentFor(resourcesProvider, counterBackgroundColorKey);
+                            CybergramTheme.buildInteractionPanelPath(cybergramCounterPath, AndroidUtilities.rectTmp, CybergramTheme.DIALOGS_BADGE_CUT_DP);
+                            cybergramCounterPaint.setStyle(Paint.Style.FILL);
+                            cybergramCounterPaint.setColor(CybergramTheme.DIALOGS_BADGE_FILL);
+                            cybergramCounterPaint.setAlpha((int) (CybergramTheme.DIALOGS_BADGE_FILL_ALPHA * counterAlpha));
+                            canvas.drawPath(cybergramCounterPath, cybergramCounterPaint);
+                            cybergramCounterPaint.setStyle(Paint.Style.STROKE);
+                            cybergramCounterPaint.setStrokeJoin(Paint.Join.MITER);
+                            cybergramCounterPaint.setStrokeWidth(dp(CybergramTheme.DIALOGS_BADGE_BORDER_WIDTH_DP));
+                            cybergramCounterPaint.setColor(accent);
+                            cybergramCounterPaint.setAlpha((int) (CybergramTheme.DIALOGS_BADGE_BORDER_ALPHA * counterAlpha));
+                            canvas.drawPath(cybergramCounterPath, cybergramCounterPaint);
+                            counterText.setTextColor(accent);
+                        } else {
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, backgroundPaint.setByKey(counterBackgroundColorKey, counterAlpha));
+                        }
                         counterText.setBounds(AndroidUtilities.rectTmp);
                         counterText.setAlpha((int) (0xFF * counterAlpha));
                         counterText.draw(canvas);
@@ -1171,7 +1259,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             avatarDrawable = new AvatarDrawable();
 
             textView = new TextView(context);
-            textView.setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), selectT));
+            textView.setTextColor(tabTextColor(resourcesProvider, selectT, false));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
             textView.setGravity(Gravity.CENTER);
             textView.setTypeface(AndroidUtilities.bold());
@@ -1181,7 +1269,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             layout.setPadding(0, 0, 0, dp(4));
 
             lineView = new ImageView(context);
-            lineView.setBackground(Theme.createRoundRectDrawable(dp(2.33f), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            lineView.setBackground(Theme.createRoundRectDrawable(dp(2.33f), tabAccentColor(resourcesProvider)));
             addView(lineView, LayoutHelper.createFrame(6, LayoutHelper.MATCH_PARENT, Gravity.FILL_VERTICAL | Gravity.LEFT, -3, 3, 0, 3));
             lineView.setTranslationX(-dp(3));
             lineView.setVisibility(View.GONE);
@@ -1404,11 +1492,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         }
 
         private void updateImageColor() {
-            final int color = ColorUtils.blendARGB(
-                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider),
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                isAdd ? 1.0f : selectT
-            );
+            final int color = tabTextColor(resourcesProvider, selectT, isAdd);
             if (!staticImage) {
                 imageView.setColorFilter(null);
             } else {
@@ -1481,7 +1565,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         private void updateState() {
             lineView.setTranslationX(-dp(3) * (1.0f - selectT));
             lineView.setVisibility(selectT <= 0.0f ? View.GONE : View.VISIBLE);
-            textView.setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), isAdd ? 1.0f : selectT));
+            textView.setTextColor(tabTextColor(resourcesProvider, selectT, isAdd));
         }
 
         @Override
@@ -1620,6 +1704,8 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             counterText.setGravity(Gravity.CENTER);
             counterView = new View(context) {
                 private final AnimatedPaint backgroundPaint = new AnimatedPaint(this, resourcesProvider);
+                private final Path cybergramCounterPath = new Path();
+                private final Paint cybergramCounterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 {
                     counterText.setCallback(this);
                 }
@@ -1637,11 +1723,27 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                         AndroidUtilities.rectTmp.set(0, 0, width, getHeight());
                         canvas.save();
                         canvas.scale(counterScale, counterScale, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8.33f), dp(8.33f), backgroundPaint.setByKey(counterBackgroundColorKey).blendTo(getTextColor(), selectT).multAlpha(counterAlpha));
+                        if (isCybergramTabs(resourcesProvider)) {
+                            final int accent = counterAccentFor(resourcesProvider, counterBackgroundColorKey);
+                            CybergramTheme.buildInteractionPanelPath(cybergramCounterPath, AndroidUtilities.rectTmp, CybergramTheme.DIALOGS_BADGE_CUT_DP);
+                            cybergramCounterPaint.setStyle(Paint.Style.FILL);
+                            cybergramCounterPaint.setColor(CybergramTheme.DIALOGS_BADGE_FILL);
+                            cybergramCounterPaint.setAlpha((int) (CybergramTheme.DIALOGS_BADGE_FILL_ALPHA * counterAlpha));
+                            canvas.drawPath(cybergramCounterPath, cybergramCounterPaint);
+                            cybergramCounterPaint.setStyle(Paint.Style.STROKE);
+                            cybergramCounterPaint.setStrokeJoin(Paint.Join.MITER);
+                            cybergramCounterPaint.setStrokeWidth(dp(CybergramTheme.DIALOGS_BADGE_BORDER_WIDTH_DP));
+                            cybergramCounterPaint.setColor(accent);
+                            cybergramCounterPaint.setAlpha((int) (CybergramTheme.DIALOGS_BADGE_BORDER_ALPHA * counterAlpha));
+                            canvas.drawPath(cybergramCounterPath, cybergramCounterPaint);
+                            counterText.setTextColor(accent);
+                        } else {
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8.33f), dp(8.33f), backgroundPaint.setByKey(counterBackgroundColorKey).blendTo(getTextColor(), selectT).multAlpha(counterAlpha));
+                            counterText.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText, resourcesProvider));
+                        }
                         // canvas.translate(0, -dp(1));
                         counterText.setBounds(AndroidUtilities.rectTmp);
                         counterText.setAlpha((int) (0xFF * counterAlpha));
-                        counterText.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText, resourcesProvider));
                         counterText.draw(canvas);
                         canvas.restore();
                     }
@@ -1809,7 +1911,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         }
 
         private int getTextColor() {
-            return ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), isAdd ? 1.0f : selectT);
+            return tabTextColor(resourcesProvider, selectT, isAdd);
         }
 
         private AvatarSpan avatarSpan;

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CounterView extends View {
@@ -63,6 +65,11 @@ public class CounterView extends View {
         counterDrawable.setCount(count, animated);
     }
 
+    public void setCybergramAngular(boolean enabled) {
+        counterDrawable.setCybergramAngular(enabled);
+        invalidate();
+    }
+
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
     }
@@ -81,6 +88,9 @@ public class CounterView extends View {
         public TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         public RectF rectF = new RectF();
         public boolean addServiceGradient;
+        private boolean cybergramAngular;
+        private final Path cybergramPath = new Path();
+        private final Paint cybergramStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         int currentCount;
         CharSequence currentText;
@@ -135,6 +145,40 @@ public class CounterView extends View {
             textPaint.setTextSize(AndroidUtilities.dp(13));
         }
 
+        public void setCybergramAngular(boolean enabled) {
+            cybergramAngular = enabled;
+            if (parent != null) {
+                parent.invalidate();
+            }
+        }
+
+        private void drawCounterBackground(Canvas canvas) {
+            if (circlePaint == null || !drawBackground) {
+                return;
+            }
+            if (cybergramAngular) {
+                CybergramTheme.buildInteractionPanelPath(
+                        cybergramPath, rectF, CybergramTheme.PAGE_DOWN_BADGE_CUT_DP);
+                circlePaint.setStyle(Paint.Style.FILL);
+                circlePaint.setColor(CybergramTheme.PAGE_DOWN_BADGE_FILL);
+                circlePaint.setAlpha(255);
+                canvas.drawPath(cybergramPath, circlePaint);
+
+                cybergramStrokePaint.setStyle(Paint.Style.STROKE);
+                cybergramStrokePaint.setStrokeJoin(Paint.Join.MITER);
+                cybergramStrokePaint.setStrokeWidth(
+                        AndroidUtilities.dpf2(CybergramTheme.PAGE_DOWN_BADGE_BORDER_WIDTH_DP));
+                cybergramStrokePaint.setColor(CybergramTheme.PAGE_DOWN_BADGE_BORDER);
+                cybergramStrokePaint.setAlpha(230);
+                canvas.drawPath(cybergramPath, cybergramStrokePaint);
+            } else {
+                canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, circlePaint);
+                if (addServiceGradient && Theme.hasGradientService()) {
+                    canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
+                }
+            }
+        }
+
         public void setSize(int h, int w) {
             if (h != lastH) {
                 int count = currentCount;
@@ -158,10 +202,7 @@ public class CounterView extends View {
                     canvas.scale(circleScale, circleScale, rectF.centerX(), rectF.centerY());
                     needRestore = true;
                 }
-                canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, circlePaint);
-                if (addServiceGradient && Theme.hasGradientService()) {
-                    canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
-                }
+                drawCounterBackground(canvas);
                 if (needRestore) {
                     canvas.restore();
                 }
@@ -309,7 +350,16 @@ public class CounterView extends View {
         }
 
         public void draw(Canvas canvas) {
-            if (type != TYPE_CHAT_PULLING_DOWN && type != TYPE_CHAT_REACTIONS) {
+            if (cybergramAngular) {
+                if (textColor != CybergramTheme.PAGE_DOWN_BADGE_TEXT) {
+                    textColor = CybergramTheme.PAGE_DOWN_BADGE_TEXT;
+                    textPaint.setColor(textColor);
+                }
+                if (circlePaint != null) {
+                    circleColor = CybergramTheme.PAGE_DOWN_BADGE_FILL;
+                    circlePaint.setColor(circleColor);
+                }
+            } else if (type != TYPE_CHAT_PULLING_DOWN && type != TYPE_CHAT_REACTIONS) {
                 int textColor = getThemedColor(textColorKey);
                 int circleColor = getThemedColor(circleColorKey);
                 if (this.textColor != textColor) {
@@ -365,10 +415,7 @@ public class CounterView extends View {
                         canvas.scale(circleScale, circleScale, rectF.centerX(), rectF.centerY());
                     }
                     if (drawBackground && circlePaint != null) {
-                        canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, circlePaint);
-                        if (addServiceGradient && Theme.hasGradientService()) {
-                            canvas.drawRoundRect(rectF, radius * AndroidUtilities.density, radius * AndroidUtilities.density, Theme.chat_actionBackgroundGradientDarkenPaint);
-                        }
+                        drawCounterBackground(canvas);
                     }
                     if (needRestore) {
                         canvas.restore();

@@ -1691,7 +1691,15 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     : 0f;
             params.additionalInset = dpf2(1.33f) * progressToCollapsed;
             avatarImage.setAlpha(1f);
-            avatarImage.setRoundRadius((int) radius);
+            // Cybergram uses one silhouette only. The upstream circular ImageReceiver mask was
+            // surviving inside the chamfered story frame, producing a circle-in-a-square.
+            // Fade the radius back only while Telegram morphs the rail into its collapsed state.
+            avatarImage.setRoundRadius(cybergramStory
+                    ? (int) (radius * progressToCollapsed)
+                    : (int) radius);
+            crossfadeToAvatarImage.setRoundRadius(cybergramStory
+                    ? (int) (radius * progressToCollapsed)
+                    : (int) radius);
 
             cx = x + radius;
             cy = y + radius;
@@ -1756,22 +1764,44 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     canvas.save();
                     canvas.scale(params.getScale(), params.getScale(), params.originalAvatarRect.centerX(), params.originalAvatarRect.centerY());
                     avatarImage.setImageCoords(params.originalAvatarRect);
-                    avatarImage.draw(canvas);
+                    if (cybergramStory) {
+                        cybergramStoryRect.set(params.originalAvatarRect);
+                        CybergramTheme.buildInteractionPanelPath(
+                                cybergramStoryPath, cybergramStoryRect,
+                                Math.max(0.1f, params.avatarChamferCutDp));
+                        final int avatarClipSave = canvas.save();
+                        canvas.clipPath(cybergramStoryPath);
+                        avatarImage.draw(canvas);
+                        canvas.restoreToCount(avatarClipSave);
+                    } else {
+                        avatarImage.draw(canvas);
+                    }
                     canvas.restore();
                 }
-                radialProgress.setDiff(0);
                 Paint paint = closeFriends ?
                         StoriesUtilities.getCloseFriendsPaint(avatarImage) :
                         StoriesUtilities.getUnreadCirclePaint(avatarImage, true);
                 paint.setAlpha(255);
-                radialProgress.setPaint(paint);
-                radialProgress.setProgressRect(
-                        (int) (avatarImage.getImageX() - dp(3)), (int) (avatarImage.getImageY() - dp(3)),
-                        (int) (avatarImage.getImageX2() + dp(3)), (int) (avatarImage.getImageY2() + dp(3))
-                );
-                radialProgress.setProgress(Utilities.clamp(uploadingProgress, 1f, 0), progressWasDrawn);
-                if (avatarImage.getVisible()) {
-                    radialProgress.draw(canvas);
+                if (cybergramStory) {
+                    // Angular upload ring: the upstream circular RadialProgress would put the
+                    // circle back inside the chamfered avatar frame.
+                    final RectF progressRect = new RectF(
+                            avatarImage.getImageX() - dp(3), avatarImage.getImageY() - dp(3),
+                            avatarImage.getImageX2() + dp(3), avatarImage.getImageY2() + dp(3));
+                    StoriesUtilities.drawAngularProgress(canvas, progressRect,
+                            Utilities.clamp(uploadingProgress, 1f, 0), paint,
+                            Math.max(0.1f, params.avatarChamferCutDp));
+                } else {
+                    radialProgress.setDiff(0);
+                    radialProgress.setPaint(paint);
+                    radialProgress.setProgressRect(
+                            (int) (avatarImage.getImageX() - dp(3)), (int) (avatarImage.getImageY() - dp(3)),
+                            (int) (avatarImage.getImageX2() + dp(3)), (int) (avatarImage.getImageY2() + dp(3))
+                    );
+                    radialProgress.setProgress(Utilities.clamp(uploadingProgress, 1f, 0), progressWasDrawn);
+                    if (avatarImage.getVisible()) {
+                        radialProgress.draw(canvas);
+                    }
                 }
                 progressWasDrawn = true;
                 drawCircleForce = true;
@@ -1833,7 +1863,17 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         final Paint paint = StoriesUtilities.getErrorPaint(avatarImage);
                         paint.setStrokeWidth(dp(2));
                         paint.setAlpha((int) (0xFF * failT));
-                        canvas.drawCircle(x + finalSize / 2, y + finalSize / 2, (finalSize / 2 + dp(4)) * params.getScale(), paint);
+                        if (cybergramStory) {
+                            // Error state keeps the chamfered silhouette instead of a circular ring.
+                            final float expand = dp(4) * params.getScale();
+                            cybergramStoryRect.set(x - expand, y - expand, x + finalSize + expand, y + finalSize + expand);
+                            CybergramTheme.buildInteractionPanelPath(
+                                    cybergramStoryPath, cybergramStoryRect,
+                                    Math.max(0.1f, params.avatarChamferCutDp));
+                            canvas.drawPath(cybergramStoryPath, paint);
+                        } else {
+                            canvas.drawCircle(x + finalSize / 2, y + finalSize / 2, (finalSize / 2 + dp(4)) * params.getScale(), paint);
+                        }
                     }
                 }
                 progressWasDrawn = false;
@@ -1851,7 +1891,17 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             if (crossfadeToDialog && progressToCollapsed2 > 0) {
                 crossfadeToAvatarImage.setImageCoords(x, y, finalSize, finalSize);
                 crossfadeToAvatarImage.setAlpha(progressToCollapsed2);
-                crossfadeToAvatarImage.draw(canvas);
+                if (cybergramStory && params.avatarChamferCutDp > 0f) {
+                    cybergramStoryRect.set(x, y, x + finalSize, y + finalSize);
+                    CybergramTheme.buildInteractionPanelPath(
+                            cybergramStoryPath, cybergramStoryRect, params.avatarChamferCutDp);
+                    final int crossfadeClipSave = canvas.save();
+                    canvas.clipPath(cybergramStoryPath);
+                    crossfadeToAvatarImage.draw(canvas);
+                    canvas.restoreToCount(crossfadeClipSave);
+                } else {
+                    crossfadeToAvatarImage.draw(canvas);
+                }
             }
             textViewContainer.setTranslationY(y + finalSize + dp(7) * (1f - progressToCollapsed));
             textViewContainer.setTranslationX(x - fromX);

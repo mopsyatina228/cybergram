@@ -162,7 +162,8 @@ chat_inBubble=-804122099
 chat_inBubbleSelected=-400678891
 chat_inBubbleShadow=0
 chat_messageTextIn=-2238529
-chat_messageLinkIn=-7410958
+# Incoming hyperlinks follow the amber family of the incoming bubble (outgoing stays cyan).
+chat_messageLinkIn=-992390
 chat_inTimeText=-5134481
 chat_inTimeSelectedText=-1652395
 chat_inViews=-5134481
@@ -177,7 +178,7 @@ chat_inReplyMessageText=-3025976
 chat_inReplyMediaMessageText=-3025976
 chat_inPreviewLine=-4677774
 chat_inSiteNameText=-1652395
-chat_inQuote=-9446936
+chat_inQuote=-1652395
 chat_outQuote=-9446936
 chat_adminText=-992390
 chat_adminSelectedText=-992390
@@ -189,10 +190,12 @@ chat_inFileNameText=-2833505
 chat_inFileInfoText=-5656405
 chat_inAudioTitleText=-1381659
 chat_inAudioDurationText=-5656405
-# Channel/message interaction accent: use Cybergram primary cyan, not Telegram blue.
-chat_inInstant=-9446936
-chat_inInstantSelected=-7410958
-chat_inPreviewInstantText=-9446936
+# Channel/message interaction accent. Incoming side is the warm accent (links, comment counter,
+# poll hint, instant view); the outgoing side keeps Cybergram cyan. Owner ruling 2026-10-05:
+# cyan must not appear inside an incoming amber bubble.
+chat_inInstant=-992390
+chat_inInstantSelected=-1652395
+chat_inPreviewInstantText=-992390
 
 # Outgoing message (owner ruling D9.2, 2026-09-17): dark blue-green surface, thin blue outline,
 # pale-blue foreground. The surface is a translucent dark blue-green material.

@@ -35,6 +35,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -100,6 +102,13 @@ public class HintDialogCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 64, 6, 0));
 
         counterView = new CounterView(context, resourcesProvider);
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            // Same Cybergram badge as the dialogs rows: the search/hint counters must not stay
+            // stock Telegram pills while the list itself is angular.
+            counterView.setCybergramAngular(true);
+            counterView.counterDrawable.textPaint.setTypeface(
+                    CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
+        }
         addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP,0 ,4,0,0));
         counterView.setColors(Theme.key_chats_unreadCounterText, Theme.key_chats_unreadCounter);
         counterView.setGravity(Gravity.RIGHT);

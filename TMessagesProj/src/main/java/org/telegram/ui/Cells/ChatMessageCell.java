@@ -1997,38 +1997,63 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (!useCybergramAngularMediaClip()) {
                     return super.draw(canvas);
                 }
-                Rect bubbleBounds = null;
-                float inset = 0f;
+                // Bubble body geometry. MessageDrawable builds the Cybergram outline on
+                // CybergramTheme.BUBBLE_FRAME_PADDING_DP and ATTACHMENT_MEDIA_INSET_DP is exactly
+                // that padding plus half of the outline stroke, so a raster held inside this rect
+                // reaches the inner edge of the visible frame and can never paint over or past it.
+                final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+                final boolean singleBubble = currentPosition == null;
                 float safeLeft = Float.NaN;
                 float safeTop = Float.NaN;
                 float safeRight = Float.NaN;
                 float safeBottom = Float.NaN;
-                if (!isCybergramGroupedAlbum()
-                        && currentBackgroundDrawable != null
-                        && !currentBackgroundDrawable.getBounds().isEmpty()) {
-                    // Single-media messages can safely clamp to their final bubble bounds. Album cells
-                    // cannot: ChatActivity reuses one representative cell to draw the *aggregate* group
-                    // background, so that cell's drawable bounds may describe the whole gallery by the
-                    // time its individual tile is rendered. Trust the mosaic layout for grouped media.
-                    bubbleBounds = currentBackgroundDrawable.getBounds();
-                    inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-                    // Media owns the full inner frame. Telegram's asymmetric text/tail gutters are
-                    // correct for text, but leave attachments looking like a card inside another card.
-                    final float framePadding = dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
-                    safeLeft = bubbleBounds.left + framePadding + inset;
-                    safeTop = bubbleBounds.top + framePadding + inset;
-                    safeRight = bubbleBounds.right - framePadding - inset;
-                    safeBottom = bubbleBounds.bottom - framePadding - inset;
-                    if (safeRight > safeLeft && safeBottom > safeTop) {
-                        final float safeWidth = safeRight - safeLeft;
-                        final float width = safeWidth;
-                        final float x = safeLeft;
-                        final float y = Math.max(getImageY(), safeTop);
-                        final float height = Math.min(getImageHeight(), Math.max(1f, safeBottom - y));
-                        if (Math.abs(x - getImageX()) > 0.5f || Math.abs(y - getImageY()) > 0.5f
-                                || Math.abs(width - getImageWidth()) > 0.5f || Math.abs(height - getImageHeight()) > 0.5f) {
-                            setImageCoords(x, y, width, height);
+                if (currentBackgroundDrawable != null && !currentBackgroundDrawable.getBounds().isEmpty()) {
+                    if (singleBubble) {
+                        safeLeft = getBackgroundDrawableLeft() + transitionParams.deltaLeft + inset;
+                        safeTop = getBackgroundDrawableTop() + transitionParams.deltaTop + inset;
+                        safeRight = getBackgroundDrawableRight() + transitionParams.deltaRight - inset;
+                        safeBottom = getBackgroundDrawableBottom() + transitionParams.deltaBottom - inset;
+                        if (!mediaBackground) {
+                            // The bubble is drawn with the TEXT silhouette, which keeps Telegram's
+                            // tail allowance on the speaking side instead of the frame padding.
+                            final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
+                                    + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
+                            if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
+                                safeRight = getBackgroundDrawableRight() + transitionParams.deltaRight - gutter;
+                            } else {
+                                safeLeft = getBackgroundDrawableLeft() + transitionParams.deltaLeft + gutter;
+                            }
                         }
+                    } else {
+                        // Grouped cells are a mosaic and ChatActivity draws the aggregate group
+                        // background through one representative cell, so the drawable bounds
+                        // describe the whole gallery here. Keep the mosaic placement and only clip,
+                        // and only when the rect really contains this tile, so a stale transition
+                        // rect can never cut a tile away.
+                        final Rect gallery = currentBackgroundDrawable.getBounds();
+                        if (gallery.left <= getImageX() && gallery.top <= getImageY()
+                                && gallery.right >= getImageX2() && gallery.bottom >= getImageY2()) {
+                            safeLeft = gallery.left + inset;
+                            safeTop = gallery.top + inset;
+                            safeRight = gallery.right - inset;
+                            safeBottom = gallery.bottom - inset;
+                        }
+                    }
+                    if (!(safeRight > safeLeft && safeBottom > safeTop)) {
+                        safeLeft = safeTop = safeRight = safeBottom = Float.NaN;
+                    }
+                }
+                if (!Float.isNaN(safeLeft) && singleBubble
+                        && (mediaBackground || currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_TEXT)) {
+                    // A real attachment owns the bubble interior: fill it up to the frame. Link
+                    // previews inside a text bubble stay on Telegram's text column and are only
+                    // clipped, so a preview does not turn into a full-width plate.
+                    final float width = safeRight - safeLeft;
+                    final float y = Math.max(getImageY(), safeTop);
+                    final float height = Math.min(getImageHeight(), Math.max(1f, safeBottom - y));
+                    if (Math.abs(safeLeft - getImageX()) > 0.5f || Math.abs(y - getImageY()) > 0.5f
+                            || Math.abs(width - getImageWidth()) > 0.5f || Math.abs(height - getImageHeight()) > 0.5f) {
+                        setImageCoords(safeLeft, y, width, height);
                     }
                 }
                 buildCybergramMediaPath(rectPath, getImageX(), getImageY(), getImageX2(), getImageY2());
@@ -10660,15 +10685,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     final boolean cybergramAlbum = isCybergramGroupedAlbum();
                     // Only the gallery perimeter reserves the half-stroke safety inset. Internal
                     // tile joins stay edge-to-edge, so a multi-photo post reads as one instrument
-                    // panel rather than several independently padded mini-bubbles.
+                    // panel rather than several independently padded mini-bubbles. The media/caption
+                    // seam is an internal join too: when the album continues into a shared caption
+                    // plate, that edge must meet the caption instead of pulling back from it.
+                    final boolean captionAboveSeam = cybergramAlbum
+                            && currentMessagesGroup.hasCaption && captionAbove;
+                    final boolean captionBelowSeam = cybergramAlbum
+                            && currentMessagesGroup.hasCaption && !captionAbove;
                     final float mediaInsetLeft = cybergramAlbum
                             && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) == 0 ? 0f : cybergramMediaInset;
                     final float mediaInsetRight = cybergramAlbum
                             && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) == 0 ? 0f : cybergramMediaInset;
                     final float mediaInsetTop = cybergramAlbum
-                            && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 ? 0f : cybergramMediaInset;
+                            && ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 || captionAboveSeam) ? 0f : cybergramMediaInset;
                     final float mediaInsetBottom = cybergramAlbum
-                            && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 ? 0f : cybergramMediaInset;
+                            && ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 || captionBelowSeam) ? 0f : cybergramMediaInset;
                     photoImage.setImageCoords(mediaInsetLeft, y + namesOffset + additionalTop + mediaInsetTop,
                             Math.max(1f, photoWidth - mediaInsetLeft - mediaInsetRight),
                             Math.max(1f, photoHeight - mediaInsetTop - mediaInsetBottom));
@@ -13914,6 +13945,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 && drawPhotoImage;
     }
 
+    private int getMessageLinkColor(boolean out) {
+        if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+            return out ? CybergramTheme.OUT_LINK : CybergramTheme.IN_LINK;
+        }
+        return getThemedColor(out ? Theme.key_chat_messageLinkOut : Theme.key_chat_messageLinkIn);
+    }
+
     private boolean useCybergramAngularMediaClip() {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
                 || currentMessageObject == null || !drawPhotoImage || isRoundVideo || isSmallImage
@@ -13945,18 +13983,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         // actual aggregate bubble perimeter.
         final boolean captionContinuesAbove = grouped && currentMessagesGroup.hasCaption && captionAbove;
         final boolean captionContinuesBelow = grouped && currentMessagesGroup.hasCaption && !captionAbove;
+        final boolean singleMediaContinuesBelow = !grouped && (
+                captionLayout != null
+                        || commentLayout != null
+                        || (!reactionsLayoutInBubble.isEmpty && !reactionsLayoutInBubble.isSmall));
         final boolean topLeft = !grouped || !captionContinuesAbove
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
         final boolean topRight = !grouped || !captionContinuesAbove
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
-        final boolean bottomRight = !grouped || !captionContinuesBelow
+        final boolean bottomRight = !singleMediaContinuesBelow && (!grouped || !captionContinuesBelow
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
-                && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0;
-        final boolean bottomLeft = !grouped || !captionContinuesBelow
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0);
+        final boolean bottomLeft = !singleMediaContinuesBelow && (!grouped || !captionContinuesBelow
                 && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0
-                && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0;
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0);
 
         path.rewind();
         path.moveTo(left + (topLeft ? cut : 0f), top);
@@ -14382,8 +14424,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
                         finalMediaWidth = Math.max(1f, targetRight - x);
                     }
+                } else if (currentMessageObject.type != MessageObject.TYPE_TEXT) {
+                    // A real attachment belongs to the bubble shell. Telegram's legacy media x
+                    // includes tail/gutter compensation which becomes visible once Cybergram
+                    // removes the rounded mask. Clamp both edges to the actual bubble frame.
+                    final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                    final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                    x = targetLeft;
+                    finalMediaWidth = Math.max(1f, targetRight - targetLeft);
                 } else {
-                    // Same correction for generic single media/link-preview positioning.
+                    // Link-preview media stays on Telegram's text-column layout.
                     x += mediaEdgeInset;
                 }
             }
@@ -16212,7 +16262,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             paint.setAlpha(wasAlpha);
             AnimatedEmojiSpan.drawAnimatedEmojis(canvas, descriptionLayout, animatedEmojiDescriptionStack, 0, null, 0, 0, 0, 1f, getAdaptiveEmojiColorFilter(1, descriptionLayout.getPaint().getColor()));
             canvas.restore();
-            paint.linkColor = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_messageLinkOut : Theme.key_chat_messageLinkIn);
+            paint.linkColor = getMessageLinkColor(currentMessageObject.isOutOwner());
             linkPreviewY += descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1);
         }
 
@@ -17171,7 +17221,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     translationLoadingDrawable.disappear();
                 }
 
-                int color = getThemedColor(currentMessageObject != null && currentMessageObject.isOutOwner() ? Theme.key_chat_messageLinkOut : Theme.key_chat_messageLinkIn);
+                int color = getMessageLinkColor(currentMessageObject != null && currentMessageObject.isOutOwner());
                 translationLoadingDrawable.setColors(
                     Theme.multAlpha(color, .05f),
                     Theme.multAlpha(color, .15f),
@@ -17330,7 +17380,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     Theme.chat_msgGameTextPaint.linkColor =
                     Theme.chat_replyTextPaint.linkColor =
                     Theme.chat_quoteTextPaint.linkColor =
-                    Theme.chat_msgTextPaint.linkColor = currentMessageObject.isOutOwner() ? Theme.getColor(Theme.key_chat_messageLinkOut, resourcesProvider) : quoteLine.getColor();
+                    Theme.chat_msgTextPaint.linkColor = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                            ? (currentMessageObject.isOutOwner() ? CybergramTheme.OUT_LINK : CybergramTheme.IN_LINK)
+                            : (currentMessageObject.isOutOwner()
+                                    ? Theme.getColor(Theme.key_chat_messageLinkOut, resourcesProvider)
+                                    : quoteLine.getColor());
 
                     if (block.quoteCollapse && block.height > block.collapsedHeight) {
                         collapsed = block.collapsed(transitionParams);
@@ -17362,7 +17416,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     Theme.chat_msgGameTextPaint.linkColor =
                     Theme.chat_replyTextPaint.linkColor =
                     Theme.chat_quoteTextPaint.linkColor =
-                    Theme.chat_msgTextPaint.linkColor = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_messageLinkOut : Theme.key_chat_messageLinkIn);
+                    Theme.chat_msgTextPaint.linkColor = getMessageLinkColor(currentMessageObject.isOutOwner());
 
                     if (block.code) {
                         if (quoteLine == null) {
@@ -20341,7 +20395,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             Theme.chat_msgTextPaint.linkColor =
             Theme.chat_msgTextCodePaint.linkColor =
             Theme.chat_msgTextCode2Paint.linkColor =
-            Theme.chat_msgTextCode3Paint.linkColor = getThemedColor(Theme.key_chat_messageLinkOut);
+            Theme.chat_msgTextCode3Paint.linkColor = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.OUT_LINK
+                    : getThemedColor(Theme.key_chat_messageLinkOut);
         } else {
             Theme.chat_msgTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextIn));
             Theme.chat_msgGameTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextIn));
@@ -20354,7 +20410,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             Theme.chat_msgTextPaint.linkColor =
             Theme.chat_msgTextCodePaint.linkColor =
             Theme.chat_msgTextCode2Paint.linkColor =
-            Theme.chat_msgTextCode3Paint.linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
+            Theme.chat_msgTextCode3Paint.linkColor = CybergramTheme.isCybergramPresentation(resourcesProvider)
+                    ? CybergramTheme.IN_LINK
+                    : getThemedColor(Theme.key_chat_messageLinkIn);
         }
 
         if (documentAttach != null) {
@@ -23783,7 +23841,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     canvas.drawLine(x, ly, endX - dp(14), ly, Theme.chat_replyLinePaint);
                 }
                 if (commentLayout != null && drawSideButton != 3) {
-                    Theme.chat_commentTextPaint.setColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText));
+                    final boolean cybergramComment = CybergramTheme.isCybergramPresentation(resourcesProvider);
+                    final int cybergramCommentAccent = currentMessageObject.isOutOwner()
+                            ? CybergramTheme.OUT_COMMENT : CybergramTheme.IN_COMMENT;
+                    Theme.chat_commentTextPaint.setColor(cybergramComment
+                            ? cybergramCommentAccent
+                            : getThemedColor(currentMessageObject.isOutOwner()
+                                    ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText));
+                    if (cybergramComment) {
+                        Theme.setDrawableColor(Theme.chat_commentArrowDrawable, cybergramCommentAccent);
+                        Theme.setDrawableColor(Theme.chat_commentDrawable, cybergramCommentAccent);
+                    }
                     commentX = x + dp(33 + avatarsOffset);
                     if (drawCommentNumber) {
                         commentX += commentNumberWidth + dp(4);
@@ -23847,7 +23915,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     if (commentDrawUnread = (replies != null && replies.read_max_id != 0 && replies.read_max_id < replies.max_id)) {
-                        int color = getThemedColor(Theme.key_chat_inInstant);
+                        int color = cybergramComment
+                                ? cybergramCommentAccent
+                                : getThemedColor(Theme.key_chat_inInstant);
                         Theme.chat_docBackPaint.setColor(color);
                         int unreadX;
                         if (transitionParams.animateComments) {
@@ -23902,7 +23972,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 }
                 if ((drawProgressDelayed || commentProgressAlpha > 0.0f) && commentProgress != null) {
-                    commentProgress.setColor(getThemedColor(Theme.key_chat_inInstant));
+                    commentProgress.setColor(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                            ? (currentMessageObject.isOutOwner()
+                                    ? CybergramTheme.OUT_COMMENT : CybergramTheme.IN_COMMENT)
+                            : getThemedColor(Theme.key_chat_inInstant));
                     commentProgress.setAlpha(commentProgressAlpha);
                     commentProgress.draw(canvas, commentX + dp(11), commentY + dp(12), commentProgressAlpha);
                     invalidate();
@@ -25827,11 +25900,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (currentMessageObject.isOutOwner()) {
                 color1 = getThemedColor(Theme.key_chat_messageTextOut);
                 color2 = getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_outTimeSelectedText : Theme.key_chat_outTimeText);
-                linkColor = getThemedColor(Theme.key_chat_messageLinkOut);
+                linkColor = getMessageLinkColor(true);
             } else {
                 color1 = getThemedColor(Theme.key_chat_messageTextIn);
                 color2 = getThemedColor(isDrawSelectionBackground() ? Theme.key_chat_inTimeSelectedText : Theme.key_chat_inTimeText);
-                linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
+                linkColor = getMessageLinkColor(false);
             }
             Theme.chat_audioTitlePaint.setColor(color1);
             Theme.chat_audioPerformerPaint.linkColor = linkColor;

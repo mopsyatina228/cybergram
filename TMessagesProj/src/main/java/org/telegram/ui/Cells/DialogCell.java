@@ -651,6 +651,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final RectF cybergramRowFrameRect = new RectF();
     private final RectF cybergramAvatarFrameRect = new RectF();
     private final CybergramHudDrawable cybergramRowPanel = new CybergramHudDrawable();
+    private final Path cybergramBadgePath = new Path();
+    private final RectF cybergramBadgeRect = new RectF();
+    private final Paint cybergramBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**
      * Cybergram chrome typography (dialogs row title + timestamp).
@@ -4822,14 +4825,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         Paint paint = drawCounterMuted && folderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
                         final int oldMentionColor = getCountTextPaint().getColor();
                         if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
-                            getCountTextPaint().setColor(drawCounterMuted
-                                    ? CybergramTheme.TEXT_MUTED
-                                    : CybergramTheme.DIALOGS_ALERT);
-                            cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                            cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ALERT);
-                            cybergramSeparatorPaint.setAlpha(drawCounterMuted ? 90 : 200);
-                            canvas.drawRect(rect.left + dp(2), rect.bottom - dpf2(1f), rect.right - dp(2), rect.bottom,
-                                    cybergramSeparatorPaint);
+                            final int mentionAccent = drawCounterMuted
+                                    ? CybergramTheme.DIALOGS_BADGE_MUTED_ACCENT
+                                    : CybergramTheme.DIALOGS_ALERT;
+                            getCountTextPaint().setColor(mentionAccent);
+                            drawCybergramBadge(canvas, rect, mentionAccent, drawCounterMuted,
+                                    1f - reorderIconProgress);
                         } else {
                             canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, paint);
                         }
@@ -5039,7 +5040,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             CybergramTheme.DIALOGS_AVATAR_CUT_DP);
                     CybergramTheme.drawAnalogDisplayOverlay(
                             canvas, cybergramAvatarFrameRect, cybergramAvatarFramePath);
-                    drawCybergramAvatarOutline(canvas);
+                    drawCybergramAvatarOutline(canvas,
+                            MessagesController.getInstance(currentAccount).getStoriesController()
+                                    .hasUnreadStories(getDialogId()));
                 }
                 if (storyParams.drawnLive) {
                     checkTtl();
@@ -5296,10 +5299,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private Drawable starFg, starBg;
 
     private void drawCybergramAmberOutline(Canvas canvas, Path path, boolean selected) {
+        drawCybergramAmberOutline(canvas, path, selected, CybergramTheme.AMBER);
+    }
+
+    private void drawCybergramAmberOutline(Canvas canvas, Path path, boolean selected, int color) {
         cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
         cybergramOutlinePaint.setStrokeJoin(Paint.Join.MITER);
         cybergramOutlinePaint.setStrokeCap(Paint.Cap.SQUARE);
-        cybergramOutlinePaint.setColor(CybergramTheme.AMBER);
+        cybergramOutlinePaint.setColor(color);
 
         cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
         cybergramOutlinePaint.setAlpha(selected
@@ -5318,14 +5325,58 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         canvas.drawPath(path, cybergramOutlinePaint);
     }
 
-    private void drawCybergramAvatarOutline(Canvas canvas) {
+    /**
+     * Row-avatar frame. It is now the ONLY story ring on the row (the circular Telegram ring is
+     * suppressed by {@code StoriesUtilities} under Cybergram geometry), so it carries the state
+     * colour itself: cyan for unread/live stories, amber for read ones, matching the story rail.
+     */
+    private void drawCybergramAvatarOutline(Canvas canvas, boolean unreadStory) {
         cybergramAvatarFrameRect.set(
                 avatarImage.getImageX(), avatarImage.getImageY(),
                 avatarImage.getImageX2(), avatarImage.getImageY2());
         CybergramTheme.buildInteractionPanelPath(
                 cybergramAvatarFramePath, cybergramAvatarFrameRect,
                 CybergramTheme.DIALOGS_AVATAR_CUT_DP);
-        drawCybergramAmberOutline(canvas, cybergramAvatarFramePath, false);
+        drawCybergramAmberOutline(canvas, cybergramAvatarFramePath, false,
+                unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER);
+    }
+
+    /**
+     * Cybergram counter badge.
+     *
+     * The chat-list counters used to be Telegram's round pill (or, after the dialogs rebuild, a bare
+     * numeral with a 1px underline that read as neither). They are now real HUD tags built on the
+     * SAME eight-segment chamfer the rest of Cybergram uses ({@link CybergramTheme#buildInteractionPanelPath}),
+     * with an opaque plate and a state-coloured rim so the numeral keeps a proper contrast ratio.
+     *
+     * @param accent state colour for both the rim and the numeral (amber = unread, red = mention)
+     * @param muted  muted counters use a quieter plate/rim
+     * @param alpha  extra alpha factor for the row's reorder/count animations
+     */
+    private void drawCybergramBadge(Canvas canvas, RectF badgeRect, int accent, boolean muted, float alpha) {
+        if (badgeRect.width() <= 0f || badgeRect.height() <= 0f || alpha <= 0f) {
+            return;
+        }
+        cybergramBadgePath.rewind();
+        CybergramTheme.buildInteractionPanelPath(
+                cybergramBadgePath, badgeRect, CybergramTheme.DIALOGS_BADGE_CUT_DP);
+
+        cybergramBadgePaint.setStyle(Paint.Style.FILL);
+        cybergramBadgePaint.setColor(CybergramTheme.DIALOGS_BADGE_FILL);
+        cybergramBadgePaint.setAlpha((int) (alpha * (muted
+                ? CybergramTheme.DIALOGS_BADGE_MUTED_FILL_ALPHA
+                : CybergramTheme.DIALOGS_BADGE_FILL_ALPHA)));
+        canvas.drawPath(cybergramBadgePath, cybergramBadgePaint);
+
+        cybergramBadgePaint.setStyle(Paint.Style.STROKE);
+        cybergramBadgePaint.setStrokeJoin(Paint.Join.MITER);
+        cybergramBadgePaint.setStrokeCap(Paint.Cap.SQUARE);
+        cybergramBadgePaint.setStrokeWidth(dpf2(CybergramTheme.DIALOGS_BADGE_BORDER_WIDTH_DP));
+        cybergramBadgePaint.setColor(accent);
+        cybergramBadgePaint.setAlpha((int) (alpha * (muted
+                ? CybergramTheme.DIALOGS_BADGE_MUTED_BORDER_ALPHA
+                : CybergramTheme.DIALOGS_BADGE_BORDER_ALPHA)));
+        canvas.drawPath(cybergramBadgePath, cybergramBadgePaint);
     }
 
     private void drawCybergramRowTreatment(Canvas canvas) {
@@ -5648,10 +5699,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         final boolean drawBubble = isForumCell() || isFolderCell();
         final boolean cybergram = CybergramTheme.isCybergramPresentation(resourcesProvider);
         final int originalCountTextColor = getCountTextPaint().getColor();
+        final int cybergramCounterAccent = drawCounterMuted
+                ? CybergramTheme.DIALOGS_BADGE_MUTED_ACCENT
+                : CybergramTheme.DIALOGS_ATTENTION;
         if (cybergram) {
-            getCountTextPaint().setColor(drawCounterMuted
-                    ? ColorUtils.setAlphaComponent(CybergramTheme.TEXT_MUTED, CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA)
-                    : ColorUtils.setAlphaComponent(CybergramTheme.DIALOGS_ATTENTION, CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA));
+            getCountTextPaint().setColor(cybergramCounterAccent);
         }
         if (drawCount && drawCount2 || countChangeProgress != 1f) {
             final float progressFinal = (unreadCount == 0 && !markUnread) ? 1f - countChangeProgress : countChangeProgress;
@@ -5673,7 +5725,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         Color.alpha(color) / 255f
                 ));
             }
-            if (isTopic && forumTopic.read_inbox_max_id == 0) {
+            if (!cybergram && isTopic && forumTopic.read_inbox_max_id == 0) {
                 if (topicCounterPaint == null) {
                     topicCounterPaint = new Paint();
                 }
@@ -5704,13 +5756,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
 
                 if (cybergram) {
-                    cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ATTENTION);
-                    cybergramSeparatorPaint.setAlpha(drawCounterMuted
-                            ? CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA
-                            : CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA);
-                    canvas.drawRect(rect.left + dp(2), rect.bottom - dpf2(1f), rect.right - dp(2), rect.bottom,
-                            cybergramSeparatorPaint);
+                    drawCybergramBadge(canvas, rect, cybergramCounterAccent, drawCounterMuted,
+                            1f - reorderIconProgress);
                 } else if (drawBubble) {
                     if (counterPath == null || counterPathRect == null || !counterPathRect.equals(rect)) {
                         if (counterPathRect == null) {
@@ -5764,13 +5811,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.save();
                 canvas.scale(scale * globalScale, scale * globalScale, rect.centerX(), rect.centerY());
                 if (cybergram) {
-                    cybergramSeparatorPaint.setStyle(Paint.Style.FILL);
-                    cybergramSeparatorPaint.setColor(drawCounterMuted ? CybergramTheme.TEXT_MUTED : CybergramTheme.DIALOGS_ATTENTION);
-                    cybergramSeparatorPaint.setAlpha(drawCounterMuted
-                            ? CybergramTheme.DIALOGS_COUNTER_MUTED_ALPHA
-                            : CybergramTheme.DIALOGS_COUNTER_ACTIVE_ALPHA);
-                    canvas.drawRect(rect.left + dp(2), rect.bottom - dpf2(1f), rect.right - dp(2), rect.bottom,
-                            cybergramSeparatorPaint);
+                    drawCybergramBadge(canvas, rect, cybergramCounterAccent, drawCounterMuted,
+                            1f - reorderIconProgress);
                 } else if (drawBubble) {
                     if (counterPath == null || counterPathRect == null || !counterPathRect.equals(rect)) {
                         if (counterPathRect == null) {

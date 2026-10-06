@@ -190,6 +190,15 @@ public class StoriesUtilities {
             params.inc = false;
         }
         params.showProgress = showProgress;
+        if (params.avatarChamferCutDp > 0f) {
+            // Cybergram story avatars use ONE silhouette: the raster is clipped into the same
+            // chamfered polygon the caller draws as the frame. Telegram's circular gradient ring,
+            // arc segments and circular progress arc are the second geometry that made stories read
+            // as a round avatar inside a square frame, so they are not drawn here. The caller owns
+            // the angular ring (DialogStoriesCell / DialogCell) and keeps it state-coloured.
+            drawAngularAvatar(canvas, avatarImage, params, storiesController, scale);
+            return;
+        }
         if (params.currentState == STATE_EMPTY && params.progressToSate == 1f) {
             avatarImage.setImageCoords(params.originalAvatarRect);
             canvas.save();
@@ -416,6 +425,131 @@ public class StoriesUtilities {
         canvas.clipPath(params.avatarClipPath);
         avatarImage.draw(canvas);
         canvas.restoreToCount(save);
+    }
+
+    private static final Path angularAvatarPath = new Path();
+    private static final RectF angularAvatarRect = new RectF();
+
+    /**
+     * Cybergram angular story avatar.
+     *
+     * The raster is clipped into the same chamfered polygon the caller draws as the frame, so the
+     * avatar and its ring share one silhouette. Telegram's circular gradient ring, arc segments and
+     * circular sweep are deliberately not drawn: they were the second geometry that made stories
+     * read as a round avatar inscribed in a square frame. Position, inset and the live badge follow
+     * the upstream contract, so only the silhouette changes.
+     */
+    private static void drawAngularAvatar(Canvas canvas, ImageReceiver avatarImage, AvatarStoryParams params, StoriesController storiesController, float scale) {
+        final float insetTo = params.isStoryCell && !params.drawInside ? 0 : lerp(
+                getInset(params.prevState, params.animateFromUnreadState),
+                getInset(params.currentState, params.animateFromUnreadState),
+                params.progressToSate
+        );
+        if (insetTo == 0) {
+            avatarImage.setImageCoords(params.originalAvatarRect);
+        } else {
+            rectTmp.set(params.originalAvatarRect);
+            rectTmp.inset(insetTo, insetTo);
+            avatarImage.setImageCoords(rectTmp);
+        }
+        final int restoreCount = canvas.save();
+        if (scale != 1f) {
+            canvas.scale(scale, scale, params.originalAvatarRect.centerX(), params.originalAvatarRect.centerY());
+        }
+        drawAvatarImage(canvas, avatarImage, params);
+
+        if (params.currentState == STATE_PROGRESS) {
+            // Uploading story: keep the state visible, but on the angular silhouette.
+            final Paint progressPaint;
+            if (params.isStoryCell) {
+                checkStoryCellGrayPaint(params.isArchive, params.resourcesProvider);
+                progressPaint = storyCellGreyPaint[params.isArchive ? 1 : 0];
+            } else {
+                checkGrayPaint(params.resourcesProvider);
+                progressPaint = grayPaint;
+            }
+            angularAvatarRect.set(
+                    avatarImage.getImageX(), avatarImage.getImageY(),
+                    avatarImage.getImageX2(), avatarImage.getImageY2());
+            CybergramTheme.buildInteractionPanelPath(
+                    angularAvatarPath, angularAvatarRect, params.avatarChamferCutDp);
+            progressPaint.setStyle(Paint.Style.STROKE);
+            progressPaint.setStrokeJoin(Paint.Join.MITER);
+            canvas.drawPath(angularAvatarPath, progressPaint);
+            if (avatarImage.getParentView() != null) {
+                avatarImage.getParentView().invalidate();
+            }
+        }
+        canvas.restoreToCount(restoreCount);
+
+        final float drawLive = storiesController.hasLiveStory(params.dialogId) ? params.progressToSegments : 0f;
+        params.drawnLive = drawLive > 0.5f;
+        if (drawLive > 0) {
+            rectTmp.set(params.originalAvatarRect);
+            rectTmp.inset(insetTo + params.additionalInset, insetTo + params.additionalInset);
+            drawLive(canvas, rectTmp, drawLive, avatarImage.getVisible(), 0);
+        }
+        // The state cross-fade is driven from here in the upstream path as well; without it a
+        // transition would freeze at its first frame and leave the avatar on a half-applied inset.
+        if (params.progressToSate != 1f) {
+            params.progressToSate += AndroidUtilities.screenRefreshTime / 250;
+            if (params.progressToSate > 1f) {
+                params.progressToSate = 1f;
+            }
+            if (avatarImage.getParentView() != null) {
+                avatarImage.invalidate();
+                avatarImage.getParentView().invalidate();
+            }
+        }
+    }
+
+    private static final Path angularProgressPath = new Path();
+    private static final PathMeasure angularProgressMeasure = new PathMeasure();
+    private static final Path angularProgressSegment = new Path();
+
+    /**
+     * Chamfered progress ring for an uploading Cybergram story. Telegram's {@code RadialProgress}
+     * draws a circular sweep, which on a chamfered avatar reads as the same circle-in-a-square the
+     * story rail is fixing. This draws the state track on the shared chamfer and a sweep segment
+     * along its perimeter, so the upload state keeps one silhouette.
+     */
+    public static void drawAngularProgress(Canvas canvas, RectF rect, float progress, Paint paint, float cutDp) {
+        if (rect == null || rect.width() <= 0f || rect.height() <= 0f) {
+            return;
+        }
+        CybergramTheme.buildInteractionPanelPath(angularProgressPath, rect, cutDp);
+        angularProgressMeasure.setPath(angularProgressPath, false);
+        final float length = angularProgressMeasure.getLength();
+        if (length <= 0f) {
+            return;
+        }
+        final int baseAlpha = paint.getAlpha();
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeJoin(Paint.Join.MITER);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+
+        // Dim track so the empty part of the ring still reads on the dark rail.
+        paint.setAlpha(baseAlpha / 5);
+        canvas.drawPath(angularProgressPath, paint);
+
+        final float sweep = length * Utilities.clamp(progress, 1f, 0f);
+        if (sweep <= 0f) {
+            return;
+        }
+        final float cut = Math.min(AndroidUtilities.dp(cutDp), Math.min(rect.width(), rect.height()) * 0.22f);
+        // Start at the top edge centre, matching Telegram's circular ring origin.
+        final float start = Math.max(0f, Math.min(length, rect.centerX() - rect.left - cut));
+        final float end = start + sweep;
+        angularProgressSegment.reset();
+        paint.setAlpha(baseAlpha);
+        if (end <= length) {
+            angularProgressMeasure.getSegment(start, end, angularProgressSegment, true);
+        } else {
+            angularProgressMeasure.getSegment(start, length, angularProgressSegment, true);
+            angularProgressMeasure.getSegment(0f, end - length, angularProgressSegment, true);
+        }
+        angularProgressSegment.rLineTo(0f, 0f);
+        canvas.drawPath(angularProgressSegment, paint);
     }
 
     public static void drawLive(Canvas canvas, RectF rect, float alpha, boolean drawText, float large) {

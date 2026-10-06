@@ -11,7 +11,10 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.DrawableRes;
 
+import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
@@ -51,6 +54,11 @@ public class ChatActivityBlurredRoundPageDownButton extends FrameLayout {
         if (counterView == null) {
             counterView = new CounterView(getContext(), resourcesProvider);
             counterView.setReverse(reversedCounter);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                counterView.setCybergramAngular(true);
+                counterView.counterDrawable.textPaint.setTypeface(
+                        CybergramTypography.chromeBold(resourcesProvider, AndroidUtilities.bold()));
+            }
             addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.TOP));
         }
 

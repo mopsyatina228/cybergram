@@ -57,6 +57,19 @@ public final class CybergramTheme {
     public static final int IN_TIME = 0xFFB1A76F;
     public static final int OUT_TIME = 0xFF86AAB2;
 
+    /** Direction-aware semantic accents. Incoming lives in the amber family, outgoing in cyan. */
+    public static final int IN_LINK = AMBER_HIGHLIGHT;
+    public static final int OUT_LINK = CYAN_SECONDARY;
+    public static final int IN_COMMENT = AMBER_HIGHLIGHT;
+    public static final int OUT_COMMENT = CYAN_SECONDARY;
+
+    /** Floating unread/page-down badge: readable state marker, not a stock Telegram blue pill. */
+    public static final int PAGE_DOWN_BADGE_FILL = AMBER;
+    public static final int PAGE_DOWN_BADGE_BORDER = AMBER_HIGHLIGHT;
+    public static final int PAGE_DOWN_BADGE_TEXT = TEXT_ON_AMBER;
+    public static final float PAGE_DOWN_BADGE_CUT_DP = 5f;
+    public static final float PAGE_DOWN_BADGE_BORDER_WIDTH_DP = 0.8f;
+
     /** Red structural rail for separators and technical framing (owner ruling D9.1). */
     public static final int SEPARATOR = DANGER;
 
@@ -78,6 +91,23 @@ public final class CybergramTheme {
 
     /** Chamfer cut, in dp, for the "near" corners of a grouped Cybergram bubble. */
     public static final float BUBBLE_NEAR_CORNER_CUT_DP = 2f;
+
+    /**
+     * Tail allowance, in dp, that the Cybergram silhouette keeps from Telegram's bubble drawable on
+     * the speaking side of a <b>text</b> bubble. Media placement must subtract it, otherwise a
+     * photo that sits inside a text-shaped bubble (single attachment with a caption below, link
+     * previews) is stretched across the gutter and paints over the frame.
+     */
+    public static final float BUBBLE_TAIL_GUTTER_DP = 8f;
+
+    /**
+     * Distance, in dp, between the drawable bounds and the Cybergram silhouette.
+     *
+     * {@code MessageDrawable} builds every Cybergram bubble polygon on this inset, so it is the
+     * single source of truth for "where the frame is". Content that must reach the frame — media
+     * rasters in particular — derives its own inset from this value instead of guessing.
+     */
+    public static final float BUBBLE_FRAME_PADDING_DP = 2f;
 
     /** Cybergram message outline stroke width, in dp (the bright neon core). */
     public static final float BUBBLE_BORDER_WIDTH_DP = 0.5f;
@@ -207,11 +237,18 @@ public final class CybergramTheme {
     public static final float ATTACHMENT_BOTTOM_PAD_DP = 6f;
 
     /**
-     * Media is intentionally edge-to-edge inside the Cybergram frame. Keep only the half-stroke
-     * safety inset so the raster reaches the visible outline without painting over it.
+     * Media is intentionally edge-to-edge inside the Cybergram frame: the raster must reach the
+     * <b>inner</b> edge of the visible outline and never paint past it.
+     *
+     * The outline is a stroked path on the {@link #BUBBLE_FRAME_PADDING_DP} silhouette, so the
+     * inner edge sits at {@code frame padding + half stroke width}. Any smaller inset lets a
+     * bright photo cover the frame (the media-overflow regression on channel posts with
+     * caption/reactions/comments footers); any larger one leaves a grey seam.
      */
-    public static final float ATTACHMENT_MEDIA_INSET_DP = 0.4f;
-    public static final float ATTACHMENT_MEDIA_CUT_DP = 4f;
+    public static final float ATTACHMENT_MEDIA_INSET_DP =
+            BUBBLE_FRAME_PADDING_DP + BUBBLE_BORDER_WIDTH_DP * 0.5f;
+    /** Media must never occupy more corner area than the parent bubble outline. */
+    public static final float ATTACHMENT_MEDIA_CUT_DP = BUBBLE_CORNER_CUT_DP;
 
     /** Subtle phosphor/CRT treatment shared by avatars and image previews. */
     public static final int ANALOG_TINT_ALPHA = 18;
@@ -258,6 +295,32 @@ public final class CybergramTheme {
     public static final int DIALOGS_ROW_SELECTED_RULE_ALPHA = 188;
     public static final int DIALOGS_COUNTER_MUTED_ALPHA = 108;
     public static final int DIALOGS_COUNTER_ACTIVE_ALPHA = 220;
+
+    /**
+     * Chat-list counters (unread count, mentions, reaction/poll mentions) are Cybergram HUD tags,
+     * not stock Telegram pills: the shared eight-segment chamfer with a solid fill, a state-coloured
+     * rim and the numeral in the same state colour. The fill is opaque so the numeral keeps a real
+     * contrast ratio against the dark row instead of floating on the row background.
+     */
+    public static final float DIALOGS_BADGE_CUT_DP = 3.5f;
+    public static final float DIALOGS_BADGE_BORDER_WIDTH_DP = 0.7f;
+    public static final int DIALOGS_BADGE_FILL = PANEL_RAISED;
+    public static final int DIALOGS_BADGE_FILL_ALPHA = 255;
+    public static final int DIALOGS_BADGE_BORDER_ALPHA = 216;
+    public static final int DIALOGS_BADGE_MUTED_BORDER_ALPHA = 132;
+    public static final int DIALOGS_BADGE_MUTED_FILL_ALPHA = 214;
+    /** Muted counters keep the same hue family as the read row instead of shouting attention amber. */
+    public static final int DIALOGS_BADGE_MUTED_ACCENT = TEXT_MUTED;
+
+    /**
+     * Forum topic tab strip ({@code TopicsTabsView}). The selected topic used to be a Telegram-blue
+     * Material pill with blue text; Cybergram replaces it with the shared chamfer and the cyan
+     * accent, so the strip reads as the same HUD family as the dialog rows and the chat chrome.
+     */
+    public static final float TOPIC_TAB_CUT_DP = 5f;
+    public static final int TOPIC_TAB_SELECTED_FILL_ALPHA = 30;
+    public static final int TOPIC_TAB_SELECTED_BORDER_ALPHA = 150;
+    public static final float TOPIC_TAB_SELECTED_BORDER_WIDTH_DP = 0.8f;
 
     /**
      * Shared interaction-shell geometry. Quick reactions and message context menus are separate

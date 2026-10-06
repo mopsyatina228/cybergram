@@ -74,7 +74,7 @@ Incoming text messages use a dark warm/amber-tinted panel with a thin amber outl
 
 Selected/pressed states increase surface contrast without changing semantic side colours.
 
-Delivery checks and outgoing metadata use cyan. Incoming timestamps/views use muted warm-light values; incoming links use cyan, while forwarded/reply/site semantic accents may use amber.
+Delivery checks and outgoing metadata use cyan. Incoming timestamps/views use muted warm-light values. Amended 2026-10-05: everything interactive inside an **incoming** bubble — hyperlinks, the comments counter, quote bars, instant-view and poll accents — uses the warm accent (`chat_messageLinkIn`, `chat_inInstant`, `chat_inInstantSelected`, `chat_inPreviewInstantText`, `chat_inQuote` in `cybergram.attheme`); cyan is reserved for the outgoing side. Cyan must not appear inside an incoming amber bubble.
 
 Date separators and service messages use compact dark plates with amber/cyan accents rather than Telegram's translucent default service bubbles.
 

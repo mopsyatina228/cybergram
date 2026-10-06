@@ -684,7 +684,7 @@ public class MessageDrawable extends Drawable {
         // the Telegram path. When Cybergram geometry is not active this branch is a
         // no-op and the exact upstream rendering path is preserved.
         if (useAngularGeometry() && (currentType == TYPE_TEXT || currentType == TYPE_MEDIA)) {
-            generateCybergramPath(path, bounds, padding);
+            generateCybergramPath(path, bounds);
             return;
         }
         path.rewind();
@@ -829,8 +829,13 @@ public class MessageDrawable extends Drawable {
      *   - media body:          left = bounds.left + padding,  right = bounds.right - padding
      * The vertical extent uses the same production padding. The tail region (8dp on the
      * tail side) is NOT reclaimed to avoid moving existing content geometry.
+     *
+     * The frame inset comes from {@link CybergramTheme#BUBBLE_FRAME_PADDING_DP}: it is the single
+     * source of truth shared with the media inset in {@code ChatMessageCell}, so a raster that is
+     * clipped to the media inset always ends exactly on the inner edge of this outline.
      */
-    private void generateCybergramPath(Path path, Rect bounds, int padding) {
+    private void generateCybergramPath(Path path, Rect bounds) {
+        final int padding = dp(CybergramTheme.BUBBLE_FRAME_PADDING_DP);
         // Owner ruling D6/D10.2: give distinct (unjoined) Cybergram text bubbles a little more
         // clear space. Paint-only: bounds, measurement and the time/check cluster are
         // untouched, and an edge joined to a neighbour of the same run keeps the upstream
@@ -849,9 +854,9 @@ public class MessageDrawable extends Drawable {
             right = bounds.right - padding;
         } else if (isOut) {
             left = bounds.left + padding;
-            right = bounds.right - dp(8);
+            right = bounds.right - dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP);
         } else {
-            left = bounds.left + dp(8);
+            left = bounds.left + dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP);
             right = bounds.right - padding;
         }
         // Directional near semantics: the corner on the former tail side is reduced when
@@ -928,7 +933,6 @@ public class MessageDrawable extends Drawable {
         if (!useAngularGeometry() || (currentType != TYPE_TEXT && currentType != TYPE_MEDIA)) {
             return;
         }
-        int padding = dp(2);
         // R-PERF: rebuild the cached outline path only when its inputs changed.
         if (!cybergramBorderCacheFilled
                 || !cybergramBorderCacheBounds.equals(bounds)
@@ -936,7 +940,7 @@ public class MessageDrawable extends Drawable {
                 || cybergramBorderCacheBottomNear != isBottomNear
                 || cybergramBorderCacheOut != isOut
                 || cybergramBorderCacheType != currentType) {
-            generateCybergramPath(cybergramBorderPath, bounds, padding);
+            generateCybergramPath(cybergramBorderPath, bounds);
             cybergramBorderCacheBounds.set(bounds);
             cybergramBorderCacheTopNear = isTopNear;
             cybergramBorderCacheBottomNear = isBottomNear;
