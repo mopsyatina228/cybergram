@@ -10699,9 +10699,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (!cybergramAlbum
                             && (mediaBackground || currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_TEXT)
                             && getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
-                        photoImage.setImageCoords(cybergramMediaInnerRect.left, cybergramMediaInnerRect.top,
+                        // Only the horizontal rails come from the shared frame rect. The vertical
+                        // placement stays upstream (y + namesOffset + additionalTop + mediaInsetTop)
+                        // with the content-driven height: the frame top is the bubble outline, not
+                        // the media top, so using it put the raster above the forward/reply header
+                        // and let the video's own overlays (duration chip) paint over the header
+                        // text. Keeping the upstream Y keeps the header band intact.
+                        photoImage.setImageCoords(cybergramMediaInnerRect.left,
+                                y + namesOffset + additionalTop + mediaInsetTop,
                                 Math.max(1f, cybergramMediaInnerRect.width()),
-                                Math.max(1f, cybergramMediaInnerRect.height()));
+                                Math.max(1f, photoHeight - mediaInsetTop - mediaInsetBottom));
                     } else {
                         photoImage.setImageCoords(mediaInsetLeft, y + namesOffset + additionalTop + mediaInsetTop,
                                 Math.max(1f, photoWidth - mediaInsetLeft - mediaInsetRight),
@@ -14027,34 +14034,49 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     /**
      * The one immutable inner rect for Cybergram single-media. Derived only from the bubble frame
-     * bounds and the shared media inset, so the measure, layout and draw passes cannot disagree
-     * about where the raster sits. Returns false for grouped albums (upstream owns the mosaic), when
-     * the angular geometry is off, or when the frame bounds are not valid. Never mutates view state.
+     * bounds and the shared media inset, so the draw pass and the horizontal layout rails cannot
+     * disagree about where the raster sits. The rect is the full frame box (top/bottom included)
+     * and is used as the clip silhouette; the layout passes take only {@code left}/{@code width}
+     * from it and keep the upstream vertical placement, because the frame top is the bubble
+     * outline rather than the media top (a forward/reply header sits between them).
+     * Returns false for grouped albums (upstream owns the mosaic), when the angular geometry is
+     * off, or when the frame bounds are not valid. Never mutates view state.
      */
     private boolean getCybergramMediaInnerRect(RectF out) {
         if (out == null || currentPosition != null || !useCybergramAngularMediaClip()) {
             return false;
         }
-        if (currentBackgroundDrawable == null || currentBackgroundDrawable.getBounds().isEmpty()) {
+        if (currentBackgroundDrawable == null) {
+            return false;
+        }
+        // The frame source of truth is the rect the bubble is ACTUALLY drawn with. The
+        // backgroundDrawable* getters recompute a frame that never receives the Cybergram side
+        // inset applied to the drawable in drawBackground(), so on an incoming bubble they sit
+        // MESSAGE_SIDE_INSET_DP to the left of the painted outline; deriving the media rect from
+        // them pushed the raster over the left frame and left an equal gap on the right.
+        // setDrawableBoundsInner() already folds transitionParams.delta* into these bounds, so the
+        // deltas must NOT be added again here.
+        final Rect frame = currentBackgroundDrawable.getBounds();
+        if (frame.isEmpty()) {
             return false;
         }
         // Bubble body geometry: the outline is built on BUBBLE_FRAME_PADDING_DP and the media inset is
         // exactly that padding plus half of the outline stroke, so a raster held inside this rect
         // reaches the inner edge of the visible frame and can never paint over or past it.
         final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-        float left = getBackgroundDrawableLeft() + transitionParams.deltaLeft + inset;
-        float top = getBackgroundDrawableTop() + transitionParams.deltaTop + inset;
-        float right = getBackgroundDrawableRight() + transitionParams.deltaRight - inset;
-        float bottom = getBackgroundDrawableBottom() + transitionParams.deltaBottom - inset;
+        float left = frame.left + inset;
+        float top = frame.top + inset;
+        float right = frame.right - inset;
+        float bottom = frame.bottom - inset;
         if (!mediaBackground) {
             // The bubble is drawn with the TEXT silhouette, which keeps Telegram's tail allowance
             // on the speaking side instead of the frame padding.
             final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
                     + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
             if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
-                right = getBackgroundDrawableRight() + transitionParams.deltaRight - gutter;
+                right = frame.right - gutter;
             } else {
-                left = getBackgroundDrawableLeft() + transitionParams.deltaLeft + gutter;
+                left = frame.left + gutter;
             }
         }
         if (!(right > left && bottom > top)) {
@@ -14603,18 +14625,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     // removes the rounded mask. Use the one shared frame-derived inner rect that the
                     // draw pass clips by instead of recomputing left/right here.
                     if (getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
-                        // The shared inner rect is the full media box. Layout is authoritative: set
-                        // x/y/width/height together here so the draw pass only clips by the same rect
-                        // and never has to re-lay-out the raster through setImageCoords.
+                        // Layout is authoritative for the horizontal rails only: x/width come from
+                        // the shared frame-derived rect, while y/height stay as measured in
+                        // setMessageContent (below the forward/reply header band). The generic
+                        // setImageCoords() below applies x/width together with the untouched Y.
                         x = (int) cybergramMediaInnerRect.left;
                         finalMediaWidth = Math.max(1f, cybergramMediaInnerRect.width());
-                        if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
-                            photoImage.setImageCoords(x, cybergramMediaInnerRect.top,
-                                    finalMediaWidth, Math.max(1f, cybergramMediaInnerRect.height()));
-                        }
                     } else {
-                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
-                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                        // Same frame source of truth as getCybergramMediaInnerRect(); the getters are
+                        // only a last resort when the drawable has no usable bounds yet.
+                        final Rect cgFrame = currentBackgroundDrawable == null ? null : currentBackgroundDrawable.getBounds();
+                        final boolean cgFrameValid = cgFrame != null && !cgFrame.isEmpty();
+                        final int targetLeft = (cgFrameValid ? cgFrame.left : getBackgroundDrawableLeft()) + mediaEdgeInset;
+                        final int targetRight = (cgFrameValid ? cgFrame.right : getBackgroundDrawableRight()) - mediaEdgeInset;
                         x = targetLeft;
                         finalMediaWidth = Math.max(1f, targetRight - targetLeft);
                     }
