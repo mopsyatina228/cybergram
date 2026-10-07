@@ -1909,6 +1909,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private MessageDrawable.PathDrawParams backgroundCacheParams = new MessageDrawable.PathDrawParams();
     private final RectF cybergramBubbleOverlayRect = new RectF();
+    private final Path cybergramBubbleOverlayPath = new Path();
     private final RectF cybergramAlbumTileRect = new RectF();
 
     VideoForwardDrawable videoForwardDrawable;
@@ -14087,36 +14088,47 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     /**
-     * The phosphor wash for a whole Cybergram bubble.
+     * The phosphor wash for Cybergram attachments.
      *
-     * Owner ruling 2026-10-07: the CRT filter used to be painted only over the media raster and the
-     * bubble avatars, so a forwarded post with a caption kept a clean (unfiltered) caption, footer
-     * and forward header while its video carried scanlines. The filter now covers the entire bubble
-     * silhouette: the rect is the bubble bounds inset by the shared media inset and the clip is the
-     * bubble path itself, so the wash stops on the inner edge of the outline and never paints over
-     * the frame. Media tiles no longer carry a second, private pass.
+     * Owner ruling r4 (2026-10-08): the wash belongs to the attachment/media surfaces only. Painting
+     * it over the whole bubble silhouette tinted plain text bubbles and the forward header, caption,
+     * footer and time of a media-less bubble. The rect is now the raster {@link #photoImage} actually
+     * draws and the clip is the same media silhouette that raster is drawn through, so a bubble with
+     * no raster gets no wash at all and an album washes exactly one tile per pass. A bubble that never
+     * enters the Cybergram media path (round video, sticker, small preview) keeps its pixels.
      */
     private void drawCybergramBubbleAnalogOverlay(Canvas canvas) {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
                 || currentMessageObject == null || currentBackgroundDrawable == null) {
             return;
         }
-        if (currentMessageObject.shouldDrawWithoutBackground()) {
+        if (currentMessageObject.shouldDrawWithoutBackground() || !useCybergramAngularMediaClip()) {
             return;
         }
-        final Rect bounds = currentBackgroundDrawable.getBounds();
-        if (bounds.isEmpty()) {
+        // One raster per cell: the tile's own drawable coords, never the bubble silhouette bounds.
+        final float left = photoImage.getImageX();
+        final float top = photoImage.getImageY();
+        final float right = photoImage.getImageX2();
+        final float bottom = photoImage.getImageY2();
+        if (!(right > left && bottom > top)) {
             return;
         }
-        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-        cybergramBubbleOverlayRect.set(
-                bounds.left + inset, bounds.top + inset,
-                bounds.right - inset, bounds.bottom - inset);
-        if (cybergramBubbleOverlayRect.width() <= 0 || cybergramBubbleOverlayRect.height() <= 0) {
-            return;
+        if (currentPosition == null && getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
+            final boolean reshape = mediaBackground
+                    || currentMessageObject == null
+                    || currentMessageObject.type != MessageObject.TYPE_TEXT;
+            if (reshape) {
+                buildCybergramMediaPath(cybergramBubbleOverlayPath,
+                        cybergramMediaInnerRect.left, cybergramMediaInnerRect.top,
+                        cybergramMediaInnerRect.right, cybergramMediaInnerRect.bottom);
+            } else {
+                buildCybergramMediaPath(cybergramBubbleOverlayPath, left, top, right, bottom);
+            }
+        } else {
+            buildCybergramMediaPath(cybergramBubbleOverlayPath, left, top, right, bottom);
         }
-        CybergramTheme.drawAnalogDisplayOverlay(
-                canvas, cybergramBubbleOverlayRect, currentBackgroundDrawable.makePath());
+        cybergramBubbleOverlayRect.set(left, top, right, bottom);
+        CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramBubbleOverlayRect, cybergramBubbleOverlayPath);
     }
 
     /**
@@ -22501,13 +22513,30 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return isSideMenuEnabled && (currentMessageObject != null && !currentMessageObject.isOutOwner()) && (currentPosition == null);
     }
 
+    /**
+     * The horizontal shift {@code drawBackgroundInternal()} bakes into the DRAWN Cybergram bubble.
+     *
+     * The side inset pulls a bubble away from the HUD rails (outgoing left, incoming right). It is
+     * applied only to the drawable bounds there, so the getters used by every layout rail and by the
+     * media mask have to carry the very same shift: otherwise the painted outline, the attachments and
+     * the text each sit on their own frame (owner report r4: forwarded text clipped against the left
+     * stroke, attachments not sharing the text rail, outline/mask past the drawn frame).
+     */
+    private int getCybergramPaintedSideInset() {
+        if (!useCybergramBubbleSideInset()) {
+            return 0;
+        }
+        final int inset = dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
+        return currentMessageObject != null && currentMessageObject.isOutOwner() ? -inset : inset;
+    }
+
     public int getBackgroundDrawableLeft() {
         MessageObject messageObject = getMessageObject();
         if (messageObject != null && messageObject.isOutOwner()) {
             if (isRoundVideo) {
-                return layoutWidth - backgroundWidth - (int) ((1f - getVideoTranscriptionProgress()) * dp(9));
+                return layoutWidth - backgroundWidth - (int) ((1f - getVideoTranscriptionProgress()) * dp(9)) + getCybergramPaintedSideInset();
             }
-            return layoutWidth - backgroundWidth - (!mediaBackground ? 0 : dp(9));
+            return layoutWidth - backgroundWidth - (!mediaBackground ? 0 : dp(9)) + getCybergramPaintedSideInset();
         } else {
             int r;
             if (isRoundVideo) {
@@ -22528,7 +22557,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else if (!mediaBackground && drawPinnedBottom) {
                 r += dp(6);
             }
-            return r;
+            return r + getCybergramPaintedSideInset();
         }
     }
 
