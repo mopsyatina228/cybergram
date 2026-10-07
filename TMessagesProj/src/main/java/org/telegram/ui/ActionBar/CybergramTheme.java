@@ -250,11 +250,27 @@ public final class CybergramTheme {
     /** Media must never occupy more corner area than the parent bubble outline. */
     public static final float ATTACHMENT_MEDIA_CUT_DP = BUBBLE_CORNER_CUT_DP;
 
-    /** Subtle phosphor/CRT treatment shared by avatars and image previews. */
-    public static final int ANALOG_TINT_ALPHA = 18;
-    public static final int ANALOG_SCANLINE_ALPHA = 17;
+    /**
+     * Phosphor/CRT treatment shared by avatars, media and (since the "whole bubble" pass) the
+     * message surface itself.
+     *
+     * Owner ruling 2026-10-07: the wash was too faint and only the media block of a bubble carried
+     * it. Both alphas were raised by ~1.7-1.8x so the filter reads as one screen treatment across
+     * every surface, and the scanline geometry (step/height) is unchanged so the texture keeps its
+     * period and the text baseline rhythm is not shifted.
+     */
+    public static final int ANALOG_TINT_ALPHA = 32;
+    public static final int ANALOG_SCANLINE_ALPHA = 30;
     public static final float ANALOG_SCANLINE_STEP_DP = 3f;
     public static final float ANALOG_SCANLINE_HEIGHT_DP = 0.55f;
+
+    /**
+     * Swipe-to-reply control (owner ruling 2026-10-07). The control belongs to the incoming amber
+     * family instead of the cyan service accent: the arrow is the accent mark, the ring around it
+     * is deliberately quieter so the pair reads as an incoming-bubble affordance.
+     */
+    public static final int REPLY_SWIPE_ARROW_COLOR = AMBER;
+    public static final int REPLY_SWIPE_RING_COLOR = IN_TIME;
 
     /** Additional top breathing room for forwarded headers and their media payloads. */
     public static final float FORWARDED_TOP_PAD_DP = 3f;

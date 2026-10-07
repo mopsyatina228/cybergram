@@ -4837,6 +4837,14 @@ public class ChatActivity extends BaseFragment implements
                 if (outlineActionBackgroundDarkenPaint.getShader() != chatActionBackgroundDarkenPaint.getShader()) {
                     outlineActionBackgroundDarkenPaint.setShader(chatActionBackgroundDarkenPaint.getShader());
                 }
+                if (CybergramTheme.isCybergramPresentation(getResourceProvider())) {
+                    // Owner ruling 2026-10-07: the swipe-to-reply ring belongs to the incoming amber
+                    // family and is deliberately quieter than the arrow. The paint copies the cyan
+                    // chat-action colour and shader just above, so both must be overridden for the
+                    // ring to actually change colour.
+                    outlineActionBackgroundPaint.setShader(null);
+                    outlineActionBackgroundPaint.setColor(CybergramTheme.REPLY_SWIPE_RING_COLOR);
+                }
 
                 float fillProgress = slidingFillProgress.getValue() / springMultiplier;
                 int wasDarkenColor = outlineActionBackgroundDarkenPaint.getColor();
@@ -4994,6 +5002,12 @@ public class ChatActivity extends BaseFragment implements
 
                 int alpha = (int) (iconProgress * 0xFF);
                 Drawable replyIconDrawable = getThemedDrawable(Theme.key_drawable_replyIcon);
+                if (CybergramTheme.isCybergramPresentation(getResourceProvider())) {
+                    // Owner ruling 2026-10-07: the swipe-to-reply arrow is an incoming-bubble accent
+                    // (amber family), not the cyan service icon. The themed drawable is shared, so the
+                    // colour is applied at the draw site instead of mutating the global theme colour.
+                    Theme.setDrawableColor(replyIconDrawable, CybergramTheme.REPLY_SWIPE_ARROW_COLOR);
+                }
                 replyIconDrawable.setAlpha(alpha);
                 replyIconDrawable.setBounds((int) (x - replyIconDrawable.getIntrinsicWidth() / 2 * scale), (int) (y - replyIconDrawable.getIntrinsicHeight() / 2 * scale), (int) (x + replyIconDrawable.getIntrinsicWidth() / 2 * scale), (int) (y + replyIconDrawable.getIntrinsicHeight() / 2 * scale));
                 replyIconDrawable.draw(canvas);

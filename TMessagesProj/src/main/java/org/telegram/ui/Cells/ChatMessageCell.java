@@ -1908,6 +1908,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public boolean drawFromPinchToZoom;
 
     private MessageDrawable.PathDrawParams backgroundCacheParams = new MessageDrawable.PathDrawParams();
+    private final RectF cybergramBubbleOverlayRect = new RectF();
+    private final RectF cybergramAlbumTileRect = new RectF();
 
     VideoForwardDrawable videoForwardDrawable;
     OldVideoPlayerRewinder videoPlayerRewinder;
@@ -2021,12 +2023,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     setRoundRadiusEnabled(false);
                     final boolean result = super.draw(canvas);
-                    if (reshape) {
-                        CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramMediaInnerRect, rectPath);
-                    } else {
-                        final RectF analogBounds = new RectF(getImageX(), getImageY(), getImageX2(), getImageY2());
-                        CybergramTheme.drawAnalogDisplayOverlay(canvas, analogBounds, rectPath);
-                    }
+                    // The phosphor wash is applied once per bubble by drawCybergramBubbleAnalogOverlay()
+                    // in drawInternal; tinting the raster here as well would double the scanlines on
+                    // every media tile.
                     setRoundRadiusEnabled(true);
                     canvas.restoreToCount(save);
                     return result;
@@ -2061,8 +2060,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 setRoundRadiusEnabled(false);
                 final boolean result = super.draw(canvas);
-                final RectF analogBounds = new RectF(getImageX(), getImageY(), getImageX2(), getImageY2());
-                CybergramTheme.drawAnalogDisplayOverlay(canvas, analogBounds, rectPath);
                 setRoundRadiusEnabled(true);
                 canvas.restoreToCount(save);
                 return result;
@@ -14067,6 +14064,128 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return true;
     }
 
+    /**
+     * The phosphor wash for a whole Cybergram bubble.
+     *
+     * Owner ruling 2026-10-07: the CRT filter used to be painted only over the media raster and the
+     * bubble avatars, so a forwarded post with a caption kept a clean (unfiltered) caption, footer
+     * and forward header while its video carried scanlines. The filter now covers the entire bubble
+     * silhouette: the rect is the bubble bounds inset by the shared media inset and the clip is the
+     * bubble path itself, so the wash stops on the inner edge of the outline and never paints over
+     * the frame. Media tiles no longer carry a second, private pass.
+     */
+    private void drawCybergramBubbleAnalogOverlay(Canvas canvas) {
+        if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                || currentMessageObject == null || currentBackgroundDrawable == null) {
+            return;
+        }
+        if (currentMessageObject.shouldDrawWithoutBackground()) {
+            return;
+        }
+        final Rect bounds = currentBackgroundDrawable.getBounds();
+        if (bounds.isEmpty()) {
+            return;
+        }
+        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+        cybergramBubbleOverlayRect.set(
+                bounds.left + inset, bounds.top + inset,
+                bounds.right - inset, bounds.bottom - inset);
+        if (cybergramBubbleOverlayRect.width() <= 0 || cybergramBubbleOverlayRect.height() <= 0) {
+            return;
+        }
+        CybergramTheme.drawAnalogDisplayOverlay(
+                canvas, cybergramBubbleOverlayRect, currentBackgroundDrawable.makePath());
+    }
+
+    /**
+     * Tile geometry for a two-attachment Cybergram album: the album's inner media rect is split
+     * 50/50.
+     *
+     * Telegram sizes album tiles from the source aspect ratios and hands the leftover span to the
+     * "fix" tile ({@code GroupedMessages.calculate}: {@code posToFix.pw += spanLeft}), so a
+     * two-photo incoming album renders roughly 58/42 and reads as an accident next to the uniform
+     * Cybergram frame. The album frame is the union of the tile drawables, so for an incoming media
+     * album the exact edges are:
+     * <pre>
+     *   frame left  = the left tile's own background-drawable left
+     *   frame right = right tile span + right tile raw pw  (== the right tile's drawable right)
+     * </pre>
+     * Both tiles derive the same pair from the group position array, so the seam they compute agrees
+     * exactly and the halves meet without a gutter. Outgoing albums and every other mosaic keep
+     * upstream/outer-edge behaviour. Returns false when the tile must keep its upstream geometry.
+     */
+    private boolean getCybergramTwoTileAlbumTile(RectF out) {
+        if (out == null || currentPosition == null || currentMessagesGroup == null
+                || currentMessageObject == null || currentMessageObject.isOutOwner()
+                || currentMessagesGroup.isDocuments || !drawPhotoImage) {
+            return false;
+        }
+        final ArrayList<MessageObject.GroupedMessagePosition> positions = currentMessagesGroup.posArray;
+        if (positions.size() != 2) {
+            return false;
+        }
+        MessageObject.GroupedMessagePosition left = null;
+        MessageObject.GroupedMessagePosition right = null;
+        for (int a = 0; a < positions.size(); a++) {
+            final MessageObject.GroupedMessagePosition position = positions.get(a);
+            if (position.minY != currentPosition.minY || position.maxY != currentPosition.maxY) {
+                return false;
+            }
+            if ((position.flags & MessageObject.POSITION_FLAG_LEFT) != 0
+                    && (position.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
+                left = position;
+            } else if ((position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0
+                    && (position.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
+                right = position;
+            }
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        final int groupWidth = getGroupPhotosWidth();
+        final int spanSelf = currentPosition.leftSpanOffset != 0
+                ? (int) Math.ceil(currentPosition.leftSpanOffset / 1000.0f * groupWidth) : 0;
+        final int spanRight = right.leftSpanOffset != 0
+                ? (int) Math.ceil(right.leftSpanOffset / 1000.0f * groupWidth) : 0;
+        final int rightWidth = (int) Math.ceil(right.pw / 1000.0f * groupWidth);
+        // A non-edge album tile does not count as an avatar tile, so its background base drops the
+        // 48dp avatar lead that the edge tile keeps; add it back to resolve the same frame left.
+        final int avatarLead = !currentPosition.edge && !isAvatarVisible && cybergramAlbumDrawsAvatarLead()
+                ? dp(48) : 0;
+        final float frameLeft = getBackgroundDrawableLeft() - spanSelf + avatarLead;
+        final float frameRight = spanRight + rightWidth;
+        if (!(frameRight > frameLeft) || frameRight - frameLeft > groupWidth * 1.15f) {
+            return false;
+        }
+        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+        final float innerLeft = frameLeft + inset;
+        final float innerRight = frameRight - inset;
+        final int inner = (int) (innerRight - innerLeft);
+        if (inner <= 1) {
+            return false;
+        }
+        final int leftTileWidth = inner / 2;
+        final int rightTileWidth = inner - leftTileWidth;
+        if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+            out.set(innerLeft, 0f, innerLeft + leftTileWidth, 0f);
+        } else {
+            out.set(innerRight - rightTileWidth, 0f, innerRight, 0f);
+        }
+        return true;
+    }
+
+    /** True when the album's edge tile carries the 48dp avatar lead in its background left. */
+    private boolean cybergramAlbumDrawsAvatarLead() {
+        if (currentMessageObject == null) {
+            return false;
+        }
+        return (isChat || currentMessageObject.isRepostPreview
+                || currentMessageObject.forceAvatar
+                || currentMessageObject.messageOwner.guestchat_via_from != null
+                || currentMessageObject.getDialogId() == UserObject.VERIFY)
+                && needDrawAvatar();
+    }
+
     private void scaleCybergramCheckBounds(Drawable drawable) {
         if (drawable == null || !CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
             return;
@@ -14458,17 +14577,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     && useCybergramAngularMediaClip()) {
                 final int mediaEdgeInset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
                 if (isCybergramGroupedAlbum()) {
-                    // Grouped media is positioned in a full-width cell. Snap only the *outer*
-                    // gallery edges to the aggregate bubble frame; internal tiles keep Telegram's
-                    // span/leftSpanOffset placement and meet without a second Cybergram gutter.
-                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
-                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
-                        finalMediaWidth += x - targetLeft;
-                        x = targetLeft;
-                    }
-                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
-                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
-                        finalMediaWidth = Math.max(1f, targetRight - x);
+                    if (getCybergramTwoTileAlbumTile(cybergramAlbumTileRect)) {
+                        // Two-attachment album: both tiles take their half of the album's inner rect,
+                        // so the mosaic is exactly 50/50 and its outer edges coincide with the frame.
+                        x = (int) cybergramAlbumTileRect.left;
+                        finalMediaWidth = Math.max(1f, cybergramAlbumTileRect.width());
+                    } else {
+                        // Any other grouped media is positioned in a full-width cell. Snap only the
+                        // *outer* gallery edges to the aggregate bubble frame; internal tiles keep
+                        // Telegram's span/leftSpanOffset placement and meet without a second
+                        // Cybergram gutter.
+                        if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+                            final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                            finalMediaWidth += x - targetLeft;
+                            x = targetLeft;
+                        }
+                        if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
+                            final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                            finalMediaWidth = Math.max(1f, targetRight - x);
+                        }
                     }
                 } else if (currentMessageObject.type != MessageObject.TYPE_TEXT) {
                     // A real attachment belongs to the bubble shell. Telegram's legacy media x
@@ -20788,6 +20915,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         if ((drawTime || !mediaBackground) && !forceNotDrawTime && !transitionParams.animateBackgroundBoundsInner && !(enterTransitionInProgress && !currentMessageObject.isVoice()) && (!currentMessageObject.isQuickReply() || currentMessageObject.isSendError())) {
             drawTime(canvas, 1f, false);
+        }
+        // Whole-bubble phosphor wash, after every content layer (media, text, forward header,
+        // caption/footer, time) so the filter covers the entire Cybergram silhouette.
+        if (!transitionParams.animateBackgroundBoundsInner) {
+            drawCybergramBubbleAnalogOverlay(canvas);
         }
 
         if ((controlsAlpha != 1.0f || timeAlpha != 1.0f) && currentMessageObject.type != MessageObject.TYPE_ROUND_VIDEO) {
