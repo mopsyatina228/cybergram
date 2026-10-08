@@ -10694,17 +10694,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             && ((currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0 || captionAboveSeam) ? 0f : cybergramMediaInset;
                     final float mediaInsetBottom = cybergramAlbum
                             && ((currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 || captionBelowSeam) ? 0f : cybergramMediaInset;
-                    // Single media shares one frame-derived inner rect with the draw pass; albums keep
-                    // the perimeter/inset math above untouched.
+                    // Single media uses deterministic horizontal rails. Never read drawable bounds
+                    // here: on a recycled cell they may still describe the previously bound message.
+                    final int cybergramCellWidth = getMeasuredWidth() > 0 ? getMeasuredWidth() : getParentWidth();
                     if (!cybergramAlbum
                             && (mediaBackground || currentMessageObject == null || currentMessageObject.type != MessageObject.TYPE_TEXT)
-                            && getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
-                        // Only the horizontal rails come from the shared frame rect. The vertical
-                        // placement stays upstream (y + namesOffset + additionalTop + mediaInsetTop)
-                        // with the content-driven height: the frame top is the bubble outline, not
-                        // the media top, so using it put the raster above the forward/reply header
-                        // and let the video's own overlays (duration chip) paint over the header
-                        // text. Keeping the upstream Y keeps the header band intact.
+                            && getCybergramMediaHorizontalRect(cybergramMediaInnerRect, cybergramCellWidth)) {
+                        // Only the horizontal rails are Cybergram-owned. Vertical placement remains
+                        // upstream so forward/reply headers and content-driven media height stay intact.
                         photoImage.setImageCoords(cybergramMediaInnerRect.left,
                                 y + namesOffset + additionalTop + mediaInsetTop,
                                 Math.max(1f, cybergramMediaInnerRect.width()),
@@ -14036,14 +14033,84 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     /**
-     * The one immutable inner rect for Cybergram single-media. Derived only from the bubble frame
-     * bounds and the shared media inset, so the draw pass and the horizontal layout rails cannot
-     * disagree about where the raster sits. The rect is the full frame box (top/bottom included)
-     * and is used as the clip silhouette; the layout passes take only {@code left}/{@code width}
-     * from it and keep the upstream vertical placement, because the frame top is the bubble
-     * outline rather than the media top (a forward/reply header sits between them).
-     * Returns false for grouped albums (upstream owns the mosaic), when the angular geometry is
-     * off, or when the frame bounds are not valid. Never mutates view state.
+     * Horizontal Cybergram media rails for layout/bind code. This deliberately does NOT read
+     * currentBackgroundDrawable.getBounds(): RecyclerView can rebind a recycled ChatMessageCell
+     * before drawBackgroundInternal() has installed the new message's drawable bounds, so those
+     * bounds may still belong to the previous message. Recompute the same horizontal frame that
+     * drawBackgroundInternal() will install later in this frame.
+     */
+    private boolean getCybergramMediaHorizontalRect(RectF out, int cellWidth) {
+        if (out == null || cellWidth <= 0 || currentPosition != null || !useCybergramAngularMediaClip()) {
+            return false;
+        }
+
+        int frameX;
+        int frameWidth;
+        if (currentMessageObject.isOutOwner()) {
+            frameX = cellWidth - backgroundWidth - (!mediaBackground ? 0 : dp(9));
+            frameWidth = backgroundWidth - (mediaBackground ? 0 : dp(3));
+            if (transitionParams.changePinnedBottomProgress != 1f) {
+                if (!mediaBackground) {
+                    frameWidth -= dp(6);
+                }
+            } else if (!mediaBackground && drawPinnedBottom) {
+                frameWidth -= dp(6);
+            }
+            if (useCybergramBubbleSideInset()) {
+                frameX -= dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
+            }
+        } else {
+            frameX = dp(isSideMenuEnabled
+                    ? ChatActivity.SIDE_MENU_WIDTH
+                    : (isChat || currentMessageObject.isRepostPreview
+                            || currentMessageObject.forceAvatar
+                            || currentMessageObject.messageOwner.guestchat_via_from != null
+                            || currentMessageObject.getDialogId() == UserObject.VERIFY) && isAvatarVisible ? 48 : 0)
+                    + dp(!mediaBackground ? 3 : 9);
+            frameWidth = backgroundWidth - (mediaBackground ? 0 : dp(3));
+            if ((!mediaBackground && drawPinnedBottom)
+                    || transitionParams.changePinnedBottomProgress != 1f) {
+                if (!(!drawPinnedBottom && mediaBackground)) {
+                    frameWidth -= dp(6);
+                }
+                if (!mediaBackground) {
+                    frameX += dp(6);
+                }
+            }
+            if (useCybergramBubbleSideInset()) {
+                frameX += dp(CybergramTheme.MESSAGE_SIDE_INSET_DP);
+            }
+        }
+
+        final int frameLeft = (int) (frameX + transitionParams.deltaLeft);
+        final int frameRight = (int) (frameX + frameWidth + transitionParams.deltaRight);
+        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
+        float left = frameLeft + inset;
+        float right = frameRight - inset;
+
+        final boolean cybergramTextShell = transitionParams.changePinnedBottomProgress >= 1f
+                && !mediaBackground && !drawPinnedBottom;
+        if (cybergramTextShell) {
+            final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
+                    + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
+            if (currentMessageObject.isOutOwner()) {
+                right = frameRight - gutter;
+            } else {
+                left = frameLeft + gutter;
+            }
+        }
+
+        if (!(right > left)) {
+            return false;
+        }
+        out.set(left, 0f, right, 1f);
+        return true;
+    }
+
+    /**
+     * Draw-phase inner rect for Cybergram single-media. At draw time the drawable bounds have
+     * already been installed for the current message, so they are authoritative for clipping and
+     * the analog overlay. Layout/bind code must use getCybergramMediaHorizontalRect() instead.
      */
     private boolean getCybergramMediaInnerRect(RectF out) {
         if (out == null || currentPosition != null || !useCybergramAngularMediaClip()) {
@@ -14541,20 +14608,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     // includes tail/gutter compensation which becomes visible once Cybergram
                     // removes the rounded mask. Use the one shared frame-derived inner rect that the
                     // draw pass clips by instead of recomputing left/right here.
-                    if (getCybergramMediaInnerRect(cybergramMediaInnerRect)) {
-                        // Layout is authoritative for the horizontal rails only: x/width come from
-                        // the shared frame-derived rect, while y/height stay as measured in
-                        // setMessageContent (below the forward/reply header band). The generic
-                        // setImageCoords() below applies x/width together with the untouched Y.
+                    if (getCybergramMediaHorizontalRect(cybergramMediaInnerRect, layoutWidth)) {
+                        // Layout owns the horizontal rails and computes them from current message
+                        // state, not from recycled Drawable bounds. Y/height remain upstream-owned.
                         x = (int) cybergramMediaInnerRect.left;
                         finalMediaWidth = Math.max(1f, cybergramMediaInnerRect.width());
                     } else {
-                        // Same frame source of truth as getCybergramMediaInnerRect(); the getters are
-                        // only a last resort when the drawable has no usable bounds yet.
-                        final Rect cgFrame = currentBackgroundDrawable == null ? null : currentBackgroundDrawable.getBounds();
-                        final boolean cgFrameValid = cgFrame != null && !cgFrame.isEmpty();
-                        final int targetLeft = (cgFrameValid ? cgFrame.left : getBackgroundDrawableLeft()) + mediaEdgeInset;
-                        final int targetRight = (cgFrameValid ? cgFrame.right : getBackgroundDrawableRight()) - mediaEdgeInset;
+                        // Defensive fallback for degenerate states only.
+                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
                         x = targetLeft;
                         finalMediaWidth = Math.max(1f, targetRight - targetLeft);
                     }
