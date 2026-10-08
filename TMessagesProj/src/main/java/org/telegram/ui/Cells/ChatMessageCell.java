@@ -1910,7 +1910,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private MessageDrawable.PathDrawParams backgroundCacheParams = new MessageDrawable.PathDrawParams();
     private final RectF cybergramBubbleOverlayRect = new RectF();
     private final Path cybergramBubbleOverlayPath = new Path();
-    private final RectF cybergramAlbumTileRect = new RectF();
 
     VideoForwardDrawable videoForwardDrawable;
     OldVideoPlayerRewinder videoPlayerRewinder;
@@ -13940,32 +13939,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 ? dp(CybergramTheme.ATTACHMENT_TEXT_RIGHT_GUARD_DP) : 0;
     }
 
-    private boolean isCybergramIncomingTwoTileHorizontalAlbum() {
-        if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
-                || currentPosition == null || currentMessagesGroup == null
-                || currentMessageObject == null || currentMessageObject.isOutOwner()
-                || currentMessagesGroup.isDocuments || !drawPhotoImage
-                || currentMessagesGroup.posArray.size() != 2) {
-            return false;
-        }
-        MessageObject.GroupedMessagePosition left = null;
-        MessageObject.GroupedMessagePosition right = null;
-        for (int a = 0; a < currentMessagesGroup.posArray.size(); a++) {
-            final MessageObject.GroupedMessagePosition position = currentMessagesGroup.posArray.get(a);
-            if (position.minY != currentPosition.minY || position.maxY != currentPosition.maxY) {
-                return false;
-            }
-            if ((position.flags & MessageObject.POSITION_FLAG_LEFT) != 0
-                    && (position.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
-                left = position;
-            } else if ((position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0
-                    && (position.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
-                right = position;
-            }
-        }
-        return left != null && right != null;
-    }
-
     private boolean useCybergramBubbleSideInset() {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
             return false;
@@ -13973,11 +13946,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (!mediaBackground) {
             return true;
         }
-        // A simple incoming two-tile album can be shifted as one coherent rail because both tiles
-        // are re-derived from the same aggregate width below. More complex mosaics keep Telegram's
-        // span origin until they get the same treatment.
-        return currentPosition == null || currentMessagesGroup == null
-                || currentMessagesGroup.isDocuments || isCybergramIncomingTwoTileHorizontalAlbum();
+        // Grouped media keeps Telegram's shared span origin. Shifting individual album cells here
+        // makes their local media coordinates diverge from the aggregate bubble frame.
+        return currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.isDocuments;
     }
 
     private boolean isCybergramGroupedAlbum() {
@@ -14166,75 +14137,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         cybergramBubbleOverlayRect.set(left, top, right, bottom);
         CybergramTheme.drawAnalogDisplayOverlay(canvas, cybergramBubbleOverlayRect, cybergramBubbleOverlayPath);
-    }
-
-    /**
-     * Tile geometry for a two-attachment incoming Cybergram album.
-     *
-     * The old r4 helper accidentally treated the right tile's raw {@code pw} as the whole album
-     * right edge and then split that already-partial width in half. On a phone this produced the
-     * very obvious "two narrow videos with a parking lot between them" failure. The row width is
-     * actually the left cell's allocated span plus the right tile's raw media width, minus the
-     * shared incoming rail. Both cells compute that same aggregate inner width, then anchor their
-     * half to their own outer frame edge. This keeps the seam coincident even though each tile lives
-     * in a different RecyclerView/Grid child coordinate system.
-     */
-    private boolean getCybergramTwoTileAlbumTile(RectF out) {
-        if (out == null || !isCybergramIncomingTwoTileHorizontalAlbum()) {
-            return false;
-        }
-        final ArrayList<MessageObject.GroupedMessagePosition> positions = currentMessagesGroup.posArray;
-        MessageObject.GroupedMessagePosition left = null;
-        MessageObject.GroupedMessagePosition right = null;
-        int leftIndex = -1;
-        for (int a = 0; a < positions.size(); a++) {
-            final MessageObject.GroupedMessagePosition position = positions.get(a);
-            if ((position.flags & MessageObject.POSITION_FLAG_LEFT) != 0
-                    && (position.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
-                left = position;
-                leftIndex = a;
-            } else if ((position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0
-                    && (position.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
-                right = position;
-            }
-        }
-        if (left == null || right == null) {
-            return false;
-        }
-
-        final int groupWidth = getGroupPhotosWidth();
-        final int leftSpanWidth = (int) Math.ceil(left.spanSize / 1000.0f * groupWidth);
-        final int rightRawWidth = (int) Math.ceil(right.pw / 1000.0f * groupWidth);
-
-        boolean albumAvatarLead = false;
-        if (leftIndex >= 0 && leftIndex < currentMessagesGroup.messages.size()) {
-            final MessageObject leftMessage = currentMessagesGroup.messages.get(leftIndex);
-            albumAvatarLead = leftMessage != null && (
-                    isChat && !isSavedPreviewChat && (!isThreadPost || isForum)
-                            && !leftMessage.isOutOwner() && leftMessage.needDrawAvatar()
-                    || leftMessage.getDialogId() == UserObject.VERIFY
-                    || leftMessage.forceAvatar
-                    || leftMessage.messageOwner != null && leftMessage.messageOwner.guestchat_via_from != null);
-        }
-        final int incomingRail = dp(9)
-                + (isSideMenuEnabled ? dp(ChatActivity.SIDE_MENU_WIDTH) : albumAvatarLead ? dp(48) : 0);
-        final float aggregateFrameWidth = leftSpanWidth + rightRawWidth - incomingRail;
-        final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-        final int inner = (int) Math.floor(aggregateFrameWidth - inset * 2f);
-        if (inner <= 1 || aggregateFrameWidth > groupWidth * 1.15f) {
-            return false;
-        }
-
-        final int leftTileWidth = inner / 2;
-        final int rightTileWidth = inner - leftTileWidth;
-        if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
-            final float innerLeft = getBackgroundDrawableLeft() + inset;
-            out.set(innerLeft, 0f, innerLeft + leftTileWidth, 0f);
-        } else {
-            final float innerRight = getBackgroundDrawableRight() - inset;
-            out.set(innerRight - rightTileWidth, 0f, innerRight, 0f);
-        }
-        return true;
     }
 
     private void scaleCybergramCheckBounds(Drawable drawable) {
@@ -14628,25 +14530,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     && useCybergramAngularMediaClip()) {
                 final int mediaEdgeInset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
                 if (isCybergramGroupedAlbum()) {
-                    if (getCybergramTwoTileAlbumTile(cybergramAlbumTileRect)) {
-                        // Two-attachment album: both tiles take their half of the album's inner rect,
-                        // so the mosaic is exactly 50/50 and its outer edges coincide with the frame.
-                        x = (int) cybergramAlbumTileRect.left;
-                        finalMediaWidth = Math.max(1f, cybergramAlbumTileRect.width());
-                    } else {
-                        // Any other grouped media is positioned in a full-width cell. Snap only the
-                        // *outer* gallery edges to the aggregate bubble frame; internal tiles keep
-                        // Telegram's span/leftSpanOffset placement and meet without a second
-                        // Cybergram gutter.
-                        if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
-                            final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
-                            finalMediaWidth += x - targetLeft;
-                            x = targetLeft;
-                        }
-                        if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
-                            final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
-                            finalMediaWidth = Math.max(1f, targetRight - x);
-                        }
+                    // Grouped media already carries its span/leftSpanOffset placement in x/width.
+                    // Keep that internal geometry intact and only snap the aggregate outer edges
+                    // to the Cybergram frame. Re-splitting a two-tile group here caused the media
+                    // rail and its caption to jump by roughly half a screen on real devices.
+                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
+                        finalMediaWidth += x - targetLeft;
+                        x = targetLeft;
+                    }
+                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
+                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
+                        finalMediaWidth = Math.max(1f, targetRight - x);
                     }
                 } else if (currentMessageObject.type != MessageObject.TYPE_TEXT) {
                     // A real attachment belongs to the bubble shell. Telegram's legacy media x
