@@ -124,6 +124,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ContextLinkCell;
@@ -809,9 +810,19 @@ public class EmojiView extends FrameLayout implements
             addView(backgroundView, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, searchFieldHeight));
 
             box = new FrameLayout(context);
-            box.setBackground(Theme.createRoundRectDrawable(dp(18), glassDesign ? getGlassIconColor(0.06f) : getThemedColor(Theme.key_chat_emojiSearchBackground)));
-            box.setClipToOutline(true);
-            box.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
+            final int searchBoxColor = glassDesign ? getGlassIconColor(0.06f) : getThemedColor(Theme.key_chat_emojiSearchBackground);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                // Cybergram: the search field follows the same angular grammar as the composer.
+                // The fill and the clip mask are built from the SAME chamfer polygon, so children
+                // are not clipped by a stale round mask over an angular plate.
+                box.setBackground(CybergramTheme.createChamferedPanelDrawable(searchBoxColor, CybergramTheme.SEARCH_FIELD_CUT_DP));
+                box.setClipToOutline(true);
+                box.setOutlineProvider(CybergramTheme.chamferOutlineProvider(CybergramTheme.SEARCH_FIELD_CUT_DP));
+            } else {
+                box.setBackground(Theme.createRoundRectDrawable(dp(18), searchBoxColor));
+                box.setClipToOutline(true);
+                box.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
+            }
             if (type == 2) {
                 addView(box, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.FILL, 10, 8, 10, 8));
             } else {

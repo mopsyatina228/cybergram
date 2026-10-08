@@ -1,9 +1,15 @@
 package org.telegram.ui.ActionBar;
 
 import android.graphics.Canvas;
+import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.Shape;
+import android.view.View;
+import android.view.ViewOutlineProvider;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -399,6 +405,13 @@ public final class CybergramTheme {
     public static final int BOT_BUTTON_FILL_ALPHA = 236;
     public static final int BOT_BUTTON_PRESSED_FILL_ALPHA = 252;
 
+    /**
+     * Emoji/sticker/GIF search field: the stock 18dp corner radius is replaced by the shared
+     * chamfer. {@link #buildInteractionPanelPath} clamps the cut to 22% of the shorter side, so a
+     * 36dp-tall field keeps a proportionally reduced cut and the polygon stays convex.
+     */
+    public static final float SEARCH_FIELD_CUT_DP = 18f;
+
     private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**
@@ -446,6 +459,78 @@ public final class CybergramTheme {
         path.lineTo(bounds.left, bounds.bottom - cut);
         path.lineTo(bounds.left, bounds.top + cut);
         path.close();
+    }
+
+    /**
+     * Fill-only drawable whose silhouette is the shared Cybergram chamfer
+     * ({@link #buildInteractionPanelPath}) instead of a round rect. Drop-in replacement for
+     * {@link Theme#createRoundRectDrawable(int, int)} on gated surfaces.
+     *
+     * <p>The result is a {@link ShapeDrawable}, so existing colour refreshes that go through
+     * {@link Theme#setDrawableColor(Drawable, int)} keep working unchanged.
+     *
+     * @param color ARGB fill; the caller keeps its own colour lookup untouched.
+     * @param cutDp corner cut in dp, clamped inside {@link #buildInteractionPanelPath}.
+     */
+    public static Drawable createChamferedPanelDrawable(int color, float cutDp) {
+        final ShapeDrawable drawable = new ShapeDrawable(new InteractionPanelShape(cutDp));
+        drawable.getPaint().setAntiAlias(true);
+        drawable.getPaint().setStyle(Paint.Style.FILL);
+        drawable.getPaint().setColor(color);
+        return drawable;
+    }
+
+    /**
+     * Outline provider clipping a view (and its children) to the same chamfer polygon
+     * {@link #createChamferedPanelDrawable(int, float)} paints, so the clip mask and the fill
+     * agree. Pair it with {@code view.setClipToOutline(true)}.
+     */
+    public static ViewOutlineProvider chamferOutlineProvider(float cutDp) {
+        return new ViewOutlineProvider() {
+            private final Path path = new Path();
+            private final RectF rect = new RectF();
+
+            @Override
+            public void getOutline(View view, Outline outline) {
+                final int width = view.getWidth();
+                final int height = view.getHeight();
+                if (width <= 0 || height <= 0) {
+                    outline.setEmpty();
+                    return;
+                }
+                rect.set(0f, 0f, width, height);
+                buildInteractionPanelPath(path, rect, cutDp);
+                outline.setConvexPath(path);
+            }
+        };
+    }
+
+    /** Fill-only {@link Shape} painting the shared eight-segment interaction-panel chamfer. */
+    private static final class InteractionPanelShape extends Shape {
+        private final Path path = new Path();
+        private final RectF rect = new RectF();
+        private final float cutDp;
+
+        InteractionPanelShape(float cutDp) {
+            this.cutDp = cutDp;
+        }
+
+        @Override
+        public void draw(Canvas canvas, Paint paint) {
+            final float width = getWidth();
+            final float height = getHeight();
+            if (width <= 0f || height <= 0f) {
+                return;
+            }
+            rect.set(0f, 0f, width, height);
+            buildInteractionPanelPath(path, rect, cutDp);
+            canvas.drawPath(path, paint);
+        }
+
+        @Override
+        public boolean hasAlpha() {
+            return true;
+        }
     }
 
     /**

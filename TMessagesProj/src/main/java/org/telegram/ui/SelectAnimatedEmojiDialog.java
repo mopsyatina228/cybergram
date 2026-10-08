@@ -102,6 +102,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.FixedHeightEmptyCell;
 import org.telegram.ui.Components.AlertsCreator;
@@ -5147,9 +5148,18 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             if (drawBackground) {
                 setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
             }
-            box.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_chat_emojiPanelBackground, resourcesProvider)));
-            box.setClipToOutline(true);
-            box.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
+            final int searchBoxColor = Theme.getColor(Theme.key_chat_emojiPanelBackground, resourcesProvider);
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                // Cybergram: angular search field. The fill and the clip mask are built from the
+                // SAME chamfer polygon, so the round mask cannot cut the angular plate.
+                box.setBackground(CybergramTheme.createChamferedPanelDrawable(searchBoxColor, CybergramTheme.SEARCH_FIELD_CUT_DP));
+                box.setClipToOutline(true);
+                box.setOutlineProvider(CybergramTheme.chamferOutlineProvider(CybergramTheme.SEARCH_FIELD_CUT_DP));
+            } else {
+                box.setBackground(Theme.createRoundRectDrawable(dp(18), searchBoxColor));
+                box.setClipToOutline(true);
+                box.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
+            }
             addView(box, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.FILL_HORIZONTAL, 8, 8 + 4, 8, 8));
 
             search = new ImageView(context);
