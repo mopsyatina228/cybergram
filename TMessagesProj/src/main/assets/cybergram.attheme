@@ -321,3 +321,18 @@ fill_RedNormal=-65476
 undo_background=-871690990
 undo_cancelColor=-16718337
 undo_infoColor=-1640449
+# Profile / group-create / article-viewer / shared-media palette (P-1B): keys registered upstream,
+# read only by ungated surfaces (ProfileActivity, GroupCreateSpan, ArticleViewer, WebActionBar,
+# ContextLinkCell, LetterDrawable, SharedDocumentCell). No Java changes.
+profile_title=-986637
+profile_status=-7169627
+groupcreate_spanText=-986637
+groupcreate_spanDelete=-65476
+iv_background=-16777216
+iv_backgroundGray=-15656675
+iv_navigationBackground=-16249585
+iv_ab_progress=-19712
+sharedMedia_photoPlaceholder=-14407122
+sharedMedia_linkPlaceholder=-14407122
+sharedMedia_linkPlaceholderText=-7169627
+sharedMedia_startStopLoadIcon=-19712
