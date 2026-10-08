@@ -233,6 +233,13 @@ public final class CybergramTheme {
     /** Extra horizontal breathing room reserved for Cybergram attachment-heavy bubbles. */
     public static final float ATTACHMENT_TEXT_INSET_DP = 2.5f;
 
+    /**
+     * Extra right-side guard for long attachment captions. Telegram's caption StaticLayout is
+     * biased toward the former tail side; reserving this only on the far edge keeps the left rail
+     * where it is while preventing long lines from kissing the Cybergram outline.
+     */
+    public static final float ATTACHMENT_TEXT_RIGHT_GUARD_DP = 6f;
+
     /** Extra internal space below attachment/media content before the angular frame closes. */
     public static final float ATTACHMENT_BOTTOM_PAD_DP = 6f;
 

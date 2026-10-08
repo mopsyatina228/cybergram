@@ -9316,7 +9316,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (currentCaption != null) {
                     try {
                         captionFullWidth = widthForCaption;
-                        widthForCaption -= getExtraTextX() * 2;
+                        widthForCaption -= getExtraTextX() * 2 + getCybergramAttachmentTextRightGuard();
                         captionLayout = new MessageObject.TextLayoutBlocks(getPrimaryMessageObject(), currentCaption, Theme.chat_msgTextPaint, widthForCaption);
                         captionLayout.bounceFrom(prevCaptionLayout);
                         captionWidth = captionLayout.textWidth;
@@ -10280,7 +10280,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (currentCaption != null) {
                         try {
                             captionFullWidth = widthForCaption;
-                            widthForCaption -= getExtraTextX() * 2;
+                            widthForCaption -= getExtraTextX() * 2 + getCybergramAttachmentTextRightGuard();
                             captionLayout = new MessageObject.TextLayoutBlocks(getPrimaryMessageObject(), currentCaption, Theme.chat_msgTextPaint, widthForCaption);
                             captionLayout.bounceFrom(prevCaptionLayout);
                             if (fixPhotoWidth) {
@@ -13935,6 +13935,37 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 || documentAttachType != DOCUMENT_ATTACH_TYPE_NONE || drawPhotoImage);
     }
 
+    private int getCybergramAttachmentTextRightGuard() {
+        return useCybergramAttachmentPadding()
+                ? dp(CybergramTheme.ATTACHMENT_TEXT_RIGHT_GUARD_DP) : 0;
+    }
+
+    private boolean isCybergramIncomingTwoTileHorizontalAlbum() {
+        if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                || currentPosition == null || currentMessagesGroup == null
+                || currentMessageObject == null || currentMessageObject.isOutOwner()
+                || currentMessagesGroup.isDocuments || !drawPhotoImage
+                || currentMessagesGroup.posArray.size() != 2) {
+            return false;
+        }
+        MessageObject.GroupedMessagePosition left = null;
+        MessageObject.GroupedMessagePosition right = null;
+        for (int a = 0; a < currentMessagesGroup.posArray.size(); a++) {
+            final MessageObject.GroupedMessagePosition position = currentMessagesGroup.posArray.get(a);
+            if (position.minY != currentPosition.minY || position.maxY != currentPosition.maxY) {
+                return false;
+            }
+            if ((position.flags & MessageObject.POSITION_FLAG_LEFT) != 0
+                    && (position.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
+                left = position;
+            } else if ((position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0
+                    && (position.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
+                right = position;
+            }
+        }
+        return left != null && right != null;
+    }
+
     private boolean useCybergramBubbleSideInset() {
         if (!CybergramTheme.useAngularMessageGeometry(resourcesProvider)) {
             return false;
@@ -13942,11 +13973,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (!mediaBackground) {
             return true;
         }
-        // Single attachments were still allowed to sit on Telegram's media gutter, visibly
-        // farther toward the screen edge than ordinary Cybergram text bubbles. Pull single media
-        // and document stacks onto the same horizontal rail, while leaving album mosaics alone:
-        // their span geometry is shared across several cells and must not be shifted independently.
-        return currentPosition == null || currentMessagesGroup == null || currentMessagesGroup.isDocuments;
+        // A simple incoming two-tile album can be shifted as one coherent rail because both tiles
+        // are re-derived from the same aggregate width below. More complex mosaics keep Telegram's
+        // span origin until they get the same treatment.
+        return currentPosition == null || currentMessagesGroup == null
+                || currentMessagesGroup.isDocuments || isCybergramIncomingTwoTileHorizontalAlbum();
     }
 
     private boolean isCybergramGroupedAlbum() {
@@ -14069,9 +14100,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         float top = frame.top + inset;
         float right = frame.right - inset;
         float bottom = frame.bottom - inset;
-        if (!mediaBackground) {
-            // The bubble is drawn with the TEXT silhouette, which keeps Telegram's tail allowance
-            // on the speaking side instead of the frame padding.
+        final boolean cybergramForceMediaByGroup = currentPosition != null && currentMessagesGroup != null
+                && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0
+                && currentMessagesGroup.isDocuments && !drawPinnedBottom;
+        final boolean cybergramTextShell = transitionParams.changePinnedBottomProgress >= 1f
+                && !mediaBackground && !drawPinnedBottom && !cybergramForceMediaByGroup;
+        if (cybergramTextShell) {
+            // Only the actual TEXT drawable reserves Telegram's former tail gutter. A captioned
+            // attachment can still be painted with the MEDIA drawable while pinned/transitioning;
+            // keying this off mediaBackground alone left a visible empty strip on the incoming edge.
             final float gutter = dp(CybergramTheme.BUBBLE_TAIL_GUTTER_DP)
                     + dp(CybergramTheme.BUBBLE_BORDER_WIDTH_DP * 0.5f);
             if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
@@ -14132,42 +14169,30 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     /**
-     * Tile geometry for a two-attachment Cybergram album: the album's inner media rect is split
-     * 50/50.
+     * Tile geometry for a two-attachment incoming Cybergram album.
      *
-     * Telegram sizes album tiles from the source aspect ratios and hands the leftover span to the
-     * "fix" tile ({@code GroupedMessages.calculate}: {@code posToFix.pw += spanLeft}), so a
-     * two-photo incoming album renders roughly 58/42 and reads as an accident next to the uniform
-     * Cybergram frame. The album frame is the union of the tile drawables, so for an incoming media
-     * album the exact edges are:
-     * <pre>
-     *   frame left  = the left tile's own background-drawable left
-     *   frame right = right tile span + right tile raw pw  (== the right tile's drawable right)
-     * </pre>
-     * Both tiles derive the same pair from the group position array, so the seam they compute agrees
-     * exactly and the halves meet without a gutter. Outgoing albums and every other mosaic keep
-     * upstream/outer-edge behaviour. Returns false when the tile must keep its upstream geometry.
+     * The old r4 helper accidentally treated the right tile's raw {@code pw} as the whole album
+     * right edge and then split that already-partial width in half. On a phone this produced the
+     * very obvious "two narrow videos with a parking lot between them" failure. The row width is
+     * actually the left cell's allocated span plus the right tile's raw media width, minus the
+     * shared incoming rail. Both cells compute that same aggregate inner width, then anchor their
+     * half to their own outer frame edge. This keeps the seam coincident even though each tile lives
+     * in a different RecyclerView/Grid child coordinate system.
      */
     private boolean getCybergramTwoTileAlbumTile(RectF out) {
-        if (out == null || currentPosition == null || currentMessagesGroup == null
-                || currentMessageObject == null || currentMessageObject.isOutOwner()
-                || currentMessagesGroup.isDocuments || !drawPhotoImage) {
+        if (out == null || !isCybergramIncomingTwoTileHorizontalAlbum()) {
             return false;
         }
         final ArrayList<MessageObject.GroupedMessagePosition> positions = currentMessagesGroup.posArray;
-        if (positions.size() != 2) {
-            return false;
-        }
         MessageObject.GroupedMessagePosition left = null;
         MessageObject.GroupedMessagePosition right = null;
+        int leftIndex = -1;
         for (int a = 0; a < positions.size(); a++) {
             final MessageObject.GroupedMessagePosition position = positions.get(a);
-            if (position.minY != currentPosition.minY || position.maxY != currentPosition.maxY) {
-                return false;
-            }
             if ((position.flags & MessageObject.POSITION_FLAG_LEFT) != 0
                     && (position.flags & MessageObject.POSITION_FLAG_RIGHT) == 0) {
                 left = position;
+                leftIndex = a;
             } else if ((position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0
                     && (position.flags & MessageObject.POSITION_FLAG_LEFT) == 0) {
                 right = position;
@@ -14176,48 +14201,40 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (left == null || right == null) {
             return false;
         }
+
         final int groupWidth = getGroupPhotosWidth();
-        final int spanSelf = currentPosition.leftSpanOffset != 0
-                ? (int) Math.ceil(currentPosition.leftSpanOffset / 1000.0f * groupWidth) : 0;
-        final int spanRight = right.leftSpanOffset != 0
-                ? (int) Math.ceil(right.leftSpanOffset / 1000.0f * groupWidth) : 0;
-        final int rightWidth = (int) Math.ceil(right.pw / 1000.0f * groupWidth);
-        // A non-edge album tile does not count as an avatar tile, so its background base drops the
-        // 48dp avatar lead that the edge tile keeps; add it back to resolve the same frame left.
-        final int avatarLead = !currentPosition.edge && !isAvatarVisible && cybergramAlbumDrawsAvatarLead()
-                ? dp(48) : 0;
-        final float frameLeft = getBackgroundDrawableLeft() - spanSelf + avatarLead;
-        final float frameRight = spanRight + rightWidth;
-        if (!(frameRight > frameLeft) || frameRight - frameLeft > groupWidth * 1.15f) {
-            return false;
+        final int leftSpanWidth = (int) Math.ceil(left.spanSize / 1000.0f * groupWidth);
+        final int rightRawWidth = (int) Math.ceil(right.pw / 1000.0f * groupWidth);
+
+        boolean albumAvatarLead = false;
+        if (leftIndex >= 0 && leftIndex < currentMessagesGroup.messages.size()) {
+            final MessageObject leftMessage = currentMessagesGroup.messages.get(leftIndex);
+            albumAvatarLead = leftMessage != null && (
+                    isChat && !isSavedPreviewChat && (!isThreadPost || isForum)
+                            && !leftMessage.isOutOwner() && leftMessage.needDrawAvatar()
+                    || leftMessage.getDialogId() == UserObject.VERIFY
+                    || leftMessage.forceAvatar
+                    || leftMessage.messageOwner != null && leftMessage.messageOwner.guestchat_via_from != null);
         }
+        final int incomingRail = dp(9)
+                + (isSideMenuEnabled ? dp(ChatActivity.SIDE_MENU_WIDTH) : albumAvatarLead ? dp(48) : 0);
+        final float aggregateFrameWidth = leftSpanWidth + rightRawWidth - incomingRail;
         final float inset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
-        final float innerLeft = frameLeft + inset;
-        final float innerRight = frameRight - inset;
-        final int inner = (int) (innerRight - innerLeft);
-        if (inner <= 1) {
+        final int inner = (int) Math.floor(aggregateFrameWidth - inset * 2f);
+        if (inner <= 1 || aggregateFrameWidth > groupWidth * 1.15f) {
             return false;
         }
+
         final int leftTileWidth = inner / 2;
         final int rightTileWidth = inner - leftTileWidth;
         if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
+            final float innerLeft = getBackgroundDrawableLeft() + inset;
             out.set(innerLeft, 0f, innerLeft + leftTileWidth, 0f);
         } else {
+            final float innerRight = getBackgroundDrawableRight() - inset;
             out.set(innerRight - rightTileWidth, 0f, innerRight, 0f);
         }
         return true;
-    }
-
-    /** True when the album's edge tile carries the 48dp avatar lead in its background left. */
-    private boolean cybergramAlbumDrawsAvatarLead() {
-        if (currentMessageObject == null) {
-            return false;
-        }
-        return (isChat || currentMessageObject.isRepostPreview
-                || currentMessageObject.forceAvatar
-                || currentMessageObject.messageOwner.guestchat_via_from != null
-                || currentMessageObject.getDialogId() == UserObject.VERIFY)
-                && needDrawAvatar();
     }
 
     private void scaleCybergramCheckBounds(Drawable drawable) {
@@ -22253,6 +22270,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private int getCybergramSideButtonAccent() {
+        return currentMessageObject != null && currentMessageObject.isOutOwner()
+                ? CybergramTheme.OUT_COMMENT : CybergramTheme.IN_COMMENT;
+    }
+
     private void drawCybergramSideButtonPlate(Canvas canvas, RectF bounds, Paint fill, boolean stroke) {
         CybergramTheme.buildInteractionPanelPath(cybergramSideButtonPath, bounds, 5f);
         canvas.drawPath(cybergramSideButtonPath, fill);
@@ -22260,10 +22282,24 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             cybergramSideButtonStrokePaint.setStyle(Paint.Style.STROKE);
             cybergramSideButtonStrokePaint.setStrokeJoin(Paint.Join.MITER);
             cybergramSideButtonStrokePaint.setStrokeWidth(dp(0.7f));
-            cybergramSideButtonStrokePaint.setColor(CybergramTheme.CYAN);
-            cybergramSideButtonStrokePaint.setAlpha(96);
+            cybergramSideButtonStrokePaint.setColor(getCybergramSideButtonAccent());
+            cybergramSideButtonStrokePaint.setAlpha(112);
             canvas.drawPath(cybergramSideButtonPath, cybergramSideButtonStrokePaint);
         }
+    }
+
+    private void drawCybergramSideButtonIcon(Canvas canvas, Drawable drawable, boolean cybergram) {
+        if (!cybergram || drawable == null) {
+            if (drawable != null) {
+                drawable.draw(canvas);
+            }
+            return;
+        }
+        // Theme chat drawables are shared. Tint for this draw only, then restore the service colour
+        // so a neighbouring stock/service surface does not inherit this message's direction accent.
+        Theme.setDrawableColor(drawable, getCybergramSideButtonAccent());
+        drawable.draw(canvas);
+        Theme.setDrawableColor(drawable, getThemedColor(Theme.key_chat_serviceIcon));
     }
 
     public void drawSideButton(Canvas canvas) {
@@ -22421,7 +22457,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (drawSideButton == 2) {
                 Drawable goIconDrawable = getThemedDrawable(Theme.key_drawable_goIcon);
                 setDrawableBounds(goIconDrawable, sideStartX + dp(16) - goIconDrawable.getIntrinsicWidth() / 2f, sideStartY + dp(16) - goIconDrawable.getIntrinsicHeight() / 2f);
-                goIconDrawable.draw(canvas);
+                drawCybergramSideButtonIcon(canvas, goIconDrawable, cybergramSideButtons);
             } else if (drawSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
                 final int scx = (int) (sideStartX + dp(16)), scy = (int) (sideStartY + dp(16));
                 Drawable drawable = getThemedDrawable(Theme.key_drawable_closeIcon);
@@ -22447,7 +22483,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final int shw = drawable.getIntrinsicWidth() / 2, shh = drawable.getIntrinsicHeight() / 2;
                 drawable.setBounds(scx - shw, scy - shh, scx + shw, scy + shh);
                 setDrawableBounds(drawable, sideStartX + dp(4), sideStartY + dp(4));
-                drawable.draw(canvas);
+                drawCybergramSideButtonIcon(canvas, drawable, cybergramSideButtons);
             }
 
             if (restoreToSponosoredAlpha != -1) {
