@@ -336,3 +336,14 @@ sharedMedia_photoPlaceholder=-14407122
 sharedMedia_linkPlaceholder=-14407122
 sharedMedia_linkPlaceholderText=-7169627
 sharedMedia_startStopLoadIcon=-19712
+
+# Profile action-bar palette (P-1C): the four avatar_* keys with NO Cybergram-gated reader.
+# Everything else in avatar_*/chat_media_* is read by already-gated surfaces (ChatActivity,
+# DialogsActivity, ChatMessageCell/ChatActionCell) and is deliberately left untouched, so the
+# per-user avatar colour rainbow and in-chat media chrome keep their existing behaviour.
+# avatar_actionBarSelectorBlue is a 10% cyan ripple selector; the two *Blue plates are profile
+# action-bar surfaces; the subtitle sits on that plate. No Java changes.
+avatar_actionBarSelectorBlue=436266495
+avatar_backgroundActionBarBlue=-15714755
+avatar_backgroundInProfileBlue=-15657702
+avatar_subtitleInProfileBlue=-986637
