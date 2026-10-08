@@ -1,11 +1,14 @@
 package org.telegram.ui.ActionBar;
 
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.Shape;
 import android.view.View;
@@ -478,6 +481,19 @@ public final class CybergramTheme {
         drawable.getPaint().setStyle(Paint.Style.FILL);
         drawable.getPaint().setColor(color);
         return drawable;
+    }
+
+    /**
+     * Ripple selector whose press shape is the shared Cybergram chamfer
+     * ({@link #buildInteractionPanelPath}) instead of the stock circular mask. Keeps a real
+     * {@link RippleDrawable} — only the mask silhouette changes — so the stock press feedback
+     * survives. Gated callers pass their own themed colour unchanged.
+     *
+     * @param color ripple colour, normally the stock selector colour.
+     * @param cutDp corner cut in dp, clamped inside {@link #buildInteractionPanelPath}.
+     */
+    public static Drawable createChamferedRippleDrawable(int color, float cutDp) {
+        return new RippleDrawable(ColorStateList.valueOf(color), null, createChamferedPanelDrawable(Color.WHITE, cutDp));
     }
 
     /**
