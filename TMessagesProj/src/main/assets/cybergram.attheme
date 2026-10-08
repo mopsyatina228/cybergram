@@ -33,6 +33,8 @@ windowBackgroundCheckText=-16250353
 progressCircle=-16718337
 divider=-14022126
 graySection=-15656928
+# P-1A: divider/graySection shade, registered upstream and read by ungated surfaces.
+windowBackgroundGrayShadow=-15328739
 key_graySectionText=-9733494
 listSelectorSDK21=436266495
 
@@ -43,6 +45,12 @@ switchTrackChecked=-16718337
 checkboxSquareBackground=-16718337
 checkboxSquareCheck=-16250353
 checkboxSquareUnchecked=-9733494
+checkboxCheck=-16249585
+
+# Fast scroll (P-1A): registered upstream, read by ungated list fast-scroll rails.
+fastScrollActive=-19712
+fastScrollInactive=-10327179
+fastScrollText=-986637
 
 # Dialogs and generic panels
 dialogBackground=-16052974
@@ -61,6 +69,8 @@ dialogGrayLine=-14996686
 dialogInputField=-14996686
 dialogInputFieldActivated=-16718337
 dialogButton=-16718337
+# P-1A: amber translucent press state for dialog buttons.
+dialogButtonSelector=872395520
 dialogSearchBackground=-15656928
 dialogSearchHint=-10523012
 dialogSearchIcon=-9733494
@@ -283,6 +293,13 @@ chat_emojiPanelStickerSetName=-9733494
 chat_emojiPanelTrendingDescription=-9733494
 chat_attachActiveTab=-16718337
 chat_attachUnactiveTab=-9733494
+
+# Featured sticker buttons (P-1A): amber fill/accent, darkened amber pressed, near-black label.
+featuredStickers_addButton=-19712
+featuredStickers_addButtonPressed=-3371008
+featuredStickers_buttonText=-16249585
+# Photo/video editor accent (P-1A): same amber as the accent family.
+chat_editMediaButton=-19712
 
 # Service / navigation plates
 chat_serviceText=-1652395
