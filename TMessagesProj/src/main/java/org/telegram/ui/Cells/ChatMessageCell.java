@@ -14530,19 +14530,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     && useCybergramAngularMediaClip()) {
                 final int mediaEdgeInset = dp(CybergramTheme.ATTACHMENT_MEDIA_INSET_DP);
                 if (isCybergramGroupedAlbum()) {
-                    // Grouped media already carries its span/leftSpanOffset placement in x/width.
-                    // Keep that internal geometry intact and only snap the aggregate outer edges
-                    // to the Cybergram frame. Re-splitting a two-tile group here caused the media
-                    // rail and its caption to jump by roughly half a screen on real devices.
-                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0) {
-                        final int targetLeft = getBackgroundDrawableLeft() + mediaEdgeInset;
-                        finalMediaWidth += x - targetLeft;
-                        x = targetLeft;
-                    }
-                    if ((currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
-                        final int targetRight = getBackgroundDrawableRight() - mediaEdgeInset;
-                        finalMediaWidth = Math.max(1f, targetRight - x);
-                    }
+                    // Grouped media geometry is owned entirely by Telegram's mosaic layout.
+                    // In particular, getBackgroundDrawableRight() describes the aggregate group
+                    // background for some cells, not the right edge of this tile. Re-deriving a
+                    // tile width from that value can collapse the right-hand sibling to ~1 px and
+                    // leave a large black hole inside the group. Keep x/width exactly as upstream
+                    // calculated them; Cybergram only supplies perimeter insets/clipping earlier.
                 } else if (currentMessageObject.type != MessageObject.TYPE_TEXT) {
                     // A real attachment belongs to the bubble shell. Telegram's legacy media x
                     // includes tail/gutter compensation which becomes visible once Cybergram
