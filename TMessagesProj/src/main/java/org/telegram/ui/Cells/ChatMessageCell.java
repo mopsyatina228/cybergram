@@ -14563,7 +14563,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     x += mediaEdgeInset;
                 }
             }
-            if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
+            final boolean cybergramOwnsHorizontalMediaBounds =
+                    CybergramTheme.useAngularMessageGeometry(resourcesProvider)
+                            && useCybergramAngularMediaClip()
+                            && !isCybergramGroupedAlbum()
+                            && currentMessageObject.type != MessageObject.TYPE_TEXT;
+            if (cybergramOwnsHorizontalMediaBounds && transitionParams.imageChangeBoundsTransition) {
+                // ChatListItemAnimator captures Telegram's pre-Cybergram ImageReceiver bounds as the
+                // transition endpoint. If left untouched, resetAnimation() restores those stale
+                // x/width values after reply/top-panel animations. Keep the animator in charge of
+                // y/height, but make its horizontal endpoint agree with the Cybergram frame.
+                transitionParams.animateToImageX = x;
+                transitionParams.animateToImageW = Math.max(1f, finalMediaWidth);
+            }
+            if (!transitionParams.imageChangeBoundsTransition
+                    || transitionParams.updatePhotoImageX
+                    || cybergramOwnsHorizontalMediaBounds) {
                 transitionParams.updatePhotoImageX = false;
                 photoImage.setImageCoords((float) x, photoImage.getImageY(), Math.max(1f, finalMediaWidth), photoImage.getImageHeight());
             }
