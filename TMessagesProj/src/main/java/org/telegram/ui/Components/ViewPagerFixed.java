@@ -52,6 +52,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -1517,6 +1518,7 @@ public class ViewPagerFixed extends FrameLayout {
 
         private int scrollingToChild = -1;
         private GradientDrawable selectorDrawable;
+        private Drawable cybergramBubbleSelectorDrawable;
 
         private int tabLineColorKey = Theme.key_profile_tabSelectedLine;
         private int activeTextColorKey = Theme.key_profile_tabSelectedText;
@@ -1537,6 +1539,9 @@ public class ViewPagerFixed extends FrameLayout {
             this.selectorColorKey = selectorColorKey;
             this.backgroundColorKey = backgroundColorKey;
             selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
+            if (cybergramBubbleSelectorDrawable != null) {
+                Theme.setDrawableColor(cybergramBubbleSelectorDrawable, Theme.getColor(tabLineColorKey, resourcesProvider));
+            }
         }
 
         private int prevLayoutWidth;
@@ -1612,6 +1617,9 @@ public class ViewPagerFixed extends FrameLayout {
             } else {
                 float rad = AndroidUtilities.dpf2(3);
                 selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, 0, 0, 0, 0});
+            }
+            if (tabsSelectorType == SELECTOR_TYPE_BUBBLE_STYLE && CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                cybergramBubbleSelectorDrawable = CybergramTheme.createChamferedPanelDrawable(Theme.getColor(tabLineColorKey, resourcesProvider), 5f);
             }
 
             setHorizontalScrollBarEnabled(false);
@@ -2045,12 +2053,13 @@ public class ViewPagerFixed extends FrameLayout {
                             final float TAB_INTERNAL_PADDING = 12.5f;
                             final float add = additionalTabWidth / 2f;
                             final int y = height / 2 - dp(14);
-                            selectorDrawable.setBounds(
+                            Drawable indicator = cybergramBubbleSelectorDrawable != null ? cybergramBubbleSelectorDrawable : selectorDrawable;
+                            indicator.setBounds(
                                 (int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y,
                                 (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add),
                                 y + dp(28));
-                            selectorDrawable.setAlpha(31);
-                            selectorDrawable.draw(canvas);
+                            indicator.setAlpha(31);
+                            indicator.draw(canvas);
                         } else {
                             selectorDrawable.setBounds(indicatorX, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), indicatorX + indicatorWidth, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
                             selectorDrawable.draw(canvas);
@@ -2088,6 +2097,9 @@ public class ViewPagerFixed extends FrameLayout {
                 blurredBackgroundDrawable.updateColors();
             }
             selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
+            if (cybergramBubbleSelectorDrawable != null) {
+                Theme.setDrawableColor(cybergramBubbleSelectorDrawable, Theme.getColor(tabLineColorKey, resourcesProvider));
+            }
             listView.invalidateViews();
             listView.invalidate();
             invalidate();
