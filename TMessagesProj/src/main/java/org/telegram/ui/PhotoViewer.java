@@ -220,6 +220,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
@@ -4883,7 +4884,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         actionBar.setOverlayTitleAnimation(true);
         actionBar.setTitleColor(0xffffffff);
         actionBar.setSubtitleColor(0xffffffff);
-        actionBar.setBackgroundColor(Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
+        applyPhotoViewerActionBarBackground(Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
         actionBar.setOccupyStatusBar(isStatusBarVisible());
         actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
         actionBar.setItemsColor(Color.WHITE, false);
@@ -13942,7 +13943,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (photoCropView != null) {
             photoCropView.setSubtitle(null);
         }
-        actionBar.setBackgroundColor(sendPhotoTypeIsPollMedia ? 0 : Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
+        applyPhotoViewerActionBarBackground(sendPhotoTypeIsPollMedia ? 0 : Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
         checkActionBarStyle();
         bottomLayout.setVisibility(View.GONE);
         bottomLayout.setTag(0);
@@ -15194,7 +15195,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             menuItem.hideSubItem(gallery_menu_hide_translation);
         }
         fancyShadows = editing && setAvatarFor == null || sendPhotoType == SELECT_TYPE_STICKER;
-        actionBar.setBackgroundColor(sendPhotoTypeIsPollMedia || fancyShadows || setAvatarFor != null ? 0 : Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
+        applyPhotoViewerActionBarBackground(sendPhotoTypeIsPollMedia || fancyShadows || setAvatarFor != null ? 0 : Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
         checkActionBarStyle();
         actionBarContainer.setTextShadows(fancyShadows);
         navigationBar.setVisibility(fancyShadows && sendPhotoType != SELECT_TYPE_STICKER ? View.GONE : View.VISIBLE);
@@ -15213,6 +15214,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
         setCurrentCaption(newMessageObject, caption, captionTranslating, animateCaption);
+    }
+
+    /**
+     * Cybergram seam for the PhotoViewer action bar. The normal, non-blur bar keeps its stock
+     * colour, but under Cybergram presentation its flat rectangle is replaced by the shared chamfer
+     * panel; the clip mask and the outline are built from the same polygon, so children cannot be
+     * clipped by a stale rectangular mask over an angular plate. Transparent bars (poll-media,
+     * editing/blur, avatar) and every non-Cybergram theme keep the stock setBackgroundColor path.
+     */
+    private void applyPhotoViewerActionBarBackground(int color) {
+        actionBar.setBackgroundColor(color);
+        final boolean chamfer = color != 0 && CybergramTheme.isCybergramPresentation(resourcesProvider);
+        if (chamfer) {
+            actionBar.setBackground(CybergramTheme.createChamferedPanelDrawable(color, CybergramTheme.INTERACTION_PANEL_CUT_DP));
+            actionBar.setOutlineProvider(CybergramTheme.chamferOutlineProvider(CybergramTheme.INTERACTION_PANEL_CUT_DP));
+        }
+        actionBar.setClipToOutline(chamfer);
     }
 
     private void checkActionBarStyle() {
