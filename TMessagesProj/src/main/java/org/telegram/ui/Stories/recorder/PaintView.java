@@ -92,6 +92,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -658,7 +659,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
         zoomOutButton = new LinearLayout(context);
         zoomOutButton.setOrientation(LinearLayout.HORIZONTAL);
-        zoomOutButton.setBackground(Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        zoomOutButton.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.createChamferedRippleDrawable(0x30ffffff, 5f)
+                : Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         zoomOutButton.setPadding(dp(8), 0, dp(8), 0);
         zoomOutText = new TextView(context);
         zoomOutText.setTextColor(Color.WHITE);
@@ -676,7 +679,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         topLayout.addView(zoomOutButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER));
 
         undoAllButton = new TextView(context);
-        undoAllButton.setBackground(Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        undoAllButton.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.createChamferedRippleDrawable(0x30ffffff, 5f)
+                : Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         undoAllButton.setPadding(dp(8), 0, dp(8), 0);
         undoAllButton.setText(getString(R.string.PhotoEditorClearAll));
         undoAllButton.setGravity(Gravity.CENTER_VERTICAL);
@@ -688,7 +693,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         topLayout.addView(undoAllButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.RIGHT, 0, 0, 4, 0));
 
         cancelTextButton = new TextView(context);
-        cancelTextButton.setBackground(Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        cancelTextButton.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.createChamferedRippleDrawable(0x30ffffff, 5f)
+                : Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         cancelTextButton.setText(getString(R.string.Clear));
         cancelTextButton.setPadding(dp(8), 0, dp(8), 0);
         cancelTextButton.setGravity(Gravity.CENTER_VERTICAL);
@@ -710,7 +717,9 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         topLayout.addView(cancelTextButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.LEFT | Gravity.TOP, 4, 0, 0, 0));
 
         doneTextButton = new TextView(context);
-        doneTextButton.setBackground(Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        doneTextButton.setBackground(CybergramTheme.isCybergramPresentation(resourcesProvider)
+                ? CybergramTheme.createChamferedRippleDrawable(0x30ffffff, 5f)
+                : Theme.createSelectorDrawable(0x30ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         doneTextButton.setText(getString(R.string.Done));
         doneTextButton.setPadding(dp(8), 0, dp(8), 0);
         doneTextButton.setGravity(Gravity.CENTER_VERTICAL);
