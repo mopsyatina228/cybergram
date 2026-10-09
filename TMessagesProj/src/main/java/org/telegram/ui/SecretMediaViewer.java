@@ -91,6 +91,7 @@ import org.telegram.messenger.utils.WindowVisibilityManager;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -860,7 +861,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         };
         actionBar.setTitleColor(0xffffffff);
         actionBar.setSubtitleColor(0xffffffff);
-        actionBar.setBackgroundColor(Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
+        applySecretMediaViewerActionBarBackground(Theme.ACTION_BAR_PHOTO_VIEWER_COLOR);
         actionBar.setOccupyStatusBar(true);
         actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, false);
         actionBar.setItemsColor(Color.WHITE, false);
@@ -1641,6 +1642,23 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     public boolean isShowingImage(MessageObject object) {
         return isVisible && !disableShowCheck && object != null && currentMessageObject != null && currentMessageObject.getId() == object.getId();
+    }
+
+    /**
+     * Cybergram seam for the SecretMediaViewer action bar. The normal, non-blur bar keeps its stock
+     * colour, but under Cybergram presentation its flat rectangle is replaced by the shared chamfer
+     * panel; the clip mask and the outline are built from the same polygon, so the title, menu items
+     * and back button cannot be clipped by a stale rectangular mask over an angular plate. Transparent
+     * colours and every non-Cybergram theme keep the stock setBackgroundColor path unchanged.
+     */
+    private void applySecretMediaViewerActionBarBackground(int color) {
+        actionBar.setBackgroundColor(color);
+        final boolean chamfer = color != 0 && CybergramTheme.isCybergramPresentation(null);
+        if (chamfer) {
+            actionBar.setBackground(CybergramTheme.createChamferedPanelDrawable(color, CybergramTheme.INTERACTION_PANEL_CUT_DP));
+            actionBar.setOutlineProvider(CybergramTheme.chamferOutlineProvider(CybergramTheme.INTERACTION_PANEL_CUT_DP));
+        }
+        actionBar.setClipToOutline(chamfer);
     }
 
     private final Runnable hideActionBarRunnable = () -> {
