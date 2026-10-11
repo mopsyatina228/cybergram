@@ -38,7 +38,17 @@ public final class CybergramTheme {
     public static final int DANGER = 0xFFE01C47;
 
     public static final int TEXT = 0xFFE6F7FF;
-    public static final int TEXT_MUTED = 0xFF6B7A8A;
+    /**
+     * Secondary/muted text and the muted counter numeral.
+     *
+     * Raised from #6B7A8A (audit 2026-10-11, P1 "preview/timestamp secondary text too
+     * low-contrast"): the old value measured 4.31:1 on the dialogs row plate (IN_BUBBLE over the
+     * window) and 4.10:1 on the muted counter plate (PANEL_RAISED at DIALOGS_BADGE_MUTED_FILL_ALPHA
+     * over the row plate), both below the audit's WCAG 4.5:1 acceptance bar. This value holds
+     * >= 4.7:1 on all three surfaces it is used on, staying a desaturated blue-grey.
+     * Regression gate: Tools/validate_cybergram_theme.py, "WCAG contrast" section.
+     */
+    public static final int TEXT_MUTED = 0xFF78858F;
     public static final int TEXT_ON_AMBER = 0xFF101216;
 
     /**
