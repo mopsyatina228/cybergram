@@ -15,8 +15,10 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -38,6 +40,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
@@ -71,6 +74,10 @@ public class AvatarDrawable extends Drawable {
     private LinearGradient gradient2;
     private boolean drawAvatarBackground = true;
     private boolean rotate45Background = false;
+
+    /** Scratch path/rect for the Cybergram chamfered avatar plate (never shared across threads). */
+    private final Path cybergramPlatePath = new Path();
+    private final RectF cybergramPlateRect = new RectF();
 
     public static final int AVATAR_TYPE_NORMAL = 0;
     public static final int AVATAR_TYPE_SAVED = 1;
@@ -583,12 +590,25 @@ public class AvatarDrawable extends Drawable {
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
 
+        // Cybergram shape system: avatar plates are chamfered squares. Bitmap avatars already get
+        // that silhouette from the ImageReceiver clip, but every drawable-backed avatar (saved
+        // messages, archive, filters, letter avatars) kept the circular plate, so one list mixed
+        // both shapes (audit 2026-10-11, P1 "mixed circular vs square avatars (system items)").
+        // rotate45Background (story avatars) keeps its rotated plate unchanged.
+        final boolean cybergramPlate = drawAvatarBackground && !rotate45Background
+                && CybergramTheme.isCybergramPresentation(resourcesProvider);
+
         if (drawAvatarBackground) {
             if (rotate45Background) {
                 canvas.save();
                 canvas.rotate(-45, size / 2.0f, size / 2.0f);
             }
-            if (roundRadius > 0) {
+            if (cybergramPlate) {
+                cybergramPlateRect.set(0, 0, size, size);
+                CybergramTheme.buildInteractionPanelPath(cybergramPlatePath, cybergramPlateRect,
+                        CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+                canvas.drawPath(cybergramPlatePath, backgroundPaint);
+            } else if (roundRadius > 0) {
                 AndroidUtilities.rectTmp.set(0, 0, size, size);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, roundRadius, roundRadius, backgroundPaint);
             } else {

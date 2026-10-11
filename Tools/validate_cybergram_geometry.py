@@ -201,6 +201,7 @@ def main():
         "topics_tabs": TOPICS_TABS,
         "main_tabs_activity": MAIN_TABS_ACTIVITY,
         "main_tabs_layout": MAIN_TABS_LAYOUT,
+        "avatar_drawable": AVATAR_DRAWABLE,
     }
     texts = {}
     for name, path in paths.items():
@@ -384,6 +385,48 @@ def main():
     ]
     check("negative control: an unpainted wrapper exposes the inset (pre-fix symptom)",
           len(exposed) == 12, "cases detected: %d" % len(exposed))
+
+    # ---- [H] avatar shape system ----------------------------------------
+    # Owner-reported P1: the dialogs list mixed circular and square avatars. Bitmap avatars follow
+    # the chamfered ImageReceiver clip (see DialogCell "avatarRadius = 0"), but drawable-backed
+    # avatars (saved messages, archive, filters, letter avatars) were painted by AvatarDrawable with
+    # a plain circle, so both shapes appeared in the same list. These checks pin the single shape.
+    print("\n[H] avatar plate uses the shared chamfer")
+    av = texts["avatar_drawable"]
+
+    check("AvatarDrawable gates the plate on the Cybergram presentation",
+          "cybergramPlate = drawAvatarBackground && !rotate45Background" in av
+          and "CybergramTheme.isCybergramPresentation(resourcesProvider)" in av)
+    check("avatar plate is built by the shared chamfer builder",
+          "CybergramTheme.buildInteractionPanelPath(cybergramPlatePath, cybergramPlateRect," in av
+          and "CybergramTheme.DIALOGS_AVATAR_CUT_DP" in av)
+    check("avatar plate is drawn as a path, not a circle",
+          "canvas.drawPath(cybergramPlatePath, backgroundPaint)" in av)
+    check("same cut token as the DialogCell avatar frame",
+          "CybergramTheme.DIALOGS_AVATAR_CUT_DP" in dc)
+    check("rotate45Background (story avatars) keeps its own plate",
+          av.find("if (rotate45Background)") < av.find("if (cybergramPlate)"))
+    check("negative control: the circular plate is still reachable when not Cybergram",
+          "canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, backgroundPaint)" in av
+          and "} else if (roundRadius > 0) {" in av)
+
+    # Centred glyphs must fit inside the chamfer without an extra clip: the inscribed circle
+    # (radius size/2) has to stay within the plate polygon for every dp size the cut can take.
+    glyph_failures = []
+    for density in DENSITIES:
+        for side in (16.0, 24.0, 32.0, 40.0, 54.0, 100.0):
+            s = side * density
+            cut = min(dp_ceil(dialog_avatar_cut, density), min(s, s) * 0.22)
+            plate = chamfer_polygon(0.0, 0.0, s, s, cut, cut, cut, cut)
+            for step in range(72):
+                angle = step * math.pi / 36.0
+                point = (s / 2.0 + math.cos(angle) * s / 2.0, s / 2.0 + math.sin(angle) * s / 2.0)
+                if not point_in_convex(plate, point):
+                    glyph_failures.append("side=%.0fdp density=%.3f" % (side, density))
+                    break
+    check("inscribed avatar glyph stays inside the chamfer for %d cases"
+          % (len(DENSITIES) * 6), not glyph_failures,
+          "outside: " + ", ".join(glyph_failures[:4]) if glyph_failures else "")
 
     # ---- [F] independent numeric geometry proof --------------------------
     print("\n[F] numeric containment of the media rect inside the bubble silhouette")
