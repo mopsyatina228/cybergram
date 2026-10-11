@@ -48,6 +48,9 @@ DIALOG_CELL = JAVA / "ui/Cells/DialogCell.java"
 STORIES_UTILITIES = JAVA / "ui/Stories/StoriesUtilities.java"
 DIALOG_STORIES_CELL = JAVA / "ui/Stories/DialogStoriesCell.java"
 TOPICS_TABS = JAVA / "ui/Components/TopicsTabsView.java"
+MAIN_TABS_ACTIVITY = JAVA / "ui/MainTabsActivity.java"
+MAIN_TABS_LAYOUT = JAVA / "ui/MainTabsLayout.java"
+AVATAR_DRAWABLE = JAVA / "ui/Components/AvatarDrawable.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -196,6 +199,8 @@ def main():
         "stories_utilities": STORIES_UTILITIES,
         "dialog_stories_cell": DIALOG_STORIES_CELL,
         "topics_tabs": TOPICS_TABS,
+        "main_tabs_activity": MAIN_TABS_ACTIVITY,
+        "main_tabs_layout": MAIN_TABS_LAYOUT,
     }
     texts = {}
     for name, path in paths.items():
@@ -327,6 +332,58 @@ def main():
     check("blur capsule radius reduced for the angular strip",
           re.search(r"setRadius\(dp\(isCybergramTabs\(\) \? 4 : 16\)\)", tt) is not None
           and re.search(r"setRadius\(dp\(isCybergramTabs\(\) \? 4 : 18\)\)", tt) is not None)
+
+    # ---- [G] main-tabs ribbon reaches the navigation-bar inset -----------
+    # Owner-reported P0-1: a dialogs row was visible below the Chats/Contacts/Settings/Profile
+    # tabs, inside the navigation-bar strip. The ribbon plate is only
+    # MAIN_TABS_HEIGHT_WITH_MARGINS tall and its wrapper reserves the bottom inset as padding,
+    # which upstream leaves to the blurred fade. Under the opaque Cybergram ribbon that inset was
+    # simply not painted, so the list scrolled out below the tabs. These checks pin the fix.
+    print("\n[G] main-tabs ribbon covers the navigation-bar inset")
+    mta = texts["main_tabs_activity"]
+    mtl = texts["main_tabs_layout"]
+
+    check("MainTabsLayout (plate) is a child of tabsViewWrapper",
+          "tabsViewWrapper.addView(tabsView" in mta)
+    check("wrapper reserves the navigation-bar inset as bottom padding",
+          "tabsViewWrapper.setPadding(systemInsets.left, 0, systemInsets.right, navigationBarHeight)" in mta)
+    check("Cybergram paints the shared panel surface across the whole wrapper",
+          "tabsViewWrapper.setBackgroundColor(cybergram ? CybergramTheme.PANEL : 0)" in mta)
+    after_add = mta.find("contentView.addView(tabsViewWrapper")
+    check("the surface is applied after the wrapper exists (not a null no-op)",
+          after_add >= 0 and mta.find("applyTabsPresentationBackground();", after_add) > after_add)
+    check("the ribbon plate itself keeps MainTabsLayout's panel paint",
+          "cybergramRibbonPaint.setColor(CybergramTheme.PANEL)" in mtl)
+
+    # Numeric coverage model: wrapper height = plate + reserved inset. The fix paints the whole
+    # wrapper, so painted == reserved; an unpainted wrapper leaves the inset exposed.
+    MAIN_TABS_PLATE_DP = 72.0  # DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS
+
+    def ribbon_coverage(nav_h, density, wrapper_painted):
+        plate = dp_ceil(MAIN_TABS_PLATE_DP, density)
+        reserved = plate + nav_h
+        painted = reserved if wrapper_painted else plate
+        return reserved, painted
+
+    gaps = []
+    for nav_h in (0, 48, 66, 90):
+        for density in (2.0, 2.625, 2.75, 3.0):
+            reserved, painted = ribbon_coverage(nav_h, density, True)
+            if painted != reserved:
+                gaps.append("nav=%d dens=%.3f" % (nav_h, density))
+    check("painted ribbon height equals the reserved plate + inset region",
+          not gaps, "uncovered: " + ", ".join(gaps[:4]) if gaps else "")
+
+    # Negative control: without the wrapper surface the pre-fix geometry must expose a gap on
+    # every device that has a navigation-bar inset, otherwise this check is not sensitive.
+    exposed = [
+        (nav_h, density)
+        for nav_h in (48, 66, 90)
+        for density in (2.0, 2.625, 2.75, 3.0)
+        if ribbon_coverage(nav_h, density, False)[1] < ribbon_coverage(nav_h, density, False)[0]
+    ]
+    check("negative control: an unpainted wrapper exposes the inset (pre-fix symptom)",
+          len(exposed) == 12, "cases detected: %d" % len(exposed))
 
     # ---- [F] independent numeric geometry proof --------------------------
     print("\n[F] numeric containment of the media rect inside the bubble silhouette")

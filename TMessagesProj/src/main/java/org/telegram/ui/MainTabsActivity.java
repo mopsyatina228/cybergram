@@ -408,6 +408,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
         tabsViewWrapper.setClipToPadding(false);
         contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        applyTabsPresentationBackground();
 
         updateLayoutWrapper = new UpdateLayoutWrapper(context);
         contentView.addView(updateLayoutWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
@@ -435,20 +436,23 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
      * therefore all measurement is unaffected by this swap.
      */
     private void applyTabsPresentationBackground() {
-        if (tabsView == null) {
-            return;
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(resourceProvider);
+
+        if (tabsView != null) {
+            // MainTabsLayout paints the terminal ribbon over its own plate. No floating card.
+            final Drawable background = cybergram ? null : tabsViewBackground;
+            if (tabsView.getBackground() != background) {
+                tabsView.setBackground(background);
+            }
         }
 
-        final Drawable background;
-        if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
-            // MainTabsLayout paints the edge-to-edge terminal ribbon itself. No floating card.
-            background = null;
-        } else {
-            background = tabsViewBackground;
-        }
-
-        if (tabsView.getBackground() != background) {
-            tabsView.setBackground(background);
+        if (tabsViewWrapper != null) {
+            // Edge to edge. The ribbon plate is only MAIN_TABS_HEIGHT_WITH_MARGINS tall and the
+            // wrapper's remaining bottom padding is the navigation-bar inset, which upstream leaves
+            // to the blurred fade. With the opaque ribbon that inset stayed unpainted, so the
+            // dialogs list scrolled visibly below the tabs and under the gesture strip. Painting the
+            // same panel surface across the whole wrapper closes that gap without moving any tab.
+            tabsViewWrapper.setBackgroundColor(cybergram ? CybergramTheme.PANEL : 0);
         }
     }
 
