@@ -340,16 +340,35 @@ public final class CybergramTheme {
     /** Dialog-list avatar silhouette: square body with small 45-degree corner chamfers. */
     public static final float DIALOGS_AVATAR_CUT_DP = 6f;
     /**
-     * Dialog-list avatar frame (round-3 FriendCall verdict 1, "avatar/text detached blocks").
+     * Dialog-list avatar frame, owner ruling 2026-10-12 (round 7): the frame must be LEGIBLE.
      *
-     * The avatar keeps its own gutter and its own chamfered frame, but the frame is deliberately
-     * secondary: one thin stroke, no glow, quieter than the row plate. The text plate is pulled
-     * toward the gutter by {@link #DIALOGS_ROW_PANEL_INSET_DP} so the gap loses most of its visual
-     * weight and the row reads as one list element instead of two detached heavy blocks. The gutter
-     * width, the touch targets and the avatar chamfer cut are unchanged.
+     * Rounds 3-6 progressively reduced this frame — round 3 thinned it, round 4 lowered the alpha to
+     * 72 and washed the fill, round 6 kept a 0.4dp hairline — and the owner rejected the result
+     * ("убранная обводка ошибочна: аватаркам она нужна — нужно ориентироваться на интерфейс
+     * киберпанк 2077"). At emulator-5554's 440dpi the old pair covered
+     * 0.4dp * 2.75 * 72/255 = 0.31 device px of full-opacity ink, i.e. it anti-aliased below the
+     * visibility floor and read as no frame at all.
+     *
+     * The CP2077 codex entry grammar is a frame LAYER with two states, not one fixed alpha:
+     * {@code codex_style.inkstyle} gives {@code EntryItem.frameOpacity} a quiet resting
+     * {@code 0.0707399994} and raises it to {@code 1.0} on Hover and on Active, while
+     * {@code codex_main.inkwidget} (handle 1165, name "frame") binds a dedicated 32x32 frame sprite
+     * ({@code filter1_fg}, {@code atlas_shapes_sync.inkatlas}) to that opacity with an accent tint
+     * ({@code CodexFilter.frameColor} / {@code MainColors.Red}) — a separate layer, never the plate.
+     * Cybergram keeps that Rest -> Raised separation, but raises the resting opacity to the
+     * legibility floor (CP2077's 0.07 is deliberately below it) while keeping the palette accent.
+     *
+     * The frame stays secondary chrome: its resting alpha is under every raised state, and the
+     * raised states mirror the row frame's own unread/selected alphas. The gutter, the avatar rect,
+     * the chamfer cut, the row height and every touch target are unchanged.
      */
-    public static final float DIALOGS_AVATAR_FRAME_WIDTH_DP = 0.4f;
-    public static final int DIALOGS_AVATAR_FRAME_ALPHA = 72;
+    public static final float DIALOGS_AVATAR_FRAME_WIDTH_DP = 0.8f;
+    /** Resting (read, no attention) frame: legible thin stroke — 0.8dp * 2.75 * 168/255 = 1.45 px. */
+    public static final int DIALOGS_AVATAR_FRAME_ALPHA = 168;
+    /** CP2077 Hover raised frame ({@code EntryItem.frameOpacity} = 1.0): unread / mention attention. */
+    public static final int DIALOGS_AVATAR_FRAME_UNREAD_ALPHA = 232;
+    /** CP2077 Active raised frame ({@code EntryItem.frameOpacity} = 1.0): selected row, full accent. */
+    public static final int DIALOGS_AVATAR_FRAME_SELECTED_ALPHA = 255;
     /** Visual gap (dp) between the avatar gutter and the chamfered text plate; the old gap was 4dp. */
     public static final float DIALOGS_ROW_PANEL_INSET_DP = 2f;
     /**
@@ -360,7 +379,8 @@ public final class CybergramTheme {
      * {@link #DIALOGS_ROW_SURFACE} plate, so the pair still read as a bright chip next to a dark
      * slab and the 2dp seam stayed visible. The avatar now carries a restrained wash of the
      * row-plate material, clipped to its own chamfer, which pulls its fill toward the plate's
-     * luminance, and the frame alpha drops again so what remains is a hairline. This is an overlay,
+     * luminance; the frame then draws on top of that wash as a legible stroke (round 7). This is an
+     * overlay,
      * not a destructive filter: neither the gutter, the avatar rect, the chamfer cut nor any touch
      * target changes, and the row still separates avatar and plate (no merged capsule).
      */
@@ -376,7 +396,7 @@ public final class CybergramTheme {
      * materials. The gutter is therefore no longer a gap at all — the row surface is painted
      * BEHIND it, starting on the far side of the avatar's own chamfer, so avatar + plate are one
      * continuous row surface and the avatar is a chamfered inset ON that surface (it stays
-     * distinct through its fill, its scrim and its single hairline frame).
+     * distinct through its fill, its scrim and its single legible frame).
      *
      * These two tokens deliberately alias the row-plate surface tokens: the gutter must carry the
      * SAME material as the plate, never the window. They exist as named tokens so the geometry gate

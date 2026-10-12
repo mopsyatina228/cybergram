@@ -5379,6 +5379,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
      * Row-avatar frame. It is now the ONLY story ring on the row (the circular Telegram ring is
      * suppressed by {@code StoriesUtilities} under Cybergram geometry), so it carries the state
      * colour itself: cyan for unread/live stories, amber for read ones, matching the story rail.
+     *
+     * Round-7 owner ruling (2026-10-12): the frame is a CP2077-style Rest -> Raised layer, not a
+     * fixed hairline. The resting stroke is legible on every row; unread/mention raises it to the
+     * Hover level and a selected row to the Active level, exactly as {@code codex_style.inkstyle}
+     * raises {@code EntryItem.frameOpacity} from 0.0707399994 to 1.0. Colour semantics are
+     * unchanged, and this stays ONE stroke drawn on the same chamfered path.
      */
     private void drawCybergramAvatarOutline(Canvas canvas, boolean unreadStory) {
         cybergramAvatarFrameRect.set(
@@ -5396,10 +5402,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         cybergramAvatarScrimPaint.setColor(CybergramTheme.DIALOGS_AVATAR_SCRIM_COLOR);
         cybergramAvatarScrimPaint.setAlpha(CybergramTheme.DIALOGS_AVATAR_SCRIM_ALPHA);
         canvas.drawPath(cybergramAvatarFramePath, cybergramAvatarScrimPaint);
-        // Secondary chrome: one thin, quiet stroke — the avatar must not compete with the row plate.
+        // CP2077 Rest -> Raised: a legible resting stroke, raised for unread/mention and selection.
+        // Still ONE stroke on the same path; still secondary to the row plate; colour unchanged.
+        final boolean hasUnread = unreadCount > 0 || markUnread;
+        final boolean hasMention = mentionCount > 0 || reactionMentionCount > 0
+                || pollVotesMentionCount > 0;
+        final int avatarFrameAlpha;
+        if (isSelected) {
+            avatarFrameAlpha = CybergramTheme.DIALOGS_AVATAR_FRAME_SELECTED_ALPHA;
+        } else if (hasUnread || hasMention) {
+            avatarFrameAlpha = CybergramTheme.DIALOGS_AVATAR_FRAME_UNREAD_ALPHA;
+        } else {
+            avatarFrameAlpha = CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA;
+        }
         drawCybergramFrameStroke(canvas, cybergramAvatarFramePath,
                 unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER,
-                CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA,
+                avatarFrameAlpha,
                 CybergramTheme.DIALOGS_AVATAR_FRAME_WIDTH_DP);
     }
 

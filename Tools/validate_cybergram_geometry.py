@@ -562,8 +562,15 @@ def main():
     check("row plate side uses the inset token",
           "CybergramTheme.DIALOGS_ROW_PANEL_INSET_DP" in dc)
     if avatar_alpha is not None and inset is not None and row_alpha is not None:
-        check("avatar frame alpha is quieter than the read row frame",
-              avatar_alpha < row_alpha, "avatar=%s row=%s" % (avatar_alpha, row_alpha))
+        # Round-7 owner ruling (2026-10-12) supersedes the round-3 "quieter than the row plate"
+        # alpha hierarchy for the frame's resting value: the frame must be LEGIBLE. The resting
+        # alpha may sit above the row's read alpha; what must hold is that it stays under every
+        # raised state. The full round-7 model (legibility floor + CP2077 Rest -> Raised) is in [J3].
+        check("resting avatar frame alpha stays under every raised state",
+              None not in (avatar_alpha, unread_alpha, selected_alpha)
+              and avatar_alpha < unread_alpha and avatar_alpha < selected_alpha,
+              "avatar=%s row_unread=%s row_selected=%s"
+              % (avatar_alpha, unread_alpha, selected_alpha))
         check("text plate is pulled into the gutter (gap shrank but is still > 0)",
               0 < inset < 4, "inset=%.2f old_gap=4" % inset)
 
@@ -598,8 +605,8 @@ def main():
                   "scrim=0x%08X plate=0x%08X" % (scrim_color, row_surface))
             check("avatar scrim is a restrained wash (0 < alpha < 128)",
                   0 < scrim_alpha < 128, "alpha=%s" % scrim_alpha)
-        check("avatar frame alpha dropped below the round-3 value (108)",
-              avatar_alpha is not None and avatar_alpha < 108, "alpha=%s" % avatar_alpha)
+        # Round-7 (2026-10-12): the round-4 "alpha < 108" reduction is REJECTED by the owner. The
+        # legibility of the resting frame is enforced in [J3] instead.
         check("avatar scrim keeps the gutter/inset token untouched",
               inset is not None and "DIALOGS_ROW_PANEL_INSET_DP" in dc
               and "DIALOGS_ROW_PANEL_INSET_DP" in texts["theme"])
@@ -734,10 +741,13 @@ def main():
     row_width = vals.get("DIALOGS_ROW_FRAME_WIDTH_DP")
     check("exactly ONE hairline stroke is drawn on the avatar frame",
           dc.count("drawCybergramFrameStroke(canvas, cybergramAvatarFramePath") == 1)
-    check("avatar frame is thinner than the row frame",
-          None not in (avatar_width, row_width) and avatar_width < row_width,
+    # Round-7: the legibility floor needs a resolvable stroke, so the avatar frame is allowed to be
+    # wider than the row outline (which is a large shape and reads fine at 0.5dp). The full width
+    # band is enforced in [J3]; here only the token must exist.
+    check("avatar frame width token parses",
+          avatar_width is not None and row_width is not None,
           "avatar=%sdp row=%sdp" % (avatar_width, row_width))
-    check("avatar hairline is weaker than the ACTIVE-row frame",
+    check("resting avatar frame stays weaker than the ACTIVE-row frame",
           None not in (avatar_alpha, selected_alpha) and avatar_alpha < selected_alpha,
           "avatar=%s selected=%s" % (avatar_alpha, selected_alpha))
 
@@ -824,6 +834,107 @@ def main():
               "columns in every case",
               cases > 0 and prefix_cases == cases and prefix_background > 0,
               "cases=%d with background=%d columns=%d" % (cases, prefix_cases, prefix_background))
+
+    # ---- [J3] avatar frame legibility and CP2077 Rest -> Raised (round-7 owner ruling) ---------
+    # Owner ruling 2026-10-12 18:44 MSK: the avatar frames need a stroke ("Убранная обводка
+    # ошибочна: аватаркам она нужна — нужно ориентироваться на интерфейс киберпанк 2077"). The
+    # round-6 reduction to a 0.4dp alpha-72 hairline is rejected as a defect. The reference grammar
+    # is the CP2077 codex entry frame (codex_style.inkstyle EntryItem.frameOpacity: Default
+    # 0.0707399994 -> Hover 1.0 -> Active 1.0, a separate 32x32 frame sprite layer bound in
+    # codex_main.inkwidget), i.e. a legible RESTING frame plus a RAISED state. This section proves
+    # the frame reads on the dialogs rows at emulator-5554's 440dpi without touching row height,
+    # gutter, text bounds, touch targets, the round-6 joint or the palette.
+    print("\n[J3] avatar frame legibility and raised state (round-7)")
+    rest_alpha = ints.get("DIALOGS_AVATAR_FRAME_ALPHA")
+    raised_unread = ints.get("DIALOGS_AVATAR_FRAME_UNREAD_ALPHA")
+    raised_selected = ints.get("DIALOGS_AVATAR_FRAME_SELECTED_ALPHA")
+    frame_w = vals.get("DIALOGS_AVATAR_FRAME_WIDTH_DP")
+    check("round-7 avatar frame tokens parse",
+          None not in (rest_alpha, raised_unread, raised_selected, frame_w, selected_alpha),
+          "w=%s rest=%s unread=%s selected=%s"
+          % (frame_w, rest_alpha, raised_unread, raised_selected))
+
+    def _ink_px(width_dp, alpha, density=2.75):
+        """Full-opacity device-pixel coverage of a stroked line: width * density * alpha/255.
+
+        2.75 is emulator-5554's real density (1080x2400 @ 440dpi), the round-6/round-7 device.
+        """
+        return width_dp * density * (alpha / 255.0)
+
+    if None not in (rest_alpha, raised_unread, raised_selected, frame_w):
+        rest_ink = _ink_px(frame_w, rest_alpha)
+        old_ink = _ink_px(0.4, 72)
+        check("resting avatar frame reaches the legibility floor (>= 1.0 full-opacity device px)",
+              rest_ink >= 1.0,
+              "ink=%.2f px at 440dpi (w=%.2fdp a=%s)" % (rest_ink, frame_w, rest_alpha))
+        check("avatar frame stroke is resolvable (>= 2 device px wide at 440dpi)",
+              frame_w * 2.75 >= 2.0, "w=%.2fdp = %.2f px" % (frame_w, frame_w * 2.75))
+        check("avatar frame stroke is not a heavy bar (<= 1.2dp)",
+              frame_w <= 1.2, "w=%.2fdp" % frame_w)
+        check("CP2077 Rest -> Raised separation exists (rest < unread <= selected)",
+              rest_alpha < raised_unread <= raised_selected,
+              "rest=%s unread=%s selected=%s" % (rest_alpha, raised_unread, raised_selected))
+        check("raised avatar frame approaches CP2077's raised opacity 1.0 (>= 224/255)",
+              raised_unread >= 224, "unread=%s" % raised_unread)
+        # The raised avatar frame is the row's focal element, so CP2077's raised opacity (1.0) puts
+        # it at least as strong as the row outline in the same state — never weaker.
+        check("raised avatar frame is at least as strong as the row frame in the same state",
+              raised_unread >= unread_alpha and raised_selected >= selected_alpha,
+              "avatar_unread=%s row_unread=%s avatar_selected=%s row_selected=%s"
+              % (raised_unread, unread_alpha, raised_selected, selected_alpha))
+        # Negative control: the rejected round-6 pair must FAIL the two legibility predicates, so
+        # these checks are provably sensitive to exactly the defect the owner reported.
+        check("negative control: the round-6 hairline (0.4dp / alpha 72) fails legibility",
+              old_ink < 1.0 and not (0.4 * 2.75 >= 2.0),
+              "old ink=%.2f px, width=%.2f px" % (old_ink, 0.4 * 2.75))
+
+    # The state selection must be wired in the DialogCell avatar outline, and only there.
+    av_sig = "private void drawCybergramAvatarOutline(Canvas canvas, boolean unreadStory) {"
+    av_start = dc.find(av_sig)
+    av_end = dc.find("private void drawCybergramBadge(Canvas canvas, RectF badgeRect", av_start)
+    av_body = dc[av_start:av_end] if av_start >= 0 and av_end > av_start else ""
+    check("drawCybergramAvatarOutline body readable from source", bool(av_body))
+    if av_body:
+        check("all three frame states are chosen inside the Cybergram avatar outline",
+              av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA") == 1
+              and av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_UNREAD_ALPHA") == 1
+              and av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_SELECTED_ALPHA") == 1,
+              "rest=%d unread=%d selected=%d"
+              % (av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA"),
+                 av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_UNREAD_ALPHA"),
+                 av_body.count("CybergramTheme.DIALOGS_AVATAR_FRAME_SELECTED_ALPHA")))
+        check("raised state is driven by the real row state (isSelected / unread / mention)",
+              "isSelected" in av_body and "unreadCount > 0 || markUnread" in av_body
+              and "mentionCount > 0 || reactionMentionCount > 0" in av_body
+              and "pollVotesMentionCount > 0" in av_body)
+        check("still exactly ONE stroke on the avatar frame (no glow pass re-added)",
+              av_body.count("drawCybergramFrameStroke(canvas, cybergramAvatarFramePath") == 1,
+              "strokes=%d"
+              % av_body.count("drawCybergramFrameStroke(canvas, cybergramAvatarFramePath"))
+        check("avatar frame colour semantics unchanged (cyan unread story / amber read)",
+              "unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER" in av_body)
+
+    # Outside the Cybergram presentation the dialogs avatar path must stay a no-op: the framed
+    # branch is only reached under the isCybergramPresentation guard, and the new tokens have
+    # exactly one call site each in DialogCell.
+    guard = "cybergramAvatar = CybergramTheme.isCybergramPresentation(resourcesProvider);"
+    check("framed avatar path is reached only under the Cybergram presentation guard",
+          guard in dc and dc.count("drawCybergramAvatarOutline(canvas") == 1
+          and dc.index(guard) < dc.index("drawCybergramAvatarOutline(canvas"))
+    check("round-7 frame tokens are referenced only by the Cybergram frame stroke",
+          dc.count("DIALOGS_AVATAR_FRAME_UNREAD_ALPHA") == 1
+          and dc.count("DIALOGS_AVATAR_FRAME_SELECTED_ALPHA") == 1
+          and dc.count("DIALOGS_AVATAR_FRAME_ALPHA") == 1
+          and dc.count("DIALOGS_AVATAR_FRAME_WIDTH_DP") == 1,
+          "usages rest=%d unread=%d selected=%d width=%d"
+          % (dc.count("DIALOGS_AVATAR_FRAME_ALPHA"),
+             dc.count("DIALOGS_AVATAR_FRAME_UNREAD_ALPHA"),
+             dc.count("DIALOGS_AVATAR_FRAME_SELECTED_ALPHA"),
+             dc.count("DIALOGS_AVATAR_FRAME_WIDTH_DP")))
+
+    # Provenance: the theme documents the CP2077 Rest -> Raised reference it derived the values from.
+    check("theme documents the CP2077 Rest -> Raised reference (frameOpacity 0.0707399994 -> 1.0)",
+          "0.0707399994" in texts["theme"] and "EntryItem.frameOpacity" in texts["theme"])
 
     # ---- [K] dialogs counter / preview right guard (round-3 FriendCall verdict 3) ----------
     # The counter used to anchor at the upstream BADGE_MARGIN (~5.66dp from the frame) while the
