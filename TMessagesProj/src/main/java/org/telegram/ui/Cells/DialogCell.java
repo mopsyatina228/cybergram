@@ -5306,12 +5306,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
      * decorative borders competing with the content. State (selected / unread attention) now
      * strengthens this single stroke through its alpha; no second or third pass is added.
      */
-    private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, int alpha) {
+    private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, int alpha, float widthDp) {
         cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
         cybergramOutlinePaint.setStrokeJoin(Paint.Join.MITER);
         cybergramOutlinePaint.setStrokeCap(Paint.Cap.SQUARE);
         cybergramOutlinePaint.setColor(color);
-        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP));
+        cybergramOutlinePaint.setStrokeWidth(dpf2(widthDp));
         cybergramOutlinePaint.setAlpha(alpha);
         canvas.drawPath(path, cybergramOutlinePaint);
     }
@@ -5328,9 +5328,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         CybergramTheme.buildInteractionPanelPath(
                 cybergramAvatarFramePath, cybergramAvatarFrameRect,
                 CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+        // Secondary chrome: one thin, quiet stroke — the avatar must not compete with the row plate.
         drawCybergramFrameStroke(canvas, cybergramAvatarFramePath,
                 unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER,
-                CybergramTheme.DIALOGS_ROW_FRAME_ALPHA);
+                CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA,
+                CybergramTheme.DIALOGS_AVATAR_FRAME_WIDTH_DP);
     }
 
     /**
@@ -5387,8 +5389,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // Database entries separate plate, frame and content. Mirror the incoming bubble material
         // inside the existing text column; retain the avatar gutter and upstream row measurements.
         final boolean active = isSelected;
-        final int panelLeft = LocaleController.isRTL ? dp(10) : dp(72);
-        final int panelRight = w - (LocaleController.isRTL ? dp(72) : dp(10));
+        // Pull the text plate toward the avatar gutter so the row reads as ONE element (round-3
+        // FriendCall verdict 1). The gutter width, the avatar rect and every touch target keep
+        // their upstream sizes; only the visual gap loses weight (4dp -> DIALOGS_ROW_PANEL_INSET_DP).
+        final int panelGutter = dp(72 - CybergramTheme.DIALOGS_ROW_PANEL_INSET_DP);
+        final int panelEdge = dp(10);
+        final int panelLeft = LocaleController.isRTL ? panelEdge : panelGutter;
+        final int panelRight = w - (LocaleController.isRTL ? panelGutter : panelEdge);
         cybergramRowPanel.setBounds(panelLeft, dp(3), panelRight, h - dp(3));
         cybergramRowPanel.setCornerCut(dpf2(CybergramTheme.DIALOGS_ROW_CUT_DP));
         cybergramRowPanel.setFillColor(active ? CybergramTheme.DIALOGS_ROW_SURFACE_ACTIVE
@@ -5406,7 +5413,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 : (hasUnread || hasMention
                         ? CybergramTheme.DIALOGS_ROW_FRAME_UNREAD_ALPHA
                         : CybergramTheme.DIALOGS_ROW_FRAME_ALPHA);
-        drawCybergramFrameStroke(canvas, cybergramRowFramePath, CybergramTheme.AMBER, frameAlpha);
+        drawCybergramFrameStroke(canvas, cybergramRowFramePath, CybergramTheme.AMBER, frameAlpha,
+                CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP);
 
         // State color is semantic rather than decorative. Incoming attention is amber, explicit
         // mentions/errors are red. Normal and pinned rows receive no gratuitous rail.

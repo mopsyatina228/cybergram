@@ -320,6 +320,19 @@ public final class CybergramTheme {
     /** Dialog-list avatar silhouette: square body with small 45-degree corner chamfers. */
     public static final float DIALOGS_AVATAR_CUT_DP = 6f;
     /**
+     * Dialog-list avatar frame (round-3 FriendCall verdict 1, "avatar/text detached blocks").
+     *
+     * The avatar keeps its own gutter and its own chamfered frame, but the frame is deliberately
+     * secondary: one thin stroke, no glow, quieter than the row plate. The text plate is pulled
+     * toward the gutter by {@link #DIALOGS_ROW_PANEL_INSET_DP} so the gap loses most of its visual
+     * weight and the row reads as one list element instead of two detached heavy blocks. The gutter
+     * width, the touch targets and the avatar chamfer cut are unchanged.
+     */
+    public static final float DIALOGS_AVATAR_FRAME_WIDTH_DP = 0.4f;
+    public static final int DIALOGS_AVATAR_FRAME_ALPHA = 108;
+    /** Visual gap (dp) between the avatar gutter and the chamfered text plate; the old gap was 4dp. */
+    public static final float DIALOGS_ROW_PANEL_INSET_DP = 2f;
+    /**
      * Dialogs row frame, round-3 FriendCall verdict 2 ("decorative triple borders").
      *
      * Every dialogs shape is drawn with ONE main stroke. Selected / unread attention strengthens

@@ -501,7 +501,8 @@ def main():
     check("the retired three-pass helper is gone",
           "drawCybergramAmberOutline" not in dc)
 
-    stroke_sig = "private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, int alpha) {"
+    stroke_sig = ("private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, "
+                  "int alpha, float widthDp) {")
     start = dc.find(stroke_sig)
     if start < 0:
         check("drawCybergramFrameStroke found", False, "signature not found")
@@ -513,10 +514,15 @@ def main():
     check("the single stroke is the only path draw on a dialogs shape",
           stroke_body.count("drawPath") == 1,
           "drawPath calls: %d" % stroke_body.count("drawPath"))
-    check("the single stroke uses the dialogs frame width token",
-          "CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP" in stroke_body)
+    check("the single stroke takes its width from the caller",
+          "dpf2(widthDp)" in stroke_body)
+    check("the row frame passes the row width token",
+          "CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP" in dc)
     check("the avatar frame also routes through the single-stroke helper",
           "drawCybergramFrameStroke(canvas, cybergramAvatarFramePath" in dc)
+    check("avatar frame uses its own (secondary) width and alpha tokens",
+          "CybergramTheme.DIALOGS_AVATAR_FRAME_ALPHA" in dc
+          and "CybergramTheme.DIALOGS_AVATAR_FRAME_WIDTH_DP" in dc)
 
     row_alpha = ints.get("DIALOGS_ROW_FRAME_ALPHA")
     unread_alpha = ints.get("DIALOGS_ROW_FRAME_UNREAD_ALPHA")
@@ -543,6 +549,35 @@ def main():
     legacy_body = "canvas.drawPath(path, p); canvas.drawPath(path, p); canvas.drawPath(path, p);"
     check("negative control: a legacy three-pass stroke fails the one-stroke check",
           legacy_body.count("drawPath") != 1)
+
+    # ---- [J] avatar gutter / text plate gap (round-3 FriendCall verdict 1) ----------------
+    # The complaint was that the avatar and the body read as two detached heavy blocks. The fix
+    # keeps the separate pieces but makes the avatar frame secondary (quiet, thin) and pulls the
+    # text plate into the gutter so the gap loses weight. Gutter width and touch targets unchanged.
+    print("\n[J] avatar gutter and text plate read as one element")
+    avatar_alpha = ints.get("DIALOGS_AVATAR_FRAME_ALPHA")
+    inset = vals.get("DIALOGS_ROW_PANEL_INSET_DP")
+    check("avatar frame alpha / panel inset tokens parse",
+          avatar_alpha is not None and inset is not None)
+    check("row plate side uses the inset token",
+          "CybergramTheme.DIALOGS_ROW_PANEL_INSET_DP" in dc)
+    if avatar_alpha is not None and inset is not None and row_alpha is not None:
+        check("avatar frame alpha is quieter than the read row frame",
+              avatar_alpha < row_alpha, "avatar=%s row=%s" % (avatar_alpha, row_alpha))
+        check("text plate is pulled into the gutter (gap shrank but is still > 0)",
+              0 < inset < 4, "inset=%.2f old_gap=4" % inset)
+
+        # Density-independent dp model. DialogCell centres the avatar (heightDefault-6 = 64dp) in
+        # the 72dp gutter, so its raw-side edge sits at (gutter + side) / 2; the plate starts at
+        # gutter - inset. The old plate started at the bare gutter (inset 0, gap 4dp).
+        gutter = 72.0
+        avatar_side = 70.0 - 6.0
+        avatar_right = (gutter + avatar_side) / 2.0
+        gap = (gutter - inset) - avatar_right
+        check("numeric model: gap equals the panel inset and the shapes stay separate",
+              abs(gap - inset) < 1e-6 and gap > 0, "gap=%.2f inset=%.2f" % (gap, inset))
+        check("negative control: the pre-fix 4dp gap is detected as heavier",
+              abs(((gutter - 0.0) - avatar_right) - 4.0) < 1e-6)
 
     _summary()
 
