@@ -2750,7 +2750,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = dp(25);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    reactionMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE) + badgeMargin;
+                    // Anchor INSIDE the row: the icon's right edge is getMeasuredWidth() - badgeMargin,
+                    // so the new 18dp guard still puts the plate's near edge at w - 18dp. c0df7c78f
+                    // had flipped the sign, which painted the icon from w - 2.67dp to w + 18dp
+                    // (round-4 FriendCall P1 regression).
+                    reactionMentionLeft = getMeasuredWidth() - badgeMargin - dp(BADGE_SIZE);
                     if (drawMention) {
                         reactionMentionLeft -= (mentionWidth != 0 ? (mentionWidth + dp(BADGE_GAP)) : 0);
                     }
@@ -2775,7 +2779,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = dp(25);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    pollVotesMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE) + badgeMargin;
+                    // Same anchor as the reaction icon: right edge at getMeasuredWidth() - badgeMargin.
+                    pollVotesMentionLeft = getMeasuredWidth() - badgeMargin - dp(BADGE_SIZE);
                     if (drawReactionMention) {
                         pollVotesMentionLeft -= dp(25);
                     }

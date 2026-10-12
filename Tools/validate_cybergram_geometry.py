@@ -663,6 +663,114 @@ def main():
               len(bad) == len(DENSITIES) * len(COUNT_WIDTHS_DP),
               "detected %d of %d" % (len(bad), len(DENSITIES) * len(COUNT_WIDTHS_DP)))
 
+    # ---- [L] dialogs reaction/poll counter anchors (round-4 FriendCall P1 regression) ------
+    # c0df7c78f flipped the LTR reaction/poll anchor sign to `getMeasuredWidth() - dp(BADGE_SIZE)
+    # + badgeMargin`: with the new 18dp guard the icon sat from w - 2.67dp to w + 18dp and painted
+    # past the right edge. Upstream's `- dp(BADGE_SIZE + BADGE_MARGIN)` semantics must be restored
+    # while keeping the new guard value, for BOTH icons identically and only in the LTR branch.
+    print("\n[L] dialogs reaction/poll anchors sit inside the right guard")
+    badge_size_dp = 20.666                        # DialogCell BADGE_SIZE
+    badge_text_min_w_dp = 8.0                     # DialogCell BADGE_TEXT_MIN_WIDTH
+    badge_gap_dp = 25.0 - badge_text_min_w_dp     # DialogCell BADGE_GAP = 25 - MIN_WIDTH
+    reaction_slot_dp = 25.0                       # DialogCell reaction reserve (dp(25))
+    FIXED_FORM = "getMeasuredWidth()-badgeMargin-dp(BADGE_SIZE)"
+    PREFIX_FORM = "getMeasuredWidth()-dp(BADGE_SIZE)+badgeMargin"
+
+    def strip_java_comments(src):
+        src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+        return re.sub(r"//[^\n]*", "", src)
+
+    def ltr_anchor_source(src, field):
+        exprs = [e.strip() for e in re.findall(r"\b%s\s*=\s*([^;]+);" % field, src)
+                 if "getMeasuredWidth" in e]
+        return exprs[0] if len(exprs) == 1 else None
+
+    def normalize(expr):
+        return re.sub(r"\s+", "", expr)
+
+    def eval_anchor(expr, W, density, badge_margin):
+        """Evaluate the ACTUAL LTR anchor expression text with the gate's dp model."""
+        e = re.sub(r"\bgetMeasuredWidth\(\)", "W", expr)
+        e = re.sub(r"\bbadgeMargin\b", "badge_margin", e)
+        e = re.sub(r"\bdp\(([^()]*)\)", r"dp_ceil(\1, density)", e)
+        e = re.sub(r"(?<=[0-9.])f\b", "", e)
+        e = re.sub(r"\bBADGE_SIZE\b", repr(badge_size_dp), e)
+        e = re.sub(r"\bBADGE_MARGIN\b", "15.666", e)
+        return float(eval(e, {"__builtins__": {}},
+                          {"dp_ceil": dp_ceil, "W": W, "density": density,
+                           "badge_margin": badge_margin}))
+
+    clean_dc = strip_java_comments(texts["dialog_cell"])
+    anchor_fields = ("reactionMentionLeft", "pollVotesMentionLeft")
+    anchors = {f: ltr_anchor_source(clean_dc, f) for f in anchor_fields}
+    check("both LTR reaction/poll anchors are readable from DialogCell",
+          None not in anchors.values(),
+          "reaction=%r poll=%r" % (anchors["reactionMentionLeft"], anchors["pollVotesMentionLeft"]))
+    check("both LTR anchors restore the badgeMargin subtraction (guard value kept)",
+          all(a is not None and normalize(a) == FIXED_FORM for a in anchors.values()),
+          "reaction=%r poll=%r" % (anchors["reactionMentionLeft"], anchors["pollVotesMentionLeft"]))
+    check("the pre-fix `+ badgeMargin` anchor is absent from DialogCell",
+          "dp(BADGE_SIZE)+badgeMargin" not in normalize(clean_dc))
+    check("the RTL branches keep their badgeMargin anchor (not flipped)",
+          re.search(r"reactionMentionLeft = badgeMargin;", clean_dc) is not None
+          and re.search(r"pollVotesMentionLeft = badgeMargin;", clean_dc) is not None)
+
+    margin_dp = frame_edge + (guard_dp if guard_dp is not None else 8.0)   # DialogCell badgeMargin
+    sizes_dp = (320.0, 360.0, 411.0)
+    count_widths_dp = (None, 8.0, 20.0, 35.0)      # None = absent, 35dp ~ "11175"
+    mention_widths_dp = (None, 8.0, 40.0)
+
+    if None not in anchors.values():
+        def anchor_model(field, W, density, count_w_dp, mention_w_dp, reaction_present):
+            margin = dp_ceil(margin_dp, density)
+            a = eval_anchor(anchors[field], W, density, margin)
+            if field == "pollVotesMentionLeft" and reaction_present:
+                a -= dp_ceil(reaction_slot_dp, density)
+            if mention_w_dp is not None:
+                a -= dp_ceil(mention_w_dp, density) + dp_ceil(badge_gap_dp, density)
+            if count_w_dp is not None:
+                a -= dp_ceil(count_w_dp, density) + dp_ceil(badge_gap_dp, density)
+            return a, margin
+
+        cases = 0
+        violations = []
+        for density in DENSITIES:
+            height_px = dp_ceil(badge_size_dp, density)
+            for W_dp in sizes_dp:
+                W = float(dp_ceil(W_dp, density))
+                for count_w_dp in count_widths_dp:
+                    for mention_w_dp in mention_widths_dp:
+                        for field, reaction_present in (("reactionMentionLeft", False),
+                                                        ("pollVotesMentionLeft", False),
+                                                        ("pollVotesMentionLeft", True)):
+                            cases += 1
+                            a, margin = anchor_model(field, W, density, count_w_dp,
+                                                     mention_w_dp, reaction_present)
+                            if a < margin:
+                                violations.append("%s left<badgeMargin d=%.3f" % (field, density))
+                            if a + height_px > W - margin:
+                                violations.append("%s right>w-badgeMargin d=%.3f" % (field, density))
+        check("LTR anchors keep the guard for %d density/size/count/mention cases" % cases,
+              not violations, "violations: " + ", ".join(violations[:4]) if violations else "")
+
+        # Negative control: the pre-fix `+ badgeMargin` sign must be detected as right-edge
+        # overflow in every case, otherwise this section is not sensitive to the regression.
+        bad = 0
+        total = 0
+        for density in DENSITIES:
+            height_px = dp_ceil(badge_size_dp, density)
+            for W_dp in sizes_dp:
+                total += 1
+                W = float(dp_ceil(W_dp, density))
+                margin = dp_ceil(margin_dp, density)
+                a = eval_anchor(PREFIX_FORM, W, density, margin)
+                if a + height_px > W - margin:
+                    bad += 1
+        check("negative control: the pre-fix `+ badgeMargin` anchor is detected as overflow",
+              total > 0 and bad == total, "detected %d of %d" % (bad, total))
+    check("badgeMargin model matches the guard token (10dp frame inset + guard)",
+          abs(margin_dp - (frame_edge + 8.0)) < 1e-9, "margin=%.2fdp" % margin_dp)
+
     _summary()
 
 
