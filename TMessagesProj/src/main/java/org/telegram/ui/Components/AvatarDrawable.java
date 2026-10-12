@@ -622,7 +622,17 @@ public class AvatarDrawable extends Drawable {
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             if (archivedAvatarProgress != 0) {
                 backgroundPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_backgroundArchived), alpha));
-                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint);
+                if (cybergramPlate) {
+                    // Cybergram: the archive reveal overlay must share the chamfered plate, not a
+                    // circle, or the dialogs list shows a round archive avatar beside square ones
+                    // (audit 2026-10-11, P1 "mixed circular vs square avatars").
+                    canvas.save();
+                    canvas.scale(archivedAvatarProgress, archivedAvatarProgress, size / 2.0f, size / 2.0f);
+                    canvas.drawPath(cybergramPlatePath, backgroundPaint);
+                    canvas.restore();
+                } else {
+                    canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint);
+                }
                 if (Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));

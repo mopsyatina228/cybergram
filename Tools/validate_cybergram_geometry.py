@@ -410,6 +410,18 @@ def main():
           "canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, backgroundPaint)" in av
           and "} else if (roundRadius > 0) {" in av)
 
+    # The archive row paints a SECOND overlay pass (archivedAvatarProgress) after the plate.
+    # That pass must also honour the Cybergram chamfer, or a round archive avatar reappears
+    # beside the square ones (FriendCall review 2026-10-12).
+    arch = av[av.find("if (avatarType == AVATAR_TYPE_ARCHIVED)"):]
+    check("archived avatar overlay is gated on the Cybergram plate",
+          "if (cybergramPlate) {" in arch)
+    check("archived overlay reuses the chamfer path scaled by its progress",
+          "canvas.scale(archivedAvatarProgress, archivedAvatarProgress, size / 2.0f, size / 2.0f)" in arch
+          and "canvas.drawPath(cybergramPlatePath, backgroundPaint);" in arch)
+    check("negative control: archived overlay stays circular off Cybergram",
+          "canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint)" in arch)
+
     # Centred glyphs must fit inside the chamfer without an extra clip: the inscribed circle
     # (radius size/2) has to stay within the plate polygon for every dp size the cut can take.
     glyph_failures = []
