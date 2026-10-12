@@ -236,10 +236,57 @@ def main():
             print("    negative control FAILED: pre-fix value is not detected as too low")
             contrast_bad.append("negative-control")
 
-    summary_bad = bool(unknown) or bool(duplicates) or bool(malformed) or bool(contrast_bad)
+    # [g] Round-3 FriendCall verdict 4: dialogs secondary-text palette conformance.
+    #
+    # The unread title and the preview used to be the only two dialogs text literals outside the
+    # approved palette (#E5D8B8 / #A39D83): two unrelated hues for one secondary/emphasis role. The
+    # fix derives both from palette tokens (amber attention for unread, the muted warm IN_TIME for
+    # the preview drawn on the incoming olive plate) and never uses cyan for plain non-interactive
+    # text. The neutral #6B7A8A cannot be used here because it is the negative control above.
+    print("\n[g] dialogs secondary-text tokens are palette-derived")
+    palette_bad = []
+    theme_text = CYBERGRAM_THEME.read_text(encoding="utf-8", errors="replace")
+
+    for token_name, expected in (("DIALOGS_TEXT_UNREAD", "AMBER_HIGHLIGHT"),
+                                 ("DIALOGS_TEXT_PREVIEW", "IN_TIME")):
+        m = re.search(r"static final int %s\s*=\s*([^;]+);" % token_name, theme_text)
+        if not m:
+            print("    %-22s MISSING" % token_name)
+            palette_bad.append(token_name)
+            continue
+        expr = m.group(1).strip()
+        ok = expr == expected
+        print("    %-22s = %-18s %s" % (token_name, expr, "PASS" if ok else "FAIL"))
+        if not ok:
+            palette_bad.append(token_name)
+
+    off_palette = [lit for lit in ("0xFFE5D8B8", "0xFFA39D83")
+                   if lit.lower() in theme_text.lower()]
+    print("    off-palette dialogs literals remaining: %s" % (", ".join(off_palette) or "none"))
+    if off_palette:
+        palette_bad.append("off-palette-literal")
+
+    cyan_values = {tokens.get("CYAN"), tokens.get("CYAN_SECONDARY")}
+    cyan_roles = [name for name in tokens
+                  if name.startswith("DIALOGS_TEXT_") and tokens.get(name) in cyan_values]
+    print("    dialogs text roles resolving to cyan: %s" % (", ".join(sorted(cyan_roles)) or "none"))
+    if cyan_roles:
+        palette_bad.append("cyan-plain-text")
+
+    # Negative control: the pre-fix declaration must be detected as off-palette, otherwise the
+    # derivation check above is not sensitive to the regression it guards.
+    pre_fix = 'static final int DIALOGS_TEXT_UNREAD = 0xFFE5D8B8;'
+    neg = re.search(r"static final int DIALOGS_TEXT_UNREAD\s*=\s*([^;]+);", pre_fix).group(1).strip()
+    neg_detected = neg != "AMBER_HIGHLIGHT"
+    print("    negative control: pre-fix literal %r detected as off-palette: %s" % (neg, neg_detected))
+    if not neg_detected:
+        palette_bad.append("negative-control")
+
+    summary_bad = (bool(unknown) or bool(duplicates) or bool(malformed) or bool(contrast_bad)
+                   or bool(palette_bad))
     print("\n== RESULT ==")
     print(f"unknown={len(unknown)} duplicates={len(duplicates)} malformed={len(malformed)}"
-          f" contrast_issues={len(contrast_bad)}")
+          f" contrast_issues={len(contrast_bad)} palette_issues={len(palette_bad)}")
     if summary_bad:
         print("FAIL")
         sys.exit(1)

@@ -309,8 +309,28 @@ public final class CybergramTheme {
 
     /** Dialog-list palette. Saturated colors are reserved for state, not decoration. */
     public static final int DIALOGS_TEXT_READ = IN_TEXT;
-    public static final int DIALOGS_TEXT_UNREAD = 0xFFE5D8B8;
-    public static final int DIALOGS_TEXT_PREVIEW = 0xFFA39D83;
+    /**
+     * Round-3 FriendCall verdict 4, "secondary-text palette deviations".
+     *
+     * The unread title and the preview were the only two dialogs text literals outside the approved
+     * palette (#E5D8B8 cream / #A39D83 olive-grey), so two unrelated hues carried the single
+     * secondary / emphasis role of one screen. Both are now derived from the palette:
+     *
+     * <ul>
+     *   <li>{@code DIALOGS_TEXT_UNREAD} takes the amber attention accent, the same hue family as
+     *       the unread counter and the unread row stroke, so "unread" reads as one state.</li>
+     *   <li>{@code DIALOGS_TEXT_PREVIEW} is secondary text drawn on the incoming olive row plate,
+     *       where the round-3 guidance allows a muted warm tint, so it takes the palette's own muted
+     *       warm metadata tint ({@link #IN_TIME}).</li>
+     * </ul>
+     *
+     * Neither role is interactive, so neither uses cyan; the red and cyan semantics are untouched.
+     * The neutral secondary {@code #6B7A8A} is deliberately NOT used on these WCAG-checked roles: it
+     * is this gate's negative control and measures 4.10-4.50:1 on the dialogs plates, below the
+     * 4.5:1 bar the audit set (see {@link #TEXT_MUTED}).
+     */
+    public static final int DIALOGS_TEXT_UNREAD = AMBER_HIGHLIGHT;
+    public static final int DIALOGS_TEXT_PREVIEW = IN_TIME;
     public static final int DIALOGS_TEXT_META = IN_TIME;
     public static final int DIALOGS_TEXT_SENDER = IN_TEXT;
     /** Database entry grammar: independent olive plate and quiet state-dependent frame. */
