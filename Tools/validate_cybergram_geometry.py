@@ -51,6 +51,9 @@ TOPICS_TABS = JAVA / "ui/Components/TopicsTabsView.java"
 MAIN_TABS_ACTIVITY = JAVA / "ui/MainTabsActivity.java"
 MAIN_TABS_LAYOUT = JAVA / "ui/MainTabsLayout.java"
 AVATAR_DRAWABLE = JAVA / "ui/Components/AvatarDrawable.java"
+# Round 8 / Stage F profile surface.
+PROFILE_ACTIVITY = JAVA / "ui/ProfileActivity.java"
+PROFILE_ACTIONS_VIEW = JAVA / "ui/Components/ProfileActionsView.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -227,6 +230,8 @@ def main():
         "main_tabs_activity": MAIN_TABS_ACTIVITY,
         "main_tabs_layout": MAIN_TABS_LAYOUT,
         "avatar_drawable": AVATAR_DRAWABLE,
+        "profile_activity": PROFILE_ACTIVITY,
+        "profile_actions_view": PROFILE_ACTIONS_VIEW,
     }
     texts = {}
     for name, path in paths.items():
@@ -1127,6 +1132,138 @@ def main():
               total > 0 and bad == total, "detected %d of %d" % (bad, total))
     check("badgeMargin model matches the guard token (10dp frame inset + guard)",
           abs(margin_dp - (frame_edge + 8.0)) < 1e-9, "margin=%.2fdp" % margin_dp)
+
+    # ---- [M] round-8 Stage F profile surface ------------------------------------------------
+    # The Profile screen carried two stock Material shapes: the hero avatar (a circular
+    # ImageReceiver mask, ProfileActivity.AvatarImageView) and the three-capsule action row
+    # (ProfileActionsView). Round 8 routes both through the shared eight-segment chamfer, keeps
+    # the round-7 avatar-frame Rest -> Raised grammar, and must not move a single hit-test rect.
+    # This section re-derives the geometry from the real source so a silent revert (e.g. dropping
+    # the gate, or re-rounding the capsules) fails the gate instead of shipping.
+    print("\n[M] round-8 profile surface (avatar chamfer + action plates)")
+    pa = strip_java_comments(texts["profile_activity"])
+    pav = strip_java_comments(texts["profile_actions_view"])
+
+    prof_cut = token("PROFILE_AVATAR_CUT_DP")
+    prof_frame_w = token("PROFILE_AVATAR_FRAME_WIDTH_DP")
+    prof_rest = ints.get("PROFILE_AVATAR_FRAME_ALPHA")
+    prof_raised = ints.get("PROFILE_AVATAR_FRAME_RAISED_ALPHA")
+    plate_cut = token("PROFILE_ACTION_CUT_DP")
+    plate_border_w = token("PROFILE_ACTION_BORDER_WIDTH_DP")
+
+    check("profile tokens parse",
+          None not in (prof_cut, prof_frame_w, prof_rest, prof_raised, plate_cut, plate_border_w),
+          "avatar_cut=%s frame_w=%s rest=%s raised=%s plate_cut=%s plate_border=%s"
+          % (prof_cut, prof_frame_w, prof_rest, prof_raised, plate_cut, plate_border_w))
+
+    # The hero avatar is a 100dp box (getSmallAvatarRoundRadius() == dp(50) is its circle radius),
+    # so the shared builder's 22%-of-shorter-side clamp must not be the binding constraint and the
+    # chamfer must stay strictly inside the box on every supported density.
+    hero_box_dp = 100.0
+    if prof_cut is not None:
+        clamp_dp = hero_box_dp * 0.22
+        inside = []
+        for density in DENSITIES:
+            side = dp_ceil(hero_box_dp, density)
+            cut = min(dp_ceil(prof_cut, density), side * 0.22)
+            if cut <= 0 or 2 * cut >= side:
+                inside.append("d=%.3f" % density)
+        check("avatar chamfer is a real, non-degenerate cut inside the 100dp hero box",
+              prof_cut > 0 and prof_cut <= clamp_dp and not inside,
+              "cut=%.2fdp clamp=%.2fdp violations=%s" % (prof_cut, clamp_dp, inside or "none"))
+
+    # The downstream token is only an opt-in when the central gate is read first and the upstream
+    # rounded-rect branch survives as the non-Cybergram fallback.
+    avatar_gate_idx = pa.find("cybergramChamfer = r > 0 && CybergramTheme.isCybergramPresentation(null)")
+    first_round_rect_idx = pa.find("clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r")
+    check("hero avatar chamfer is read from the Cybergram gate and precedes the upstream circle",
+          avatar_gate_idx != -1 and first_round_rect_idx != -1 and avatar_gate_idx < first_round_rect_idx)
+    check("upstream circular clip survives as the non-Cybergram fallback branch",
+          "} else if (r > 0) {" in pa[avatar_gate_idx:first_round_rect_idx] if avatar_gate_idx != -1 else False)
+
+    # The ImageReceiver keeps its own circular mask, so a chamfer clip alone would leave a circle
+    # inside the chamfer. The mask suppression must share the chamfer condition, not the blur one.
+    check("circular ImageReceiver mask is suppressed together with the chamfer",
+          "shouldDrawBlur || cybergramChamfer" in pa
+          and pav.count("isCybergramPresentation") >= 1)
+
+    # Rest -> Raised: one frame, inset by half its own stroke (so the rail stays inside the
+    # silhouette clip), whose resting alpha is legible on the 440dpi device and below the raised one.
+    if None not in (prof_frame_w, prof_rest, prof_raised, frame_edge):
+        rest_ink = prof_frame_w * 2.75 * (prof_rest / 255.0)
+        check("profile avatar frame reaches the legibility floor (>= 1.0 full-opacity device px)",
+              rest_ink >= 1.0, "ink=%.2f px at 440dpi (w=%.2fdp a=%s)" % (rest_ink, prof_frame_w, prof_rest))
+        check("profile avatar frame keeps a real Rest -> Raised delta",
+              0 < prof_rest < prof_raised <= 255, "rest=%s raised=%s" % (prof_rest, prof_raised))
+        check("profile avatar frame stroke stays a hairline (<= 1.2dp)",
+              prof_frame_w <= 1.2, "w=%.2fdp" % prof_frame_w)
+    check("profile avatar frame is inset by half its own stroke",
+          "PROFILE_AVATAR_FRAME_WIDTH_DP) / 2f" in pa)
+    check("profile avatar frame samples the pressed state (Rest -> Raised)",
+          "isPressed() ? 1f : 0f" in pa)
+
+    # Action plates: the chamfer branch must be gated, must precede the upstream drawRoundRect in
+    # the same fill loop, and must not touch the hit-test rect that was computed just above it.
+    plate_gate_idx = pav.find("final boolean cybergram = CybergramTheme.isCybergramPresentation(null);")
+    plate_draw_idx = pav.find("canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);")
+    plate_chamfer_idx = pav.find("CybergramTheme.buildInteractionPanelPath(")
+    check("action plate chamfer is gated by the Cybergram presentation guard",
+          plate_gate_idx != -1 and plate_chamfer_idx != -1 and plate_gate_idx < plate_chamfer_idx,
+          "gate=%s chamfer=%s" % (plate_gate_idx, plate_chamfer_idx))
+    check("action plate keeps the upstream rounded draw as the non-Cybergram fallback",
+          plate_draw_idx > plate_chamfer_idx > -1)
+    check("action plate chamfer uses the shared cut token (not a private radius)",
+          "CybergramTheme.PROFILE_ACTION_CUT_DP" in pav and "getRoundRadius()" in pav)
+    check("action plate draws exactly one rail (fill + single stroke, no glow passes)",
+          pav.count("canvas.drawPath(cybergramPath, paint);") == 2
+          and "paint.setShadowLayer(0, 0, 0, 0);" in pav)
+    check("action plate hit-test rect is untouched by the chamfer branch",
+          "action.rect.set(left, top, left + width, top + height);" in pav
+          and "action.rect" in pav)
+
+    # Geometry model: the plate chamfer is built by the same clamped builder, so a plate whose
+    # shorter side is the cut's limiting factor must still yield a convex, in-bounds polygon. The
+    # modelled plates span the real row heights (targetHeight ~ dp(74) minus the row padding) down
+    # to a deliberately tiny plate, with a negative control that an over-large cut IS rejected.
+    def plate_outside_count(width, height, cut, clamp_ratio=None):
+        """Chamfer vertices outside the plate box (0 == valid polygon).
+
+        ``clamp_ratio=None`` models a builder WITHOUT the shared 22% clamp, which is exactly the
+        pre-fix shape a future edit could reintroduce.
+        """
+        if clamp_ratio is not None:
+            cut = min(cut, min(width, height) * clamp_ratio)
+        pts = [(cut, 0), (width - cut, 0), (width, cut), (width, height - cut),
+               (width - cut, height), (cut, height), (0, height - cut), (0, cut)]
+        return sum(1 for x, y in pts if x < 0 or y < 0 or x > width or y > height)
+
+    if plate_cut is not None:
+        cases = 0
+        bad = []
+        for density in DENSITIES:
+            for width_dp in (56.0, 96.0, 140.0):
+                for height_dp in (20.0, 38.0, 50.0):
+                    cases += 1
+                    w = float(dp_ceil(width_dp, density))
+                    h = float(dp_ceil(height_dp, density))
+                    if plate_outside_count(w, h, dp_ceil(plate_cut, density), clamp_ratio=0.22) != 0:
+                        bad.append("%.0fx%.0f d=%.3f" % (width_dp, height_dp, density))
+        check("action plate chamfer stays inside the plate for %d density/size cases" % cases,
+              not bad, "violations: " + ", ".join(bad[:4]) if bad else "")
+
+        # Negative control: an unclamped oversized cut on the smallest modelled plate must be
+        # detected, otherwise the in-bounds check above is not sensitive to the regression.
+        small_w = float(dp_ceil(56.0, 2.75))
+        small_h = float(dp_ceil(20.0, 2.75))
+        check("negative control: an unclamped oversized plate cut escapes the plate",
+              plate_outside_count(small_w, small_h, 400.0, clamp_ratio=None) > 0,
+              "w=%.1f h=%.1f" % (small_w, small_h))
+
+    # Negative control for the frame-ink model: the round-6 dialogs hairline that the owner
+    # rejected must still measure below the floor, otherwise the legibility check is not sensitive.
+    old_ink = 0.4 * 2.75 * (72 / 255.0)
+    check("negative control: the rejected 0.4dp @ alpha 72 frame is below the legibility floor",
+          old_ink < 1.0, "ink=%.2f px" % old_ink)
 
     _summary()
 

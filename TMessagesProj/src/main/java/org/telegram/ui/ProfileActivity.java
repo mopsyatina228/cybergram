@@ -187,6 +187,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.OKLCH;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -898,6 +899,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         public final Path clipPath = new Path();
         private final RectF rect = new RectF();
+        /** Round-8 Cybergram avatar scratch geometry + frame paint (paint-only, no layout effect). */
+        private final Path framePath = new Path();
+        private final Paint framePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint placeholderPaint;
         public boolean drawAvatar = true;
         public float bounceScale = 1f;
@@ -1069,7 +1073,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             ImageReceiver imageReceiver = animatedEmojiDrawable != null ? animatedEmojiDrawable.getImageReceiver() : this.imageReceiver;
 
             int r = /*isMetaballWorking && !hasStories ? roundRadiusCollapse : */roundRadiusExpand;
-            if (r > 0) {
+            // Stage F round 8: the profile hero avatar is the only renderer that reaches this
+            // nested view, so the central Cybergram gate is the whole opt-in. Under Cybergram the
+            // stock circular mask becomes the shared eight-segment chamfer; the resting frame keeps
+            // the round-7 dialogs Rest -> Raised grammar (resting alpha, full while pressed).
+            // The expanded full-bleed state (r == 0) is left completely untouched.
+            final boolean cybergramChamfer = r > 0 && CybergramTheme.isCybergramPresentation(null);
+            if (cybergramChamfer) {
+                clipPath.rewind();
+                AndroidUtilities.rectTmp.set(inset, inset, thisWidth - inset, thisHeight - inset);
+                CybergramTheme.buildInteractionPanelPath(clipPath, AndroidUtilities.rectTmp, CybergramTheme.PROFILE_AVATAR_CUT_DP);
+                canvas.clipPath(clipPath);
+            } else if (r > 0) {
                 clipPath.rewind();
                 AndroidUtilities.rectTmp.set(inset, inset, thisWidth - inset, thisHeight - inset);
                 clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
@@ -1110,11 +1125,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 imageReceiver.setAlpha(wasAlpha * alpha);
                 if (drawAvatar) {
                     int wasRadius = imageReceiver.getRoundRadius()[0];
-                    if (shouldDrawBlur) {
+                    if (shouldDrawBlur || cybergramChamfer) {
                         imageReceiver.setRoundRadius(0);
                     }
                     imageReceiver.draw(canvas);
-                    if (shouldDrawBlur) {
+                    if (shouldDrawBlur || cybergramChamfer) {
                         imageReceiver.setRoundRadius(wasRadius);
                     }
                 }
@@ -1128,9 +1143,32 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     rect.set(0f, 0f, thisWidth, thisHeight);
                     placeholderPaint.setAlpha((int) (alpha * foregroundAlpha * 255f));
-                    final int radius = foregroundImageReceiver.getRoundRadius()[0];
-                    canvas.drawRoundRect(rect, radius, radius, placeholderPaint);
+                    if (cybergramChamfer) {
+                        framePath.rewind();
+                        CybergramTheme.buildInteractionPanelPath(framePath, rect, CybergramTheme.PROFILE_AVATAR_CUT_DP);
+                        canvas.drawPath(framePath, placeholderPaint);
+                    } else {
+                        final int radius = foregroundImageReceiver.getRoundRadius()[0];
+                        canvas.drawRoundRect(rect, radius, radius, placeholderPaint);
+                    }
                 }
+            }
+            if (cybergramChamfer) {
+                // One legible frame on the silhouette, inset by half its own stroke so the whole
+                // rail stays inside the clip. Rest -> Raised mirrors the round-7 dialogs grammar.
+                final float frameInset = inset + AndroidUtilities.dpf2(CybergramTheme.PROFILE_AVATAR_FRAME_WIDTH_DP) / 2f;
+                framePath.rewind();
+                AndroidUtilities.rectTmp.set(frameInset, frameInset, thisWidth - frameInset, thisHeight - frameInset);
+                CybergramTheme.buildInteractionPanelPath(framePath, AndroidUtilities.rectTmp, CybergramTheme.PROFILE_AVATAR_CUT_DP);
+                framePaint.setStyle(Paint.Style.STROKE);
+                framePaint.setStrokeJoin(Paint.Join.MITER);
+                framePaint.setStrokeWidth(AndroidUtilities.dpf2(CybergramTheme.PROFILE_AVATAR_FRAME_WIDTH_DP));
+                framePaint.setColor(CybergramTheme.CYAN);
+                framePaint.setAlpha((int) (AndroidUtilities.lerp(
+                        CybergramTheme.PROFILE_AVATAR_FRAME_ALPHA,
+                        CybergramTheme.PROFILE_AVATAR_FRAME_RAISED_ALPHA,
+                        isPressed() ? 1f : 0f) * alpha));
+                canvas.drawPath(framePath, framePaint);
             }
 
             if (shouldDrawBlur) {
@@ -1140,6 +1178,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             canvas.restore();
+        }
+
+        @Override
+        protected void drawableStateChanged() {
+            super.drawableStateChanged();
+            // The round-8 chamfer frame is a visual state layer (Rest -> Raised while pressed), so
+            // the press transition has to repaint this custom onDraw.
+            invalidate();
         }
 
         public void setProgressToStoriesInsets(float progressToInsets) {

@@ -531,6 +531,37 @@ public final class CybergramTheme {
      */
     public static final float SEARCH_FIELD_CUT_DP = 18f;
 
+    /**
+     * Profile surface, Stage F round 8 (owner order профиль -> настройки -> вложения).
+     *
+     * <p>Two Profile-only seams carried the stock Material look: the hero avatar
+     * ({@code ProfileActivity.AvatarImageView}, a circular ImageReceiver mask) and the action-plate
+     * row ({@code ProfileActionsView}, three rounded capsules). Both are drawn by views that serve
+     * no other surface, so {@link #isCybergramPresentation} is the whole opt-in.
+     *
+     * <p>The avatar keeps the round-7 Rest -> Raised grammar (see the
+     * {@code DIALOGS_AVATAR_FRAME_*} block): one legible cyan frame on the shared eight-segment
+     * chamfer. Resting is {@link #DIALOGS_AVATAR_FRAME_ALPHA}; the raised alpha is applied while
+     * the avatar is touched, so the frame is a state layer and never a second decorative border.
+     * The image itself loses its circular mask — the chamfer becomes the silhouette — but the
+     * gutter, the layout box, the stories inset and every touch target stay upstream.
+     */
+    public static final float PROFILE_AVATAR_CUT_DP = 14f;
+    public static final float PROFILE_AVATAR_FRAME_WIDTH_DP = 1.1f;
+    public static final int PROFILE_AVATAR_FRAME_ALPHA = DIALOGS_AVATAR_FRAME_ALPHA;
+    public static final int PROFILE_AVATAR_FRAME_RAISED_ALPHA = 255;
+
+    /**
+     * Action-plate row ({@code ProfileActionsView}). Same grammar as the inline message buttons
+     * ({@link #BOT_BUTTON_CUT_DP}): a near-black {@link #PANEL_RAISED} fill with ONE thin cyan rail
+     * and no glow passes, so the three plate shapes read as one HUD strip instead of three
+     * peer-tinted capsules. The rect each action already uses for hit-testing is untouched.
+     */
+    public static final float PROFILE_ACTION_CUT_DP = 7f;
+    public static final float PROFILE_ACTION_BORDER_WIDTH_DP = 0.65f;
+    public static final int PROFILE_ACTION_BORDER_ALPHA = 126;
+    public static final int PROFILE_ACTION_FILL_ALPHA = 236;
+
     private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**

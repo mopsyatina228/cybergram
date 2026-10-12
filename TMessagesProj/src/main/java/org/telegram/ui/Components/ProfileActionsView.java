@@ -44,6 +44,7 @@ import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ProfileActivity;
@@ -66,6 +67,8 @@ public class ProfileActionsView extends View {
     public float clipHeight = -1;
     private final Path clipAvatarPath = new Path();
     private final Path clipPath = new Path();
+    /** Round-8 Profile plate silhouette (shared chamfer); paint-only scratch, never a hit-test path. */
+    private final Path cybergramPath = new Path();
     private ProfileActivity.AvatarImageView avatarView;
     private float renderNodeScale;
     private float renderNodeTranslateY;
@@ -295,6 +298,11 @@ public class ProfileActionsView extends View {
             return;
         }
 
+        // Stage F round 8: the Profile action row is a Profile-only surface, so the central
+        // Cybergram gate is the whole opt-in. No provider is threaded into this view, so the gate
+        // reads the active theme exactly like Theme#setCybergramFlatHeader does.
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(null);
+
         if (!ignoreRect) {
             for (int i = 0; i < c; i++) {
                 Action action = actions.get(i);
@@ -304,6 +312,35 @@ public class ProfileActionsView extends View {
                         action.rect.width() / 2.0f * (1.0f - action.getScale()),
                         action.rect.height() / 2.0f * (1.0f - action.getScale())
                     );
+
+                    if (cybergram) {
+                        // CP2077 HUD plate (inline-button grammar): near-black fill + ONE thin cyan
+                        // rail. action.rect and the inset above are untouched, so hit-testing,
+                        // the press bounce and every touch target keep their upstream geometry.
+                        final float itemAlpha = action.getAlpha() * alphaFraction1;
+                        final float raised = action.bounce.isPressedProgress();
+                        cybergramPath.rewind();
+                        CybergramTheme.buildInteractionPanelPath(
+                                cybergramPath, AndroidUtilities.rectTmp, CybergramTheme.PROFILE_ACTION_CUT_DP);
+
+                        paint.setShadowLayer(0, 0, 0, 0);
+                        paint.setStyle(Paint.Style.FILL);
+                        paint.setColor(CybergramTheme.PANEL_RAISED);
+                        paint.setAlpha((int) (CybergramTheme.PROFILE_ACTION_FILL_ALPHA * itemAlpha));
+                        canvas.drawPath(cybergramPath, paint);
+
+                        paint.setStyle(Paint.Style.STROKE);
+                        paint.setStrokeJoin(Paint.Join.MITER);
+                        paint.setStrokeWidth(dpf2(CybergramTheme.PROFILE_ACTION_BORDER_WIDTH_DP));
+                        paint.setColor(CybergramTheme.CYAN);
+                        paint.setAlpha((int) (AndroidUtilities.lerp(
+                                CybergramTheme.PROFILE_ACTION_BORDER_ALPHA,
+                                CybergramTheme.PROFILE_AVATAR_FRAME_RAISED_ALPHA, raised) * itemAlpha));
+                        canvas.drawPath(cybergramPath, paint);
+                        paint.setStyle(Paint.Style.FILL);
+                        continue;
+                    }
+
                     int wasAlpha = paint.getAlpha();
                     int newAlpha = (int) (action.getAlpha() * alphaFraction1 * wasAlpha);
                     paint.setAlpha((int) (newAlpha * (radialGradient != null ? 0.1f : 1f)));
@@ -409,13 +446,22 @@ public class ProfileActionsView extends View {
             return;
         }
 
+        // Stage F round 8: on the Cybergram HUD plate the glyphs always sit on the near-black
+        // PROFILE_ACTION fill, so the peer-colour/expanded blend must not be allowed to pick the
+        // dark outline variant. Everything else keeps the upstream computation untouched.
+        final boolean cybergramPlate = CybergramTheme.isCybergramPresentation(null);
         final boolean isButtonColorLight = isButtonColorLight();
         float useFilledWhiteIcon = !isButtonColorLight ? 1 : MathUtils.clamp((parentExpanded - 0.75f) / 0.25f, 0, 1);
         if (isButtonColorLight && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             useFilledWhiteIcon = 0f;
         }
+        if (cybergramPlate) {
+            useFilledWhiteIcon = 1f;
+        }
 
-        final int textColor = ColorUtils.blendARGB(Color.BLACK, Color.WHITE, useFilledWhiteIcon);
+        final int textColor = cybergramPlate
+                ? CybergramTheme.TEXT
+                : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, useFilledWhiteIcon);
         if (lastColorFilter == null || lastColorFilterColor != textColor) {
             lastColorFilterColor = textColor;
             lastColorFilter = new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN);
