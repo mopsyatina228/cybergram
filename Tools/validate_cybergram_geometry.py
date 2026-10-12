@@ -665,6 +665,166 @@ def main():
                   fills and len(untouched) == len(fills),
                   "detected %d of %d" % (len(untouched), len(fills)))
 
+    # Round-6 FriendCall finding (avatar / text JOINT, still PARTIAL after rounds 3-5): the seam is
+    # still a dark vertical sliver between two chamfered blocks, and the avatar fill and the plate
+    # surface still read as different materials. A frame-alpha reduction cannot fix a missing
+    # material, so the row surface now runs BEHIND the gutter, from the far side of the avatar's own
+    # chamfer, and the row outline is left OPEN at the joint so the avatar's single hairline is the
+    # only outline there. Gutter/inset, avatar rect, chamfer cut and touch targets are unchanged.
+    print("\n[J2] avatar / text joint carries the row material (round-6)")
+    row_surface = ints.get("DIALOGS_ROW_SURFACE")
+    background = ints.get("BACKGROUND")
+    gutter_fill = ints.get("DIALOGS_ROW_GUTTER_FILL")
+    gutter_fill_active = ints.get("DIALOGS_ROW_GUTTER_FILL_ACTIVE")
+    row_surface_active = ints.get("DIALOGS_ROW_SURFACE_ACTIVE")
+    check("gutter fill / active row surface tokens parse",
+          None not in (gutter_fill, gutter_fill_active, row_surface_active))
+    if None not in (gutter_fill, gutter_fill_active, row_surface_active) and row_surface is not None:
+        check("gutter fill IS the row-plate surface token (same material, not the window)",
+              gutter_fill == row_surface and gutter_fill_active == row_surface_active,
+              "gutter=0x%08X/0x%08X plate=0x%08X/0x%08X"
+              % (gutter_fill, gutter_fill_active, row_surface, row_surface_active))
+        if background is not None:
+            check("gutter fill is never the window background",
+                  gutter_fill != background and gutter_fill_active != background,
+                  "gutter=0x%08X/0x%08X window=0x%08X"
+                  % (gutter_fill, gutter_fill_active, background))
+    check("DialogCell fills the row surface from the gutter fill tokens",
+          "CybergramTheme.DIALOGS_ROW_GUTTER_FILL_ACTIVE" in dc
+          and "CybergramTheme.DIALOGS_ROW_GUTTER_FILL" in dc)
+
+    # Structural proof that the joint outline is open: find the row treatment body and check that
+    # (a) the surface fill and the single amber stroke share ONE path built in that method,
+    # (b) that path is never closed, so no joint-side outline can be stroked next to the avatar.
+    row_sig = "private void drawCybergramRowTreatment(Canvas canvas) {"
+    row_start = dc.find(row_sig)
+    row_end = dc.find("public boolean drawAvatarOverlays(Canvas canvas) {", row_start)
+    row_body = dc[row_start:row_end] if row_start >= 0 and 0 < row_end else ""
+    check("drawCybergramRowTreatment body readable from source", bool(row_body))
+
+    def _outline_is_open(body):
+        """The row outline is open when it is hand-built and never closed on the joint side.
+
+        The pre-fix plate outline came from the shared four-corner builder, which closes the left
+        chamfer into the silhouette — exactly the competing joint outline this section guards.
+        """
+        return ("cybergramRowFramePath.close()" not in body
+                and "buildInteractionPanelPath(cybergramRowFramePath" not in body)
+
+    if row_body:
+        check("the row surface fill and the row outline share ONE path",
+              row_body.count("canvas.drawPath(cybergramRowFramePath") == 1
+              and "drawCybergramFrameStroke(canvas, cybergramRowFramePath" in row_body
+              and "cybergramRowFramePath.rewind()" in row_body)
+        check("the joint side of the row outline is left OPEN (no competing joint outline)",
+              _outline_is_open(row_body) and row_body.count("jointEdge") >= 3)
+        check("the row surface joint edge is derived from the avatar rect + chamfer cut",
+              "storyParams.originalAvatarRect.right - avatarCut" in row_body
+              and "storyParams.originalAvatarRect.left + avatarCut" in row_body
+              and "CybergramTheme.DIALOGS_AVATAR_CUT_DP" in row_body)
+        # Negative control: the pre-fix body closed the plate on its own chamfered left edge via the
+        # shared four-corner builder, so the SAME predicate must reject it.
+        legacy_row = ("CybergramTheme.buildInteractionPanelPath(cybergramRowFramePath, "
+                      "cybergramRowFrameRect, CybergramTheme.DIALOGS_ROW_CUT_DP);")
+        check("negative control: the pre-fix closed plate outline fails the open-joint predicate",
+              not _outline_is_open(legacy_row))
+
+    # Single hairline avatar frame, weaker than the row frame in every state.
+    avatar_width = vals.get("DIALOGS_AVATAR_FRAME_WIDTH_DP")
+    row_width = vals.get("DIALOGS_ROW_FRAME_WIDTH_DP")
+    check("exactly ONE hairline stroke is drawn on the avatar frame",
+          dc.count("drawCybergramFrameStroke(canvas, cybergramAvatarFramePath") == 1)
+    check("avatar frame is thinner than the row frame",
+          None not in (avatar_width, row_width) and avatar_width < row_width,
+          "avatar=%sdp row=%sdp" % (avatar_width, row_width))
+    check("avatar hairline is weaker than the ACTIVE-row frame",
+          None not in (avatar_alpha, selected_alpha) and avatar_alpha < selected_alpha,
+          "avatar=%s selected=%s" % (avatar_alpha, selected_alpha))
+
+    # Density x layout x width matrix. Every device pixel column between the avatar's right edge and
+    # the plate's left edge must be covered by the row surface. Mirrors the real code:
+    #   onMeasure:  avatarSize = dp(height - 6); gutterWidth = dp(messagePaddingStart);
+    #               avatarX = (gutterWidth - avatarSize) * 0.5f
+    #   onDraw:     panelLeft = dp(messagePaddingStart - DIALOGS_ROW_PANEL_INSET_DP);
+    #               jointEdge = min(panelLeft, avatarRight - dpf2(DIALOGS_AVATAR_CUT_DP))
+    # The gutter distance is width-independent (the plate is edge-anchored), so the widths in the
+    # matrix only prove the invariant survives every row width; RTL mirrors the same distances.
+    def _int_field(name):
+        m = re.search(r"\bint\s+%s\s*=\s*(-?\d+)\s*;" % re.escape(name), dc)
+        return int(m.group(1)) if m else None
+
+    gutter_dp = _int_field("messagePaddingStart")
+    height_dp = _int_field("heightDefault")
+    height_three_dp = _int_field("heightThreeLines")
+    check("Dialogs row metrics readable from DialogCell source",
+          None not in (gutter_dp, height_dp, height_three_dp),
+          "gutter=%s height=%s three=%s" % (gutter_dp, height_dp, height_three_dp))
+
+    if None not in (gutter_dp, height_dp, height_three_dp) and None not in (inset, dialog_avatar_cut):
+        widths_dp = (320.0, 360.0, 411.0, 480.0, 600.0)
+        # 2.75 is emulator-5554's real density (1080x2400 @ 440dpi), i.e. the round-6 device shot.
+        joint_densities = tuple(sorted(set(DENSITIES) | {2.75}))
+
+        def _gutter_columns(density, layout_height_dp, width_dp):
+            """Pixel columns strictly between the avatar's right edge and the plate's left edge."""
+            gutter_px = float(dp_ceil(gutter_dp, density))
+            avatar_px = float(dp_ceil(layout_height_dp - 6, density))
+            avatar_right_px = (gutter_px - avatar_px) * 0.5 + avatar_px
+            panel_left_px = float(dp_ceil(gutter_dp - inset, density))
+            if width_dp <= gutter_dp + 10.0:
+                return None, None, None, None
+            columns = [x + 0.5 for x in range(int(math.ceil(avatar_right_px)),
+                                              int(math.floor(panel_left_px)))]
+            return avatar_right_px, panel_left_px, columns, gutter_px
+
+        cases = 0
+        no_gutter = 0
+        unexplained_empty = []
+        uncovered = []
+        prefix_background = 0
+        prefix_cases = 0
+        for density in joint_densities:
+            for layout_height_dp in (height_dp, height_three_dp):
+                cut_px = density * dialog_avatar_cut          # AndroidUtilities.dpf2
+                for width_dp in widths_dp:
+                    avatar_right_px, panel_left_px, columns, _ = _gutter_columns(
+                        density, layout_height_dp, width_dp)
+                    if columns is None:
+                        continue
+                    if not columns:
+                        # The 3-line avatar (dp(heightThreeLines - 6)) already reaches the plate's
+                        # own left edge, so that layout has no background column to cover at all.
+                        no_gutter += 1
+                        if avatar_right_px < panel_left_px:
+                            unexplained_empty.append((density, layout_height_dp, width_dp))
+                        continue
+                    cases += 1
+                    joint_px = min(panel_left_px, avatar_right_px - cut_px)
+                    post = [c for c in columns if c < joint_px]
+                    pre = [c for c in columns if c < panel_left_px]
+                    if post:
+                        uncovered.append((density, layout_height_dp, width_dp, post[0]))
+                    if pre:
+                        prefix_cases += 1
+                    prefix_background += len(pre)
+
+        check("matrix model covers at least one gutter column in every case",
+              cases > 0, "cases=%d no_gutter_layouts=%d" % (cases, no_gutter))
+        check("every layout without a covered column is one whose avatar already reaches the plate",
+              not unexplained_empty,
+              "unexplained=%s" % (unexplained_empty[:3],) if unexplained_empty else "")
+        check("no window-background column survives between avatar and plate "
+              "(density x layout x width matrix)",
+              cases > 0 and not uncovered,
+              "cases=%d uncovered=%d%s" % (cases, len(uncovered),
+                                           " first=%s" % (uncovered[0],) if uncovered else ""))
+        # Negative control: with the pre-fix surface (starting at the plate's left edge) EVERY gutter
+        # column is background, so the check above is provably sensitive to the regression it guards.
+        check("negative control: the pre-fix layout (surface at the plate edge) shows background "
+              "columns in every case",
+              cases > 0 and prefix_cases == cases and prefix_background > 0,
+              "cases=%d with background=%d columns=%d" % (cases, prefix_cases, prefix_background))
+
     # ---- [K] dialogs counter / preview right guard (round-3 FriendCall verdict 3) ----------
     # The counter used to anchor at the upstream BADGE_MARGIN (~5.66dp from the frame) while the
     # preview layout box could reach past the counter's left edge, so a wide unread value crowded

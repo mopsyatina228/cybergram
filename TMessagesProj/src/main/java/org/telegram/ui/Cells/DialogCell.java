@@ -23,7 +23,6 @@ import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
-import org.telegram.ui.ActionBar.CybergramHudDrawable;
 import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.CybergramTypography;
 import android.graphics.PorterDuff;
@@ -648,9 +647,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final Paint cybergramOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path cybergramRowFramePath = new Path();
     private final Path cybergramAvatarFramePath = new Path();
-    private final RectF cybergramRowFrameRect = new RectF();
     private final RectF cybergramAvatarFrameRect = new RectF();
-    private final CybergramHudDrawable cybergramRowPanel = new CybergramHudDrawable();
+    private final Paint cybergramRowSurfacePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path cybergramBadgePath = new Path();
     private final RectF cybergramBadgeRect = new RectF();
     private final Paint cybergramBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -5459,25 +5457,59 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // Database entries separate plate, frame and content. Mirror the incoming bubble material
         // inside the existing text column; retain the avatar gutter and upstream row measurements.
         final boolean active = isSelected;
-        // Pull the text plate toward the avatar gutter so the row reads as ONE element (round-3
-        // FriendCall verdict 1). The gutter width, the avatar rect and every touch target keep
-        // their upstream sizes; only the visual gap loses weight (4dp -> DIALOGS_ROW_PANEL_INSET_DP).
         final int panelGutter = dp(72 - CybergramTheme.DIALOGS_ROW_PANEL_INSET_DP);
         final int panelEdge = dp(10);
         final int panelLeft = LocaleController.isRTL ? panelEdge : panelGutter;
         final int panelRight = w - (LocaleController.isRTL ? panelGutter : panelEdge);
-        cybergramRowPanel.setBounds(panelLeft, dp(3), panelRight, h - dp(3));
-        cybergramRowPanel.setCornerCut(dpf2(CybergramTheme.DIALOGS_ROW_CUT_DP));
-        cybergramRowPanel.setFillColor(active ? CybergramTheme.DIALOGS_ROW_SURFACE_ACTIVE
-                : CybergramTheme.DIALOGS_ROW_SURFACE);
-        cybergramRowPanel.setStroke(0, 0, false);
-        cybergramRowPanel.draw(canvas);
+        final float panelTop = dp(3);
+        final float panelBottom = h - dp(3);
+        final float rowCut = dpf2(CybergramTheme.DIALOGS_ROW_CUT_DP);
 
-        // One amber stroke for the row shape. Selection / unread attention strengthens this same
-        // stroke instead of adding glow passes (round-3 FriendCall verdict 2).
-        cybergramRowFrameRect.set(panelLeft, dp(3), panelRight, h - dp(3));
-        CybergramTheme.buildInteractionPanelPath(
-                cybergramRowFramePath, cybergramRowFrameRect, CybergramTheme.DIALOGS_ROW_CUT_DP);
+        // Round-6 FriendCall finding (avatar / text seam, still PARTIAL after rounds 3-5): the
+        // thinner frame and the washed avatar fill did not close the seam, because the 2dp gutter
+        // still painted the window and the avatar's right chamfer met the plate's left chamfer
+        // across a dark sliver. That needs a JOINT change, not another frame-alpha tweak. The row
+        // surface now starts on the far side of the avatar's own chamfer, so the gutter carries the
+        // row-plate material and avatar + plate are ONE continuous surface with the avatar as a
+        // chamfered inset on it. The joint side of the row outline is left OPEN: the avatar's single
+        // hairline is the only outline at the seam (no second competing outline, no double chamfer).
+        // Gutter width, avatar rect, chamfer cut, row height and every touch target are unchanged.
+        final float avatarCut = dpf2(CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+        final float jointEdge;
+        if (storyParams.originalAvatarRect.isEmpty()) {
+            jointEdge = LocaleController.isRTL ? panelRight : panelLeft;
+        } else if (LocaleController.isRTL) {
+            jointEdge = Math.max(panelRight, storyParams.originalAvatarRect.left + avatarCut);
+        } else {
+            jointEdge = Math.min(panelLeft, storyParams.originalAvatarRect.right - avatarCut);
+        }
+
+        // ONE path for the whole row surface: square on the joint side, chamfered on the outer side.
+        // It is filled (the joint edge closes implicitly) and then stroked while still OPEN, so the
+        // fill and the outline can never disagree and nothing is drawn beside the avatar frame.
+        cybergramRowFramePath.rewind();
+        if (LocaleController.isRTL) {
+            cybergramRowFramePath.moveTo(jointEdge, panelTop);
+            cybergramRowFramePath.lineTo(panelLeft + rowCut, panelTop);
+            cybergramRowFramePath.lineTo(panelLeft, panelTop + rowCut);
+            cybergramRowFramePath.lineTo(panelLeft, panelBottom - rowCut);
+            cybergramRowFramePath.lineTo(panelLeft + rowCut, panelBottom);
+            cybergramRowFramePath.lineTo(jointEdge, panelBottom);
+        } else {
+            cybergramRowFramePath.moveTo(jointEdge, panelTop);
+            cybergramRowFramePath.lineTo(panelRight - rowCut, panelTop);
+            cybergramRowFramePath.lineTo(panelRight, panelTop + rowCut);
+            cybergramRowFramePath.lineTo(panelRight, panelBottom - rowCut);
+            cybergramRowFramePath.lineTo(panelRight - rowCut, panelBottom);
+            cybergramRowFramePath.lineTo(jointEdge, panelBottom);
+        }
+        cybergramRowSurfacePaint.setStyle(Paint.Style.FILL);
+        cybergramRowSurfacePaint.setColor(active ? CybergramTheme.DIALOGS_ROW_GUTTER_FILL_ACTIVE
+                : CybergramTheme.DIALOGS_ROW_GUTTER_FILL);
+        canvas.drawPath(cybergramRowFramePath, cybergramRowSurfacePaint);
+
+        // One amber stroke for the row shape, over the SAME open path. Selection / unread attention
+        // strengthens this same stroke instead of adding glow passes (round-3 FriendCall verdict 2).
         final int frameAlpha = active
                 ? CybergramTheme.DIALOGS_ROW_FRAME_SELECTED_ALPHA
                 : (hasUnread || hasMention

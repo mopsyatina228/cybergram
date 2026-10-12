@@ -367,6 +367,24 @@ public final class CybergramTheme {
     public static final int DIALOGS_AVATAR_SCRIM_COLOR = DIALOGS_ROW_SURFACE;
     public static final int DIALOGS_AVATAR_SCRIM_ALPHA = 88;
     /**
+     * Avatar / plate JOINT material (round-6 FriendCall finding, "still two detached blocks").
+     *
+     * Round-3 thinned the avatar frame, round-4 washed the avatar fill, and neither closed the
+     * seam: the 2dp gutter between the avatar and the text plate kept painting the window, so a
+     * dark vertical sliver ran the full height of every row, the avatar's right chamfer and the
+     * plate's left chamfer formed a double joint, and the two fills still read as different
+     * materials. The gutter is therefore no longer a gap at all — the row surface is painted
+     * BEHIND it, starting on the far side of the avatar's own chamfer, so avatar + plate are one
+     * continuous row surface and the avatar is a chamfered inset ON that surface (it stays
+     * distinct through its fill, its scrim and its single hairline frame).
+     *
+     * These two tokens deliberately alias the row-plate surface tokens: the gutter must carry the
+     * SAME material as the plate, never the window. They exist as named tokens so the geometry gate
+     * can assert the alias instead of trusting a duplicated literal.
+     */
+    public static final int DIALOGS_ROW_GUTTER_FILL = DIALOGS_ROW_SURFACE;
+    public static final int DIALOGS_ROW_GUTTER_FILL_ACTIVE = DIALOGS_ROW_SURFACE_ACTIVE;
+    /**
      * Dialogs row frame, round-3 FriendCall verdict 2 ("decorative triple borders").
      *
      * Every dialogs shape is drawn with ONE main stroke. Selected / unread attention strengthens
