@@ -5298,30 +5298,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int starBgColor;
     private Drawable starFg, starBg;
 
-    private void drawCybergramAmberOutline(Canvas canvas, Path path, boolean selected) {
-        drawCybergramAmberOutline(canvas, path, selected, CybergramTheme.AMBER);
-    }
-
-    private void drawCybergramAmberOutline(Canvas canvas, Path path, boolean selected, int color) {
+    /**
+     * ONE stroke for one dialogs shape (round-3 FriendCall verdict 2, "decorative triple borders").
+     *
+     * The former implementation painted three passes per shape — a 6.2dp glow, a 2.4dp mid halo and
+     * the 0.5dp core — on both the row plate and the avatar. Across a list that read as stacked
+     * decorative borders competing with the content. State (selected / unread attention) now
+     * strengthens this single stroke through its alpha; no second or third pass is added.
+     */
+    private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, int alpha) {
         cybergramOutlinePaint.setStyle(Paint.Style.STROKE);
         cybergramOutlinePaint.setStrokeJoin(Paint.Join.MITER);
         cybergramOutlinePaint.setStrokeCap(Paint.Cap.SQUARE);
         cybergramOutlinePaint.setColor(color);
-
-        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_GLOW_WIDTH_DP));
-        cybergramOutlinePaint.setAlpha(selected
-                ? CybergramTheme.BUBBLE_GLOW_SELECTED_ALPHA
-                : CybergramTheme.BUBBLE_GLOW_ALPHA);
-        canvas.drawPath(path, cybergramOutlinePaint);
-
-        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_MID_GLOW_WIDTH_DP));
-        cybergramOutlinePaint.setAlpha(selected
-                ? CybergramTheme.BUBBLE_MID_GLOW_SELECTED_ALPHA
-                : CybergramTheme.BUBBLE_MID_GLOW_ALPHA);
-        canvas.drawPath(path, cybergramOutlinePaint);
-
-        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.BUBBLE_BORDER_WIDTH_DP));
-        cybergramOutlinePaint.setAlpha(CybergramTheme.BUBBLE_BORDER_ALPHA);
+        cybergramOutlinePaint.setStrokeWidth(dpf2(CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP));
+        cybergramOutlinePaint.setAlpha(alpha);
         canvas.drawPath(path, cybergramOutlinePaint);
     }
 
@@ -5337,8 +5328,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         CybergramTheme.buildInteractionPanelPath(
                 cybergramAvatarFramePath, cybergramAvatarFrameRect,
                 CybergramTheme.DIALOGS_AVATAR_CUT_DP);
-        drawCybergramAmberOutline(canvas, cybergramAvatarFramePath, false,
-                unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER);
+        drawCybergramFrameStroke(canvas, cybergramAvatarFramePath,
+                unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER,
+                CybergramTheme.DIALOGS_ROW_FRAME_ALPHA);
     }
 
     /**
@@ -5404,11 +5396,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         cybergramRowPanel.setStroke(0, 0, false);
         cybergramRowPanel.draw(canvas);
 
-        // Match incoming message bubbles: same amber core and the same restrained two-pass bloom.
+        // One amber stroke for the row shape. Selection / unread attention strengthens this same
+        // stroke instead of adding glow passes (round-3 FriendCall verdict 2).
         cybergramRowFrameRect.set(panelLeft, dp(3), panelRight, h - dp(3));
         CybergramTheme.buildInteractionPanelPath(
                 cybergramRowFramePath, cybergramRowFrameRect, CybergramTheme.DIALOGS_ROW_CUT_DP);
-        drawCybergramAmberOutline(canvas, cybergramRowFramePath, active);
+        final int frameAlpha = active
+                ? CybergramTheme.DIALOGS_ROW_FRAME_SELECTED_ALPHA
+                : (hasUnread || hasMention
+                        ? CybergramTheme.DIALOGS_ROW_FRAME_UNREAD_ALPHA
+                        : CybergramTheme.DIALOGS_ROW_FRAME_ALPHA);
+        drawCybergramFrameStroke(canvas, cybergramRowFramePath, CybergramTheme.AMBER, frameAlpha);
 
         // State color is semantic rather than decorative. Incoming attention is amber, explicit
         // mentions/errors are red. Normal and pinned rows receive no gratuitous rail.

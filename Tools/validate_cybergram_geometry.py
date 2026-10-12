@@ -104,6 +104,31 @@ def resolve_all(text):
     return values
 
 
+INT_DECL = re.compile(
+    r"static final int\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
+)
+
+
+def resolve_ints(text):
+    """Resolve integer tokens (alphas, counts) declared in CybergramTheme."""
+    raw = {m.group(1): m.group(2).strip() for m in INT_DECL.finditer(text)}
+    values = {}
+    for _ in range(len(raw) + 2):
+        changed = False
+        for key, expr in raw.items():
+            e = expr.strip()
+            if re.fullmatch(r"0[xX][0-9A-Fa-f]+[lL]?", e) or re.fullmatch(r"-?\d+", e):
+                resolved = int(e.rstrip("lL"), 0)
+            else:
+                resolved = values.get(e)
+            if resolved is not None and values.get(key) != resolved:
+                values[key] = resolved
+                changed = True
+        if not changed:
+            break
+    return values
+
+
 # --------------------------------------------------------------------------- #
 # Independent geometry model (mixture of CybergramBubbleDrawable.buildPath and
 # AndroidUtilities.dp -> (int) Math.ceil(density * value))
@@ -462,6 +487,62 @@ def main():
         for density in DENSITIES for w_dp, h_dp in SIZES_DP
     )
     check("negative control: media inset 0 (pre-fix) is detected as overflow", sensitive)
+
+    # ---- [I] dialogs row chrome: one stroke per shape (round-3 FriendCall verdict 2) ---------
+    # Every dialogs shape used to be stroked three times (6.2dp bloom + 2.4dp mid halo + 0.5dp core)
+    # on both the row plate and the avatar frame, so a list of rows read as stacked decorative
+    # borders. The fix keeps ONE stroke per shape and moves the state (selected / unread attention)
+    # into that stroke's alpha.
+    print("\n[I] dialogs row/avatar chrome uses ONE stroke per shape")
+    ints = resolve_ints(texts["theme"])
+
+    check("DialogCell no longer paints the two extra glow passes",
+          not re.search(r"BUBBLE_(?:MID_)?GLOW_WIDTH_DP", dc))
+    check("the retired three-pass helper is gone",
+          "drawCybergramAmberOutline" not in dc)
+
+    stroke_sig = "private void drawCybergramFrameStroke(Canvas canvas, Path path, int color, int alpha) {"
+    start = dc.find(stroke_sig)
+    if start < 0:
+        check("drawCybergramFrameStroke found", False, "signature not found")
+        stroke_body = ""
+    else:
+        end = dc.find("\n    private ", start + len(stroke_sig))
+        stroke_body = dc[start:end if end > 0 else len(dc)]
+        check("drawCybergramFrameStroke found", True)
+    check("the single stroke is the only path draw on a dialogs shape",
+          stroke_body.count("drawPath") == 1,
+          "drawPath calls: %d" % stroke_body.count("drawPath"))
+    check("the single stroke uses the dialogs frame width token",
+          "CybergramTheme.DIALOGS_ROW_FRAME_WIDTH_DP" in stroke_body)
+    check("the avatar frame also routes through the single-stroke helper",
+          "drawCybergramFrameStroke(canvas, cybergramAvatarFramePath" in dc)
+
+    row_alpha = ints.get("DIALOGS_ROW_FRAME_ALPHA")
+    unread_alpha = ints.get("DIALOGS_ROW_FRAME_UNREAD_ALPHA")
+    selected_alpha = ints.get("DIALOGS_ROW_FRAME_SELECTED_ALPHA")
+    badge_alpha = ints.get("DIALOGS_BADGE_BORDER_ALPHA")
+    old_core = ints.get("BUBBLE_BORDER_ALPHA")
+    check("row frame alpha tokens parse",
+          None not in (row_alpha, unread_alpha, selected_alpha, badge_alpha, old_core))
+    if None not in (row_alpha, unread_alpha, selected_alpha, badge_alpha, old_core):
+        check("unread/selected strengthen the SAME stroke (normal < unread < selected)",
+              row_alpha < unread_alpha < selected_alpha,
+              "normal=%s unread=%s selected=%s" % (row_alpha, unread_alpha, selected_alpha))
+        check("counter rim stays weaker than the attention row frame",
+              badge_alpha < unread_alpha,
+              "badge=%s frame=%s" % (badge_alpha, unread_alpha))
+        check("normal (read) row stroke is quieter than the retired 3-pass core",
+              row_alpha < old_core, "normal=%s old_core=%s" % (row_alpha, old_core))
+    check("row stroke strengthens on state (selected/unread branches present)",
+          "DIALOGS_ROW_FRAME_SELECTED_ALPHA" in dc
+          and "DIALOGS_ROW_FRAME_UNREAD_ALPHA" in dc)
+
+    # Negative control: the retired three-pass body must fail the one-stroke check, otherwise the
+    # check above is not sensitive to the regression it guards.
+    legacy_body = "canvas.drawPath(path, p); canvas.drawPath(path, p); canvas.drawPath(path, p);"
+    check("negative control: a legacy three-pass stroke fails the one-stroke check",
+          legacy_body.count("drawPath") != 1)
 
     _summary()
 

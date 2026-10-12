@@ -319,9 +319,19 @@ public final class CybergramTheme {
     public static final float DIALOGS_ROW_CUT_DP = 5f;
     /** Dialog-list avatar silhouette: square body with small 45-degree corner chamfers. */
     public static final float DIALOGS_AVATAR_CUT_DP = 6f;
-    public static final int DIALOGS_ROW_FRAME_ALPHA = 18;
-    public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 64;
-    public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 138;
+    /**
+     * Dialogs row frame, round-3 FriendCall verdict 2 ("decorative triple borders").
+     *
+     * Every dialogs shape is drawn with ONE main stroke. Selected / unread attention strengthens
+     * that same stroke instead of stacking extra glow passes: the old {@code drawCybergramAmberOutline}
+     * painted a 6.2dp bloom (alpha 11) + a 2.4dp mid halo (alpha 30) + a 0.5dp core on every row and
+     * on every avatar, so each row read as three competing decorative borders. The chamfer cut and
+     * the amber semantics are unchanged.
+     */
+    public static final float DIALOGS_ROW_FRAME_WIDTH_DP = BUBBLE_BORDER_WIDTH_DP;
+    public static final int DIALOGS_ROW_FRAME_ALPHA = 140;
+    public static final int DIALOGS_ROW_FRAME_UNREAD_ALPHA = 230;
+    public static final int DIALOGS_ROW_FRAME_SELECTED_ALPHA = 250;
     public static final int DIALOGS_RULE = 0xFF47121C;
     public static final int DIALOGS_ACTIVE = AMBER_HIGHLIGHT;
     public static final int DIALOGS_ATTENTION = AMBER_HIGHLIGHT;
