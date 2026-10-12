@@ -2685,6 +2685,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 pinLeft = dp(14);
             }
         }
+        // Cybergram keeps the counter cluster >= DIALOGS_RIGHT_GUARD_DP inside the row frame
+        // (round-3 FriendCall verdict 3, "unread-counter crowding"): badgeMargin is the distance
+        // from the row edge to the counter's near edge, so it is 8dp past the frame's inner edge
+        // instead of the upstream BADGE_MARGIN that let the badge kiss the frame.
+        final boolean cybergram = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        final int badgeMargin = cybergram
+                ? dp(10 + CybergramTheme.DIALOGS_RIGHT_GUARD_DP)
+                : dp(BADGE_MARGIN);
         if (drawError) {
             int w = dp(21 + 8);
             messageWidth -= w;
@@ -2704,9 +2712,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = countWidth + dp(BADGE_GAP);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    countLeft = getMeasuredWidth() - dp(BADGE_MARGIN) - (countWidth + dp(BADGE_TEXT_PADDING * 2));
+                    countLeft = getMeasuredWidth() - badgeMargin - (countWidth + dp(BADGE_TEXT_PADDING * 2));
                 } else {
-                    countLeft = dp(BADGE_MARGIN);
+                    countLeft = badgeMargin;
                     messageLeft += w;
                     typingLeft += w;
                     buttonLeft += w;
@@ -2726,9 +2734,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = mentionWidth + dp(BADGE_GAP);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    mentionLeft = getMeasuredWidth() - (mentionWidth + dp(BADGE_TEXT_PADDING * 2)) - dp(BADGE_MARGIN) - (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
+                    mentionLeft = getMeasuredWidth() - (mentionWidth + dp(BADGE_TEXT_PADDING * 2)) - badgeMargin - (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
                 } else {
-                    mentionLeft = dp(BADGE_MARGIN) + (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
+                    mentionLeft = badgeMargin + (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
                     messageLeft += w;
                     typingLeft += w;
                     buttonLeft += w;
@@ -2742,7 +2750,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = dp(25);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    reactionMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE + BADGE_MARGIN);
+                    reactionMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE) + badgeMargin;
                     if (drawMention) {
                         reactionMentionLeft -= (mentionWidth != 0 ? (mentionWidth + dp(BADGE_GAP)) : 0);
                     }
@@ -2750,7 +2758,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         reactionMentionLeft -= (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
                     }
                 } else {
-                    reactionMentionLeft = dp(BADGE_MARGIN);
+                    reactionMentionLeft = badgeMargin;
                     if (drawMention) {
                         reactionMentionLeft += (mentionWidth != 0 ? (mentionWidth + dp(BADGE_GAP)) : 0);
                     }
@@ -2767,7 +2775,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int w = dp(25);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
-                    pollVotesMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE + BADGE_MARGIN);
+                    pollVotesMentionLeft = getMeasuredWidth() - dp(BADGE_SIZE) + badgeMargin;
                     if (drawReactionMention) {
                         pollVotesMentionLeft -= dp(25);
                     }
@@ -2778,7 +2786,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         pollVotesMentionLeft -= (countWidth != 0 ? countWidth + dp(BADGE_GAP) : 0);
                     }
                 } else {
-                    pollVotesMentionLeft = dp(BADGE_MARGIN);
+                    pollVotesMentionLeft = badgeMargin;
                     if (drawReactionMention) {
                         pollVotesMentionLeft += dp(25);
                     }
@@ -2818,6 +2826,53 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         } else {
             drawCount = false;
             drawMention = false;
+        }
+
+        // Cybergram right guard (round-3 FriendCall verdict 3). Whatever the upstream per-badge
+        // reserves produced, the preview must end >= 8dp before the row frame and >= 8dp before the
+        // nearest counter, so a wide value (e.g. 11175) expands leftwards without touching the text.
+        if (cybergram) {
+            final int guard = dp(CybergramTheme.DIALOGS_RIGHT_GUARD_DP);
+            if (!LocaleController.isRTL) {
+                int textMaxRight = getMeasuredWidth() - dp(10) - guard;
+                if (drawCount) {
+                    textMaxRight = Math.min(textMaxRight, countLeft - guard);
+                }
+                if (drawMention) {
+                    textMaxRight = Math.min(textMaxRight, mentionLeft - guard);
+                }
+                if (drawReactionMention) {
+                    textMaxRight = Math.min(textMaxRight, reactionMentionLeft - guard);
+                }
+                if (drawPollVotesMention) {
+                    textMaxRight = Math.min(textMaxRight, pollVotesMentionLeft - guard);
+                }
+                messageWidth = Math.min(messageWidth, textMaxRight - messageLeft);
+            } else {
+                int textMinLeft = dp(10) + guard;
+                if (drawCount) {
+                    textMinLeft = Math.max(textMinLeft,
+                            countLeft + countWidth + dp(BADGE_TEXT_PADDING * 2) + guard);
+                }
+                if (drawMention) {
+                    textMinLeft = Math.max(textMinLeft,
+                            mentionLeft + mentionWidth + dp(BADGE_TEXT_PADDING * 2) + guard);
+                }
+                if (drawReactionMention) {
+                    textMinLeft = Math.max(textMinLeft, reactionMentionLeft + dp(BADGE_SIZE) + guard);
+                }
+                if (drawPollVotesMention) {
+                    textMinLeft = Math.max(textMinLeft, pollVotesMentionLeft + dp(BADGE_SIZE) + guard);
+                }
+                final int shift = textMinLeft - messageLeft;
+                if (shift > 0) {
+                    messageLeft += shift;
+                    typingLeft += shift;
+                    buttonLeft += shift;
+                    messageNameLeft += shift;
+                    messageWidth -= shift;
+                }
+            }
         }
 
         if (checkMessage) {

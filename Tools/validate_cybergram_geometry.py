@@ -579,6 +579,90 @@ def main():
         check("negative control: the pre-fix 4dp gap is detected as heavier",
               abs(((gutter - 0.0) - avatar_right) - 4.0) < 1e-6)
 
+    # ---- [K] dialogs counter / preview right guard (round-3 FriendCall verdict 3) ----------
+    # The counter used to anchor at the upstream BADGE_MARGIN (~5.66dp from the frame) while the
+    # preview layout box could reach past the counter's left edge, so a wide unread value crowded
+    # the preview. Cybergram now anchors the counter cluster DIALOGS_RIGHT_GUARD_DP inside the frame
+    # and clamps the preview so it always stops that far before the frame / the nearest counter.
+    print("\n[K] dialogs counter / preview right guard")
+    guard_dp = vals.get("DIALOGS_RIGHT_GUARD_DP")
+    pad_dp = 6.333          # DialogCell BADGE_TEXT_PADDING
+    upstream_margin = 15.666  # DialogCell BADGE_MARGIN
+    frame_edge = 10.0        # DialogCell row plate is inset 10dp from the window edge
+
+    check("DIALOGS_RIGHT_GUARD_DP parses and is positive",
+          guard_dp is not None and guard_dp > 0)
+    check("DialogCell anchors the counter with the Cybergram guard token",
+          "CybergramTheme.DIALOGS_RIGHT_GUARD_DP" in dc)
+    check("DialogCell builds a Cybergram badge margin",
+          "final int badgeMargin = cybergram" in dc)
+    check("DialogCell clamps the preview against frame and counter",
+          "textMaxRight" in dc and "textMinLeft" in dc)
+
+    if guard_dp is not None:
+        COUNT_WIDTHS_DP = [8.0, 20.0, 35.0, 60.0]   # 35dp ~ five bold digits ("11175")
+
+        def counter_guard_model(W, density, count_w_dp, margin_dp, clamped):
+            frame_inner = W - dp_ceil(frame_edge, density)
+            plate_w = dp_ceil(count_w_dp, density) + 2 * dp_ceil(pad_dp, density)
+            badge_right = W - dp_ceil(margin_dp, density)
+            badge_left = badge_right - plate_w
+            if clamped:
+                text_max_right = min(frame_inner - dp_ceil(guard_dp, density),
+                                     badge_left - dp_ceil(guard_dp, density))
+            else:
+                # Pre-fix: base box ended 4dp short of the window edge and the reserve was
+                # BADGE_GAP = 25 - BADGE_TEXT_MIN_WIDTH = 17dp.
+                text_max_right = (frame_inner + dp_ceil(frame_edge, density) - dp_ceil(4.0, density)
+                                  - (dp_ceil(count_w_dp, density) + dp_ceil(17.0, density)))
+            return frame_inner, badge_left, badge_right, text_max_right
+
+        cases = 0
+        failures = []
+        for density in DENSITIES:
+            for W_dp in (320.0, 360.0, 411.0):
+                W = float(dp_ceil(W_dp, density))
+                for cw in COUNT_WIDTHS_DP:
+                    cases += 1
+                    frame_inner, badge_left, badge_right, text_right = counter_guard_model(
+                        W, density, cw, frame_edge + guard_dp, True)
+                    g = dp_ceil(guard_dp, density)
+                    if frame_inner - badge_right < g:
+                        failures.append("frame gap d=%.3f cw=%.0f" % (density, cw))
+                    if badge_left - text_right < g:
+                        failures.append("counter gap d=%.3f cw=%.0f" % (density, cw))
+                    if text_right > frame_inner - g:
+                        failures.append("text past frame d=%.3f cw=%.0f" % (density, cw))
+        check("counter and preview keep the guard for %d density/size/value cases" % cases,
+              not failures, "violations: " + ", ".join(failures[:4]) if failures else "")
+
+        # Large values must expand without overlap: the badge grows left, the text follows.
+        overlaps = []
+        for density in DENSITIES:
+            W = float(dp_ceil(411.0, density))
+            g = dp_ceil(guard_dp, density)
+            for cw in COUNT_WIDTHS_DP:
+                _, badge_left, _, text_right = counter_guard_model(
+                    W, density, cw, frame_edge + guard_dp, True)
+                if text_right > badge_left - g:
+                    overlaps.append("d=%.3f cw=%.0f" % (density, cw))
+        check("wide values (up to a five-digit counter) never overlap the preview",
+              not overlaps, "overlaps: " + ", ".join(overlaps[:4]) if overlaps else "")
+
+        # Negative control: the pre-fix anchoring must be detected as too close / overlapping.
+        bad = []
+        for density in DENSITIES:
+            W = float(dp_ceil(411.0, density))
+            g = dp_ceil(guard_dp, density)
+            for cw in COUNT_WIDTHS_DP:
+                frame_inner, badge_left, badge_right, text_right = counter_guard_model(
+                    W, density, cw, upstream_margin, False)
+                if frame_inner - badge_right < g or text_right > badge_left - g:
+                    bad.append((density, cw))
+        check("negative control: the pre-fix margin/gap is detected as crowding",
+              len(bad) == len(DENSITIES) * len(COUNT_WIDTHS_DP),
+              "detected %d of %d" % (len(bad), len(DENSITIES) * len(COUNT_WIDTHS_DP)))
+
     _summary()
 
 

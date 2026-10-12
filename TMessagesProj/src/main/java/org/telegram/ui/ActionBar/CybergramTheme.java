@@ -378,6 +378,17 @@ public final class CybergramTheme {
     public static final int DIALOGS_BADGE_MUTED_ACCENT = TEXT_MUTED;
 
     /**
+     * Dialog-list right guard (round-3 FriendCall verdict 3, "unread-counter crowding").
+     *
+     * The counter cluster is anchored this far inside the chamfered row frame and the preview text
+     * stops this far before the frame — and before the nearest counter. The upstream BADGE_MARGIN
+     * anchored the badge only ~5.66dp from the frame and the preview's layout box reached past the
+     * counter's left edge, so a wide value such as 11175 crowded the text. The counter keeps its
+     * state rim; the rim alphas stay below {@link #DIALOGS_ROW_FRAME_UNREAD_ALPHA}.
+     */
+    public static final float DIALOGS_RIGHT_GUARD_DP = 8f;
+
+    /**
      * Forum topic tab strip ({@code TopicsTabsView}). The selected topic used to be a Telegram-blue
      * Material pill with blue text; Cybergram replaces it with the shared chamfer and the cyan
      * accent, so the strip reads as the same HUD family as the dialog rows and the chat chrome.
