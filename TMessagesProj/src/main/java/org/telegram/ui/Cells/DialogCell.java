@@ -654,6 +654,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private final Path cybergramBadgePath = new Path();
     private final RectF cybergramBadgeRect = new RectF();
     private final Paint cybergramBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cybergramAvatarScrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**
      * Cybergram chrome typography (dialogs row title + timestamp).
@@ -5388,6 +5389,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         CybergramTheme.buildInteractionPanelPath(
                 cybergramAvatarFramePath, cybergramAvatarFrameRect,
                 CybergramTheme.DIALOGS_AVATAR_CUT_DP);
+        // Round-4 FriendCall finding 1: a saturated avatar fill (Saved Messages, or a peer whose
+        // colour comes from its region/id) is far brighter than the olive text plate, so the pair
+        // still read as a bright chip beside a dark slab. Wash the avatar's own fill toward the
+        // plate material, clipped to its chamfer — no geometry, gutter or touch target changes, and
+        // the row stays two shapes (no merged capsule). The stroke below stays crisp on top.
+        cybergramAvatarScrimPaint.setStyle(Paint.Style.FILL);
+        cybergramAvatarScrimPaint.setColor(CybergramTheme.DIALOGS_AVATAR_SCRIM_COLOR);
+        cybergramAvatarScrimPaint.setAlpha(CybergramTheme.DIALOGS_AVATAR_SCRIM_ALPHA);
+        canvas.drawPath(cybergramAvatarFramePath, cybergramAvatarScrimPaint);
         // Secondary chrome: one thin, quiet stroke — the avatar must not compete with the row plate.
         drawCybergramFrameStroke(canvas, cybergramAvatarFramePath,
                 unreadStory ? CybergramTheme.CYAN : CybergramTheme.AMBER,

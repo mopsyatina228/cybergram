@@ -579,6 +579,92 @@ def main():
         check("negative control: the pre-fix 4dp gap is detected as heavier",
               abs(((gutter - 0.0) - avatar_right) - 4.0) < 1e-6)
 
+        # Round-4 FriendCall finding 1 (still PARTIAL after the round-3 fix): the thinner, quieter
+        # frame and the tighter gap were not enough — a saturated avatar fill (Saved Messages, or a
+        # peer coloured from its region/id) is far brighter than the olive plate, so the pair still
+        # read as a bright chip beside a dark slab. The avatar now carries a restrained wash of the
+        # row-plate material clipped to its own chamfer, which pulls its fill toward the plate's
+        # luminance, and the frame alpha drops again. Geometry / gutter / touch targets unchanged.
+        scrim_alpha = ints.get("DIALOGS_AVATAR_SCRIM_ALPHA")
+        scrim_color = ints.get("DIALOGS_AVATAR_SCRIM_COLOR")
+        row_surface = ints.get("DIALOGS_ROW_SURFACE")
+        background = ints.get("BACKGROUND")
+        row_bubble = ints.get("IN_BUBBLE")
+        check("avatar scrim / plate tokens parse",
+              None not in (scrim_alpha, scrim_color, row_surface, background, row_bubble))
+        if None not in (scrim_alpha, scrim_color, row_surface):
+            check("avatar scrim uses the row-plate material (palette-derived)",
+                  scrim_color == row_surface,
+                  "scrim=0x%08X plate=0x%08X" % (scrim_color, row_surface))
+            check("avatar scrim is a restrained wash (0 < alpha < 128)",
+                  0 < scrim_alpha < 128, "alpha=%s" % scrim_alpha)
+        check("avatar frame alpha dropped below the round-3 value (108)",
+              avatar_alpha is not None and avatar_alpha < 108, "alpha=%s" % avatar_alpha)
+        check("avatar scrim keeps the gutter/inset token untouched",
+              inset is not None and "DIALOGS_ROW_PANEL_INSET_DP" in dc
+              and "DIALOGS_ROW_PANEL_INSET_DP" in texts["theme"])
+        scrim_draw = "canvas.drawPath(cybergramAvatarFramePath, cybergramAvatarScrimPaint)"
+        check("DialogCell washes the avatar on its own chamfer path, before the frame stroke",
+              "cybergramAvatarScrimPaint.setColor(CybergramTheme.DIALOGS_AVATAR_SCRIM_COLOR)" in dc
+              and "cybergramAvatarScrimPaint.setAlpha(CybergramTheme.DIALOGS_AVATAR_SCRIM_ALPHA)" in dc
+              and scrim_draw in dc
+              and dc.index(scrim_draw)
+                  < dc.index("drawCybergramFrameStroke(canvas, cybergramAvatarFramePath"))
+
+        # Independent luminance model: the plate is IN_BUBBLE over the window; the scrim is the
+        # plate's RGB painted at DIALOGS_AVATAR_SCRIM_ALPHA (Paint.setAlpha replaces the alpha), and
+        # the representative fills are the real AvatarDrawable gradient palette read from source.
+        if None not in (scrim_alpha, scrim_color, background, row_bubble):
+
+            def _srgb(v):
+                c = v / 255.0
+                return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+            def _lum(rgb):
+                return 0.2126 * _srgb(rgb[0]) + 0.7152 * _srgb(rgb[1]) + 0.0722 * _srgb(rgb[2])
+
+            def _rgb(argb):
+                return ((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF)
+
+            def _over(fg_argb, alpha, bg_rgb):
+                f = alpha / 255.0
+                fg = _rgb(fg_argb)
+                return tuple(f * fg[i] + (1.0 - f) * bg_rgb[i] for i in range(3))
+
+            plate = _over(row_bubble, (row_bubble >> 24) & 0xFF, _rgb(background))
+            plate_lum = _lum(plate)
+            fills = sorted({int(m, 16) for m in
+                            re.findall(r"0xFF[0-9A-Fa-f]{6}", texts["avatar_drawable"])})
+            check("representative avatar fills parsed from AvatarDrawable",
+                  len(fills) >= 4, "%d fills" % len(fills))
+
+            no_improve = []
+            ratios = []
+            for fill in fills:
+                raw_delta = abs(_lum(_rgb(fill)) - plate_lum)
+                if raw_delta < 1e-9:
+                    continue
+                washed = _lum(_over(scrim_color, scrim_alpha, _rgb(fill)))
+                washed_delta = abs(washed - plate_lum)
+                ratios.append(washed_delta / raw_delta)
+                if washed_delta >= raw_delta:
+                    no_improve.append("0x%08X" % fill)
+            check("scrim pulls every AvatarDrawable fill toward the plate luminance",
+                  not no_improve, "no improvement: " + ", ".join(no_improve[:4]) if no_improve else "")
+            worst = min(ratios) if ratios else None
+            check("scrim removes >= 40% of the luminance delta for every fill",
+                  worst is not None and worst <= 0.6,
+                  "worst remaining delta ratio=%s" % ("%.3f" % worst if worst is not None else "n/a"))
+
+            # Negative control: the pre-fix scrim alpha (no wash at all) leaves every delta intact,
+            # otherwise the checks above are not sensitive to the separation they guard.
+            untouched = [fill for fill in fills
+                         if abs(_lum(_over(scrim_color, 0, _rgb(fill))) - plate_lum)
+                         >= abs(_lum(_rgb(fill)) - plate_lum)]
+            check("negative control: scrim alpha 0 (pre-fix) leaves the delta unchanged",
+                  fills and len(untouched) == len(fills),
+                  "detected %d of %d" % (len(untouched), len(fills)))
+
     # ---- [K] dialogs counter / preview right guard (round-3 FriendCall verdict 3) ----------
     # The counter used to anchor at the upstream BADGE_MARGIN (~5.66dp from the frame) while the
     # preview layout box could reach past the counter's left edge, so a wide unread value crowded

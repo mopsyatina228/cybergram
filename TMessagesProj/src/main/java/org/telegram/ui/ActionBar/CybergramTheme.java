@@ -349,9 +349,23 @@ public final class CybergramTheme {
      * width, the touch targets and the avatar chamfer cut are unchanged.
      */
     public static final float DIALOGS_AVATAR_FRAME_WIDTH_DP = 0.4f;
-    public static final int DIALOGS_AVATAR_FRAME_ALPHA = 108;
+    public static final int DIALOGS_AVATAR_FRAME_ALPHA = 72;
     /** Visual gap (dp) between the avatar gutter and the chamfered text plate; the old gap was 4dp. */
     public static final float DIALOGS_ROW_PANEL_INSET_DP = 2f;
+    /**
+     * Avatar / plate luminance reconciliation (round-4 FriendCall finding 1, still PARTIAL).
+     *
+     * Making the frame thinner and quieter did not close the gap: a saturated avatar fill (Saved
+     * Messages, or a peer whose colour comes from its region/id) is far brighter than the olive
+     * {@link #DIALOGS_ROW_SURFACE} plate, so the pair still read as a bright chip next to a dark
+     * slab and the 2dp seam stayed visible. The avatar now carries a restrained wash of the
+     * row-plate material, clipped to its own chamfer, which pulls its fill toward the plate's
+     * luminance, and the frame alpha drops again so what remains is a hairline. This is an overlay,
+     * not a destructive filter: neither the gutter, the avatar rect, the chamfer cut nor any touch
+     * target changes, and the row still separates avatar and plate (no merged capsule).
+     */
+    public static final int DIALOGS_AVATAR_SCRIM_COLOR = DIALOGS_ROW_SURFACE;
+    public static final int DIALOGS_AVATAR_SCRIM_ALPHA = 88;
     /**
      * Dialogs row frame, round-3 FriendCall verdict 2 ("decorative triple borders").
      *
