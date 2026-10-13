@@ -62,3 +62,53 @@ python Tools/validate_cybergram_theme.py -> exit 0
 2. Установка на `emulator-5554`, открыть attach-меню, скриншот
    `.local-artifacts/r11_attach_after.png`, logcat FATAL/ANR = 0.
 3. Коммиты локально, БЕЗ push.
+
+### ROUND 11 — РЕЗУЛЬТАТ (2026-10-14, ВЫПОЛНЕНО)
+
+- Правка применена к репо (`r11_apply.py`, все анкеры сверены на вхождение ровно 1 раз):
+  `CybergramTheme.java` +71/-1, `ChatAttachAlert.java` +34/-3,
+  `Tools/validate_cybergram_geometry.py` +180, новый `STATE.md`.
+  Гейт-прогон в стейджинг-дереве (копия дерева вне репо) прошёл ДО записи в репо.
+- Гейты (exit 0 оба): geometry `checks=192 failed=0` (до правки 168; +24 проверки
+  секции [P], 4 отрицательных контроля), theme
+  `unknown=0 duplicates=0 malformed=0 contrast_issues=0 palette_issues=0`.
+- Сборка: `:TMessagesProj_App:assembleAfatDebug -PCYBERGRAM_ABI=x86_64 --offline`
+  -> `BUILD SUCCESSFUL`, 82 actionable tasks: 5 executed / 77 up-to-date.
+  Тяжёлые задачи (native javac/dex) прошли в первом запуске, который был срезан
+  120-секундным лимитом foreground-команды; второй запуск дособрал пакет за 9 s.
+  Контроль, что правка вошла в артефакт: .class-файлы `CybergramTheme*.class` /
+  `ChatAttachAlert*.class` (01:03:04) новее исходников (00:58:53), dex 01:06:20,
+  APK 01:06:48.
+- APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`
+  69 069 674 B, sha256
+  `E9CC3A6847C4526F1C66AA35EBC5C9915F9E2FF0494AD01E156AD5A9809614E5`,
+  mtime `2026-10-14T01:06:48`.
+  badging: package `org.telegram.messenger.beta`, versionCode `70389`,
+  versionName `12.10.1`, platformBuildVersionName `16`, `native-code: 'x86_64'`;
+  `aapt list lib/` -> только `lib/x86_64/libtmessages.49.so` и
+  `lib/x86_64/liblanguage_id_l2c_jni.so`.
+- Эмулятор `emulator-5554` (AVD Cybergram_API36): `adb install -r` -> `Success`;
+  lastUpdateTime 2026-10-13 21:11:21 -> 22:09:59, codePath сменился,
+  PID 4174. При первом открытии attach-меню система спросила CAMERA-разрешение
+  (окно перекрывало меню) — выдано «While using the app», после этого меню
+  открывается чисто.
+- Скриншоты (1080x2400, `.local-artifacts/`):
+  `r11_attach_before.png` (сборка R10B, 564 350 B) и `r11_attach_after.png`
+  (R11, 596 244 B) — требуемый артефакт; кропы полосы
+  `r11_strip_before.png` / `r11_strip_after.png`.
+  На after полоса типов вложений — тёмная плашка со срезанными 45° углами и одной
+  тонкой циановой рейкой; внешний footprint совпадает с прежней стеклянной капсулой
+  (тот же `dp(7)` инсет), хит-ректы табов не сдвинулись.
+- logcat: буфер очищен (`logcat -c`) перед открытием меню; строк 8188,
+  `FATAL EXCEPTION`=0, `ANR in`=0, `beginning of crash`=0, `E AndroidRuntime`=0.
+  (Подстрочных совпадений «AndroidRuntime» — 20, все строки uiautomator-процесса,
+  не краши.)
+- Коммиты (локально, push НЕ делался): `249fd3c26`
+  «feat(attach): chamfer the attach-alert tab strip and action plate»;
+  коммит обновления этого файла — следующий в `git log`.
+- Не проверено (границы доказательства): RTL-раскладка; не-Cybergram контроль на
+  живой сборке (вне гейта ветки кода не исполняются по построению, но устройством это
+  не снято); физическое arm64-устройство; состояние выбранной вкладки при скролле
+  полосы; смена темы при уже открытом attach-меню (фон полосы выбирается в
+  конструкторе окна, плашка «Create» — в draw-time).
+
