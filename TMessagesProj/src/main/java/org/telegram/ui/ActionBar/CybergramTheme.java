@@ -608,6 +608,31 @@ public final class CybergramTheme {
     /** 48dp settings search-result icon plate: same grammar, slightly larger cut. */
     public static final float SETTINGS_SEARCH_PLATE_CUT_DP = 6f;
 
+    /**
+     * Round-11 Stage F attach surface, surface 3 of 3 (owner order 2026-10-13:
+     * profile -> settings -> attachments): the paperclip attach-alert menu owned by
+     * {@code ui/Components/ChatAttachAlert}.
+     *
+     * The alert carried two large stock Material capsules: the 70dp attach-type tab strip (a
+     * translucent 28dp-radius glass capsule behind the Gallery/File/Music/Location/Contact/Poll
+     * tabs) and the 28dp-tall "Create" plate on its action bar. {@code docs/CYBERGRAM_UI_SPEC.md}
+     * line 21 rules large rounded/glass Material capsules an anti-target inside Cybergram
+     * presentation, so both are replaced through narrow gated seams with the shared eight-segment
+     * chamfer plus ONE thin cyan rail. The rail/fill tokens alias the round-9 settings chip values
+     * (themselves the inline-button grammar), so the attach surface speaks the already-accepted
+     * chip grammar instead of inventing a second visual language.
+     *
+     * Geometry, hit rects and touch targets are untouched: the strip keeps its 70dp wrapper, its
+     * dp(11) tab padding and its dp(11)/dp(28) content clip, and the round-11 plate is drawn inside
+     * the very same dp(7) inset the glass capsule used; the action plate keeps its 28dp box.
+     */
+    public static final float ATTACH_TAB_STRIP_CUT_DP = 10f;
+    public static final float ATTACH_TAB_STRIP_BORDER_WIDTH_DP = BOT_BUTTON_BORDER_WIDTH_DP;
+    public static final int ATTACH_TAB_STRIP_BORDER_ALPHA = BOT_BUTTON_BORDER_ALPHA;
+    public static final int ATTACH_TAB_STRIP_FILL_ALPHA = BOT_BUTTON_FILL_ALPHA;
+    /** 28dp-tall attach-alert action plate ("Create"): the same chamfer grammar as the chips. */
+    public static final float ATTACH_ACTION_CUT_DP = 6f;
+
     private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**
@@ -733,7 +758,29 @@ public final class CybergramTheme {
             int borderColor, int borderAlpha,
             float borderWidthDp, float cutDp
     ) {
-        return new ChamferPlateDrawable(fillColor, fillAlpha, borderColor, borderAlpha, borderWidthDp, cutDp);
+        return createChamferedPlateDrawable(fillColor, fillAlpha, borderColor, borderAlpha,
+                borderWidthDp, cutDp, 0);
+    }
+
+    /**
+     * Same plate as {@link #createChamferedPlateDrawable(int, int, int, int, float, float)}, but
+     * the whole silhouette (fill AND rail) is drawn inside a uniform {@code insetPx} inset, so a
+     * gated caller that REPLACES an existing drawable can keep that drawable's painted footprint.
+     * The round-11 attach tab strip uses it to take over from the stock glass capsule, which paints
+     * inside its own {@code dp(7)} padding: without the inset the chamfer plate would be 14dp wider
+     * and taller than the capsule it replaces. The inset is a drawing-time inset only - it is never
+     * reported through {@link Drawable#getPadding(Rect)} - so it cannot move a child or a hit rect.
+     *
+     * @param cutDp        corner cut in dp, clamped inside {@link #buildInteractionPanelPath}
+     * @param insetPx      uniform drawing-time inset in px (0 = paint the full bounds)
+     */
+    public static Drawable createChamferedPlateDrawable(
+            int fillColor, int fillAlpha,
+            int borderColor, int borderAlpha,
+            float borderWidthDp, float cutDp, int insetPx
+    ) {
+        return new ChamferPlateDrawable(fillColor, fillAlpha, borderColor, borderAlpha,
+                borderWidthDp, cutDp, insetPx);
     }
 
     /** Fill + single-stroke chamfer plate; see {@link #createChamferedPlateDrawable}. */
@@ -743,12 +790,15 @@ public final class CybergramTheme {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final int fillColor, fillAlpha, borderColor, borderAlpha;
         private final float borderWidthDp, cutDp;
+        /** Drawing-time inset (px) reproducing the footprint of the drawable this one replaces. */
+        private final int insetPx;
 
         ChamferPlateDrawable(
                 int fillColor, int fillAlpha,
                 int borderColor, int borderAlpha,
-                float borderWidthDp, float cutDp
+                float borderWidthDp, float cutDp, int insetPx
         ) {
+            this.insetPx = insetPx;
             this.fillColor = fillColor;
             this.fillAlpha = fillAlpha;
             this.borderColor = borderColor;
@@ -765,16 +815,23 @@ public final class CybergramTheme {
             }
             if (fillColor != 0 && fillAlpha > 0) {
                 rect.set(bounds);
-                buildInteractionPanelPath(path, rect, cutDp);
-                paint.setStyle(Paint.Style.FILL);
-                paint.setColor(fillColor);
-                paint.setAlpha(fillAlpha);
-                canvas.drawPath(path, paint);
+                rect.inset(insetPx, insetPx);
+                if (rect.width() > 0f && rect.height() > 0f) {
+                    buildInteractionPanelPath(path, rect, cutDp);
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(fillColor);
+                    paint.setAlpha(fillAlpha);
+                    canvas.drawPath(path, paint);
+                }
             }
             if (borderColor != 0 && borderAlpha > 0 && borderWidthDp > 0f) {
                 final float stroke = AndroidUtilities.dpf2(borderWidthDp);
                 rect.set(bounds);
+                rect.inset(insetPx, insetPx);
                 rect.inset(stroke / 2f, stroke / 2f);
+                if (rect.width() <= 0f || rect.height() <= 0f) {
+                    return;
+                }
                 buildInteractionPanelPath(path, rect, cutDp);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeJoin(Paint.Join.MITER);

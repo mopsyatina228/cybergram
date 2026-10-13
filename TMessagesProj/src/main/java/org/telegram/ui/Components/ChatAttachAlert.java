@@ -2290,13 +2290,29 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             showMotionHint(enable);
         });
 
+        // Round 11 (Stage F surface 3 of 3): the attach alert's primary action plate carried the
+        // stock 14dp-radius pill. Under Cybergram presentation it becomes the shared eight-segment
+        // chamfer, read at draw time from the central gate; the 28dp plate box (getHeight()/2 +- 14),
+        // its width and its hit rect are untouched, and the upstream rounded draw stays the
+        // non-Cybergram fallback. docs/CYBERGRAM_UI_SPEC.md line 21.
+        final boolean cybergramAttach = CybergramTheme.isCybergramPresentation(resourcesProvider);
         TextView doneItem = new TextView(context) {
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Path cybergramAttachPlatePath = new Path();
+            private final RectF cybergramAttachPlateRect = new RectF();
             @Override
             protected void onDraw(Canvas canvas) {
                 p.setColor(getThemedColor(Theme.key_featuredStickers_addButton));
-                canvas.drawRoundRect(0, getHeight() / 2f - dp(14),
-                    getWidth(), getHeight() / 2f + dp(14), dp(14), dp(14), p);
+                if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                    cybergramAttachPlateRect.set(0, getHeight() / 2f - dp(14),
+                        getWidth(), getHeight() / 2f + dp(14));
+                    CybergramTheme.buildInteractionPanelPath(cybergramAttachPlatePath,
+                        cybergramAttachPlateRect, CybergramTheme.ATTACH_ACTION_CUT_DP);
+                    canvas.drawPath(cybergramAttachPlatePath, p);
+                } else {
+                    canvas.drawRoundRect(0, getHeight() / 2f - dp(14),
+                        getWidth(), getHeight() / 2f + dp(14), dp(14), dp(14), p);
+                }
                 super.onDraw(canvas);
             }
         };
@@ -2748,7 +2764,19 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         BlurredBackgroundDrawable tabsViewBackground = iBlur3FactoryLiquidGlass.create(buttonsRecyclerViewWrapper, BlurredBackgroundProviderImpl.mainTabs(resourcesProvider));
         tabsViewBackground.setRadius(dp(56 / 2f));
         tabsViewBackground.setPadding(dp(7));
-        buttonsRecyclerViewWrapper.setBackground(tabsViewBackground);
+        // Round 11 (Stage F surface 3 of 3): the attach-type tab strip is a large rounded/glass
+        // Material capsule, an anti-target inside Cybergram presentation (docs/CYBERGRAM_UI_SPEC.md
+        // line 21). The gated branch replaces ONLY the background drawable with the shared chamfer
+        // plate, drawn inside the very same dp(7) inset the glass capsule used, so the 70dp wrapper,
+        // the dp(11) tab padding, the dp(11)/dp(28) content clip and every tab hit rect stay exactly
+        // as upstream. The glass drawable remains the non-Cybergram branch.
+        buttonsRecyclerViewWrapper.setBackground(cybergramAttach
+            ? CybergramTheme.createChamferedPlateDrawable(
+                CybergramTheme.PANEL_RAISED, CybergramTheme.ATTACH_TAB_STRIP_FILL_ALPHA,
+                CybergramTheme.CYAN, CybergramTheme.ATTACH_TAB_STRIP_BORDER_ALPHA,
+                CybergramTheme.ATTACH_TAB_STRIP_BORDER_WIDTH_DP,
+                CybergramTheme.ATTACH_TAB_STRIP_CUT_DP, dp(7))
+            : tabsViewBackground);
         buttonsRecyclerView.setPadding(dp(11), dp(11), dp(11), dp(11));
         buttonsRecyclerView.setClipToOutline(true);
         buttonsRecyclerView.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(11), dp(56 / 2f)));

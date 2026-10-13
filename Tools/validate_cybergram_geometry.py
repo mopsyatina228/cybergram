@@ -59,6 +59,8 @@ SETTINGS_ACTIVITY = JAVA / "ui/SettingsActivity.java"
 SETTINGS_SEARCH_CELL = JAVA / "ui/Cells/SettingsSearchCell.java"
 # Round 10 / Stage F profile chrome typography.
 CYBERGRAM_TYPOGRAPHY = JAVA / "ui/ActionBar/CybergramTypography.java"
+# Round 11 / Stage F attach surface (paperclip attach-alert menu).
+CHAT_ATTACH_ALERT = JAVA / "ui/Components/ChatAttachAlert.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -240,6 +242,7 @@ def main():
         "settings_activity": SETTINGS_ACTIVITY,
         "settings_search_cell": SETTINGS_SEARCH_CELL,
         "cybergram_typography": CYBERGRAM_TYPOGRAPHY,
+        "chat_attach_alert": CHAT_ATTACH_ALERT,
     }
     texts = {}
     for name, path in paths.items():
@@ -1474,6 +1477,183 @@ def main():
         name_routed, "nameTextView[a].setTypeface(AndroidUtilities.bold());")
     check("negative control: the pre-fix raw header-name typeface is detected as un-routed",
           header_name_routed(prefix_source) is False)
+
+    # ---- [P] round-11 Stage F attach surface ------------------------------------------------
+    # The paperclip attach-alert surface (ChatAttachAlert) carried two large stock Material
+    # capsules: the 70dp attach-type tab strip (a translucent 28dp-radius glass capsule behind the
+    # Gallery/File/Music/Location/Contact/Poll tabs) and the 28dp-tall "Create" plate on the alert
+    # action bar. docs/CYBERGRAM_UI_SPEC.md line 21 rules large rounded/glass Material capsules an
+    # anti-target inside Cybergram presentation, so round 11 replaces both through narrow gated
+    # seams with the shared eight-segment chamfer plus ONE thin cyan rail (the round-9 chip
+    # grammar). This section re-derives the invariants from the real source and pins the upstream
+    # geometry (70dp wrapper, dp(11) tab padding, dp(11)/dp(28) content clip, 28dp action plate) so
+    # the replacement can never move a hit rect.
+    print("\n[P] round-11 attach surface (attach tab strip + attach action plate)")
+    caa = strip_java_comments(texts["chat_attach_alert"])
+    caan = re.sub(r"[ \t]*\n[ \t]*", " ", caa)
+    themen = re.sub(r"[ \t]*\n[ \t]*", " ", strip_java_comments(texts["theme"]))
+
+    strip_cut = token("ATTACH_TAB_STRIP_CUT_DP")
+    strip_border_w = token("ATTACH_TAB_STRIP_BORDER_WIDTH_DP")
+    strip_border_alpha = ints.get("ATTACH_TAB_STRIP_BORDER_ALPHA")
+    strip_fill_alpha = ints.get("ATTACH_TAB_STRIP_FILL_ALPHA")
+    attach_action_cut = token("ATTACH_ACTION_CUT_DP")
+
+    check("round-11 attach tokens parse",
+          None not in (strip_cut, strip_border_w, strip_border_alpha, strip_fill_alpha,
+                       attach_action_cut),
+          "strip_cut=%s rail_w=%s rail=%s fill=%s action_cut=%s"
+          % (strip_cut, strip_border_w, strip_border_alpha, strip_fill_alpha, attach_action_cut))
+
+    # The strip plate must speak the accepted chip grammar, never invent a second visual language.
+    check("attach tab strip rail/fill aliases the inline-button (chip) grammar",
+          strip_border_w == token("BOT_BUTTON_BORDER_WIDTH_DP")
+          and strip_border_alpha == ints.get("BOT_BUTTON_BORDER_ALPHA")
+          and strip_fill_alpha == ints.get("BOT_BUTTON_FILL_ALPHA"),
+          "w=%s rail=%s fill=%s" % (strip_border_w, strip_border_alpha, strip_fill_alpha))
+
+    gate_decl = ("final boolean cybergramAttach = "
+                 "CybergramTheme.isCybergramPresentation(resourcesProvider);")
+    strip_branch = "buttonsRecyclerViewWrapper.setBackground(cybergramAttach"
+
+    check("tab strip background is a gated seam on the central Cybergram presentation gate",
+          gate_decl in caan and strip_branch in caan
+          and "CybergramTheme.PANEL_RAISED, CybergramTheme.ATTACH_TAB_STRIP_FILL_ALPHA" in caan
+          and "CybergramTheme.CYAN, CybergramTheme.ATTACH_TAB_STRIP_BORDER_ALPHA" in caan
+          and "CybergramTheme.ATTACH_TAB_STRIP_CUT_DP, dp(7)) : tabsViewBackground);" in caan)
+    check("the gate is read before the strip branch (not a dead or ungated seam)",
+          caan.find(gate_decl) != -1 and caan.find(gate_decl) < caan.find(strip_branch))
+
+    _strip_start = caan.find(strip_branch)
+    _strip_end = caan.find(": tabsViewBackground);", _strip_start)
+    strip_call = (caan[_strip_start:_strip_end + len(": tabsViewBackground);")]
+                  if _strip_start != -1 and _strip_end > _strip_start else "")
+
+    def strip_seam_gated(src):
+        """True only for the gated two-branch seam that keeps the upstream glass capsule."""
+        return (gate_decl in src
+                and "buttonsRecyclerViewWrapper.setBackground(cybergramAttach" in src
+                and "ATTACH_TAB_STRIP_CUT_DP, dp(7)) : tabsViewBackground);" in src)
+
+    check("strip chamfer plate is drawn inside the glass capsule's own dp(7) inset",
+          "ATTACH_TAB_STRIP_CUT_DP, dp(7))" in caan)
+    _plate_body = themen[themen.find("class ChamferPlateDrawable"):
+                         themen.find("class InteractionPanelShape")]
+    check("the new inset is drawing-time only (the helper never reports view padding)",
+          "rect.inset(insetPx, insetPx);" in _plate_body and "getPadding" not in _plate_body)
+    check("the shared plate helper keeps its six-argument contract (round-9 call sites untouched)",
+          "return createChamferedPlateDrawable(fillColor, fillAlpha, borderColor, borderAlpha, "
+          "borderWidthDp, cutDp, 0);" in themen)
+
+    check("upstream tab-strip geometry is untouched (70dp wrapper, dp(11) padding, dp(11)/dp(28) clip)",
+          "LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.BOTTOM | "
+          "Gravity.CENTER_HORIZONTAL)" in caan
+          and "buttonsRecyclerView.setPadding(dp(11), dp(11), dp(11), dp(11));" in caan
+          and "ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(11), dp(56 / 2f))" in caan)
+    check("the glass capsule survives as the non-Cybergram fallback (radius + padding kept)",
+          "tabsViewBackground.setRadius(dp(56 / 2f));" in caan
+          and "tabsViewBackground.setPadding(dp(7));" in caan)
+
+    _done_start = caan.find("TextView doneItem = new TextView(context) {")
+    _done_end = caan.find("updateDoneItemEnabled();", _done_start)
+    done_body = caan[_done_start:_done_end] if _done_start != -1 and _done_end > _done_start else ""
+    check("attach action plate body readable from source", bool(done_body))
+    if done_body:
+        check("action plate chamfer is read at draw time from the central gate",
+              "if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {" in done_body)
+        check("action plate chamfer uses the shared path builder and the round-11 cut token",
+              "CybergramTheme.buildInteractionPanelPath(cybergramAttachPlatePath," in done_body
+              and "CybergramTheme.ATTACH_ACTION_CUT_DP);" in done_body)
+        _chamfer_draw = done_body.find("canvas.drawPath(cybergramAttachPlatePath, p);")
+        _upstream_draw = done_body.find("canvas.drawRoundRect(0, getHeight() / 2f - dp(14),")
+        check("the chamfer branch precedes the upstream rounded draw (fallback preserved)",
+              _chamfer_draw != -1 and _upstream_draw != -1 and _chamfer_draw < _upstream_draw)
+        check("action plate box is untouched (28dp from the +-dp(14) half-height)",
+              done_body.count("getHeight() / 2f - dp(14)") == 2
+              and done_body.count("getHeight() / 2f + dp(14)") == 2,
+              "min=%d max=%d" % (done_body.count("getHeight() / 2f - dp(14)"),
+                                 done_body.count("getHeight() / 2f + dp(14)")))
+
+    def action_plate_routed(src):
+        return ("if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {" in src
+                and "CybergramTheme.ATTACH_ACTION_CUT_DP);" in src)
+
+    _pre_fix_plate = ("p.setColor(getThemedColor(Theme.key_featuredStickers_addButton)); "
+                      "canvas.drawRoundRect(0, getHeight() / 2f - dp(14), "
+                      "getWidth(), getHeight() / 2f + dp(14), dp(14), dp(14), p);")
+    check("negative control: the pre-fix rounded action plate fails the routing predicate",
+          action_plate_routed(_pre_fix_plate) is False)
+    check("negative control: the pre-fix plain glass capsule fails the strip-seam predicate",
+          bool(strip_call) and strip_seam_gated(
+              caan.replace(strip_call,
+                           "buttonsRecyclerViewWrapper.setBackground(tabsViewBackground);")) is False)
+
+    # Density model of the shared builder on the two round-11 plates (independent port of
+    # CybergramTheme.buildInteractionPanelPath, including its 22%-of-shorter-side clamp).
+    def attach_chamfer_ok(width_dp, height_dp, cut_dp, inset_dp, density, clamp_ratio=0.22):
+        w = float(dp_ceil(width_dp, density)) - 2.0 * float(dp_ceil(inset_dp, density))
+        h = float(dp_ceil(height_dp, density)) - 2.0 * float(dp_ceil(inset_dp, density))
+        if w <= 0.0 or h <= 0.0:
+            return False, "empty box"
+        cut = float(dp_ceil(cut_dp, density))
+        if clamp_ratio is not None:
+            cut = min(cut, min(w, h) * clamp_ratio)
+        if cut <= 0.0 or 2.0 * cut >= min(w, h):
+            return False, "degenerate cut=%.2f" % cut
+        pts = [(cut, 0.0), (w - cut, 0.0), (w, cut), (w, h - cut),
+               (w - cut, h), (cut, h), (0.0, h - cut), (0.0, cut)]
+        if any(x < 0.0 or y < 0.0 or x > w or y > h for x, y in pts):
+            return False, "outside box"
+        return True, "cut=%.2f w=%.1f h=%.1f" % (cut, w, h)
+
+    if strip_cut is not None and attach_action_cut is not None:
+        strip_cases = 0
+        strip_bad = []
+        for density in DENSITIES:
+            for width_dp in (320.0, 360.0, 411.0, 480.0):
+                strip_cases += 1
+                ok, why = attach_chamfer_ok(width_dp, 70.0, strip_cut, 7.0, density)
+                if not ok:
+                    strip_bad.append("%.0fdp d=%.3f %s" % (width_dp, density, why))
+        check("attach tab strip chamfer stays a real, in-bounds polygon for %d density/width cases"
+              % strip_cases, not strip_bad,
+              "violations: " + ", ".join(strip_bad[:4]) if strip_bad else "")
+
+        action_bad = []
+        for density in DENSITIES:
+            ok, why = attach_chamfer_ok(96.0, 28.0, attach_action_cut, 0.0, density)
+            if not ok:
+                action_bad.append("d=%.3f %s" % (density, why))
+        check("attach action plate chamfer is a real cut inside the 28dp box at every density",
+              not action_bad, "violations: " + ", ".join(action_bad[:4]) if action_bad else "")
+        check("attach action plate cut stays inside the shared 22 percent clamp of its 28dp box",
+              attach_action_cut <= 28.0 * 0.22 + 1e-6,
+              "cut=%.2fdp clamp=%.2fdp" % (attach_action_cut, 28.0 * 0.22))
+
+        # Negative controls: the model must react to an oversized cut AND to a dropped inset,
+        # otherwise the in-bounds checks above are not sensitive to the regressions they guard.
+        over_ok, _ = attach_chamfer_ok(360.0, 70.0, 400.0, 7.0, 2.75, clamp_ratio=None)
+        check("negative control: an unclamped oversized attach cut escapes the tab-strip box",
+              over_ok is False)
+
+        def strip_plate_w(density, inset_dp):
+            return float(dp_ceil(360.0, density)) - 2.0 * float(dp_ceil(inset_dp, density))
+
+        check("negative control: dropping the dp(7) inset widens the strip plate by 14dp",
+              all(strip_plate_w(d, 0.0) - strip_plate_w(d, 7.0) == 2.0 * float(dp_ceil(7.0, d))
+                  for d in DENSITIES))
+        check("negative control: the same seam without the dp(7) inset fails the footprint predicate",
+              caan.count("ATTACH_TAB_STRIP_CUT_DP, dp(7))") == 1
+              and "ATTACH_TAB_STRIP_CUT_DP, dp(7))" not in
+                  caan.replace("ATTACH_TAB_STRIP_CUT_DP, dp(7))", "ATTACH_TAB_STRIP_CUT_DP))"))
+
+    check("theme documents the round-11 attach provenance and its scope boundary",
+          "surface 3 of 3" in texts["theme"] and "attach-alert" in texts["theme"]
+          and "docs/CYBERGRAM_UI_SPEC.md" in texts["theme"])
+    check("round 11 adds tokens only (TEXT_MUTED and the D2 palette hues are untouched)",
+          "public static final int TEXT_MUTED = 0xFF78858F;" in texts["theme"]
+          and "public static final int CYAN = 0xFF00E5FF;" in texts["theme"]
+          and "public static final int AMBER = 0xFFFFB300;" in texts["theme"])
 
     _summary()
 
