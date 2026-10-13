@@ -32,13 +32,20 @@ public final class CybergramTheme {
     public static final int PANEL = 0xFF0B0D12;
     public static final int PANEL_RAISED = 0xFF111820;
 
-    public static final int CYAN = 0xFF6FD9E8;
-    public static final int CYAN_SECONDARY = 0xFF8EEAF2;
+    /**
+     * Approved D2 hue palette (owner ruling 2026-09-15, docs/OWNER_DECISIONS_2026-09-15.md),
+     * restored globally by the explicit owner override of 2026-10-13 (owner option "а", chat
+     * 264566925) after the 2026-09-30 pass-2 experiment desaturated the hue cores. These five
+     * values are the single source of truth for the hue roles; cybergram.attheme carries exactly
+     * the same five.
+     */
+    public static final int CYAN = 0xFF00E5FF;
+    public static final int CYAN_SECONDARY = 0xFF33D6FF;
     /** Ruled 2026-09-15: reference amber (was #E8D93A). See docs/OWNER_DECISIONS_2026-09-15.md. */
-    public static final int AMBER = 0xFFE6C955;
-    public static final int AMBER_HIGHLIGHT = 0xFFF0DB7A;
+    public static final int AMBER = 0xFFFFB300;
+    public static final int AMBER_HIGHLIGHT = 0xFFFFC94D;
     /** Ruled 2026-09-15: reference service red (was #FF2E46). */
-    public static final int DANGER = 0xFFE01C47;
+    public static final int DANGER = 0xFFFF003C;
 
     public static final int TEXT = 0xFFE6F7FF;
     /**
