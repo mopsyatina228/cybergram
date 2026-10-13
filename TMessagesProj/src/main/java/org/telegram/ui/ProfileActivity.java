@@ -188,6 +188,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.OKLCH;
 import org.telegram.ui.ActionBar.CybergramTheme;
+import org.telegram.ui.ActionBar.CybergramTypography;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -5602,7 +5603,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[a].setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(a == 0 ? 12 : 4));
             nameTextView[a].setTextSizePx(dp(17.5f));
             nameTextView[a].setGravity(Gravity.LEFT);
-            nameTextView[a].setTypeface(AndroidUtilities.bold());
+            // Cybergram chrome identity (profile header name): LOCAL opt-in through the central gate.
+            // Outside Cybergram chromeBold() returns the upstream bold face verbatim, and the gate is
+            // re-evaluated on every call, so a rebuilt header after a live theme switch restores stock.
+            nameTextView[a].setTypeface(CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));
             nameTextView[a].setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
             nameTextView[a].setPivotX(0);
             nameTextView[a].setPivotY(0);
@@ -5668,6 +5672,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setTextColor(applyPeerColor(getThemedColor(Theme.key_actionBarDefaultSubtitle), true, null));
             onlineTextView[a].setTextSizePx(dp(13.5f));
             onlineTextView[a].setGravity(Gravity.LEFT);
+            // Cybergram chrome identity (profile status line): LOCAL opt-in through the central gate.
+            // The status view has no explicit upstream face, so Typeface.DEFAULT is the verbatim
+            // upstream value returned outside Cybergram presentation.
+            onlineTextView[a].setTypeface(CybergramTypography.chromeRegular(getResourceProvider(), Typeface.DEFAULT));
             onlineTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
             onlineTextView[a].setPivotX(dp(8));
             onlineTextView[a].setPivotY(dp(8));

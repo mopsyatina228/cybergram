@@ -57,6 +57,8 @@ PROFILE_ACTIONS_VIEW = JAVA / "ui/Components/ProfileActionsView.java"
 # Round 9 / Stage F settings surface.
 SETTINGS_ACTIVITY = JAVA / "ui/SettingsActivity.java"
 SETTINGS_SEARCH_CELL = JAVA / "ui/Cells/SettingsSearchCell.java"
+# Round 10 / Stage F profile chrome typography.
+CYBERGRAM_TYPOGRAPHY = JAVA / "ui/ActionBar/CybergramTypography.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -237,6 +239,7 @@ def main():
         "profile_actions_view": PROFILE_ACTIONS_VIEW,
         "settings_activity": SETTINGS_ACTIVITY,
         "settings_search_cell": SETTINGS_SEARCH_CELL,
+        "cybergram_typography": CYBERGRAM_TYPOGRAPHY,
     }
     texts = {}
     for name, path in paths.items():
@@ -1414,6 +1417,63 @@ def main():
     check("negative control: an unclamped oversized chip cut escapes the 28dp chip",
           chip_outside_count(float(dp_ceil(28.0, 2.75)), float(dp_ceil(28.0, 2.75)), 400.0,
                              clamp_ratio=None) > 0)
+
+    # ---- [O] round-10 Stage F profile chrome typography --------------------------------------
+    # The profile screen built its header identity from raw upstream faces: the header name called
+    # AndroidUtilities.bold() directly and the status line carried no face at all, so ProfileActivity
+    # never consulted the central chrome helper (CybergramTypography references == 0 before this
+    # round). Round 10 routes ONLY those two identity seams through CybergramTypography, which is a
+    # LOCAL opt-in with the shared gate inside it: chromeBold()/chromeRegular() return the caller's
+    # upstream typeface verbatim whenever Cybergram presentation is off, and the gate is re-read on
+    # every call, so a header rebuilt after a live theme switch cannot leak the chrome face.
+    # Specialised profile texts (the avatar pager indicator and the star-rating title) stay upstream
+    # by owner instruction; this section pins both the routing and that deliberate non-routing.
+    print("\n[O] round-10 profile chrome typography (header name + status)")
+    typ = strip_java_comments(texts["cybergram_typography"])
+
+    # The helper is two-way for both faces: the Cybergram branch yields the chrome face, every other
+    # presentation yields the caller's upstream typeface unchanged.
+    check("chrome typography helper is two-way for name and status faces",
+          "return isChrome(provider) ? chromeBold() : upstream;" in typ
+          and "return isChrome(provider) ? chromeRegular() : upstream;" in typ,
+          "helper must return `upstream` outside Cybergram")
+
+    name_routed = ("nameTextView[a].setTypeface("
+                   "CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold()));")
+    status_routed = ("onlineTextView[a].setTypeface("
+                     "CybergramTypography.chromeRegular(getResourceProvider(), Typeface.DEFAULT));")
+    name_bare = "nameTextView[a].setTypeface(AndroidUtilities.bold())"
+
+    check("profile header name is routed through the central chrome-bold helper",
+          name_routed in pa and name_bare not in pa)
+    check("profile status line is routed through the central chrome-regular helper",
+          status_routed in pa)
+    check("both profile identity seams pass an explicit upstream fallback to the helper",
+          "CybergramTypography.chromeBold(getResourceProvider(), AndroidUtilities.bold())" in pa
+          and "CybergramTypography.chromeRegular(getResourceProvider(), Typeface.DEFAULT)" in pa)
+
+    # Deliberate non-routing: the avatar pager indicator and the star-rating title are specialised
+    # texts, not chrome identity, and must keep their upstream faces.
+    check("specialised profile texts keep their upstream faces (pager indicator + rating title)",
+          "textPaint.setTypeface(Typeface.SANS_SERIF);" in pa
+          and "titleView.setTypeface(AndroidUtilities.bold());" in pa)
+
+    routed = pa.count("setTypeface(CybergramTypography.")
+    upstream_direct = (pa.count(".setTypeface(Typeface.SANS_SERIF)")
+                       + pa.count(".setTypeface(AndroidUtilities.bold())"))
+    check("profile exposes exactly two routed and three deliberate upstream setTypeface sites",
+          routed == 2 and upstream_direct == 3,
+          "routed=%d upstream=%d" % (routed, upstream_direct))
+
+    # Negative control: the pre-fix source (raw AndroidUtilities.bold() on the header name) must be
+    # rejected by the same predicate, otherwise the routing checks above are not sensitive.
+    def header_name_routed(src):
+        return name_routed in src and name_bare not in src
+
+    prefix_source = pa.replace(
+        name_routed, "nameTextView[a].setTypeface(AndroidUtilities.bold());")
+    check("negative control: the pre-fix raw header-name typeface is detected as un-routed",
+          header_name_routed(prefix_source) is False)
 
     _summary()
 
