@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -36,6 +37,8 @@ public class SettingsSearchCell extends FrameLayout {
     private ImageView imageView;
     private boolean needDivider;
     private int left;
+    /** Round-9 LOCAL opt-in; true only for the settings root (see the two-arg constructor). */
+    private final boolean cybergram;
 
     public static class VerticalImageSpan extends ImageSpan {
 
@@ -79,7 +82,20 @@ public class SettingsSearchCell extends FrameLayout {
     }
 
     public SettingsSearchCell(Context context) {
+        this(context, false);
+    }
+
+    /**
+     * @param cybergram explicit LOCAL opt-in for the settings ROOT only. This cell is shared: the
+     *                  settings root reaches it through {@link Factory} + {@code UniversalAdapter},
+     *                  while ProfileActivity's own settings-search list constructs it directly
+     *                  ({@code ProfileActivity.SearchAdapter.onCreateViewHolder}). The chamfered
+     *                  icon plate must not leak into that profile list, so only the Factory passes
+     *                  {@code true} and the direct constructor stays upstream.
+     */
+    public SettingsSearchCell(Context context, boolean cybergram) {
         super(context);
+        this.cybergram = cybergram;
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -102,7 +118,17 @@ public class SettingsSearchCell extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        if (cybergram) {
+            // Round 9: the settings-root search icon becomes a chamfered HUD plate (PANEL_RAISED
+            // fill + ONE thin cyan rail) with a cyan glyph; the 48dp icon box is unchanged.
+            imageView.setBackground(CybergramTheme.createChamferedPlateDrawable(
+                    CybergramTheme.PANEL_RAISED, CybergramTheme.SETTINGS_CHIP_FILL_ALPHA,
+                    CybergramTheme.CYAN, CybergramTheme.SETTINGS_CHIP_BORDER_ALPHA,
+                    CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP, CybergramTheme.SETTINGS_SEARCH_PLATE_CUT_DP));
+            imageView.setColorFilter(new PorterDuffColorFilter(CybergramTheme.CYAN, PorterDuff.Mode.SRC_IN));
+        } else {
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        }
         addView(imageView, LayoutHelper.createFrame(48, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 10, 8, 10, 0));
     }
 
@@ -215,7 +241,10 @@ public class SettingsSearchCell extends FrameLayout {
 
         @Override
         public SettingsSearchCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-            return new SettingsSearchCell(context);
+            // Round 9: the Factory path is reached only by the settings root (SettingsActivity ->
+            // ProfileActivity.SearchAdapter.fillItems -> UniversalAdapter), so this is the LOCAL
+            // opt-in for the chamfered icon plate; the direct constructor stays upstream.
+            return new SettingsSearchCell(context, true);
         }
 
         @Override

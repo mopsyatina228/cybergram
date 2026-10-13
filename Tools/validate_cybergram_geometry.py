@@ -54,6 +54,9 @@ AVATAR_DRAWABLE = JAVA / "ui/Components/AvatarDrawable.java"
 # Round 8 / Stage F profile surface.
 PROFILE_ACTIVITY = JAVA / "ui/ProfileActivity.java"
 PROFILE_ACTIONS_VIEW = JAVA / "ui/Components/ProfileActionsView.java"
+# Round 9 / Stage F settings surface.
+SETTINGS_ACTIVITY = JAVA / "ui/SettingsActivity.java"
+SETTINGS_SEARCH_CELL = JAVA / "ui/Cells/SettingsSearchCell.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -232,6 +235,8 @@ def main():
         "avatar_drawable": AVATAR_DRAWABLE,
         "profile_activity": PROFILE_ACTIVITY,
         "profile_actions_view": PROFILE_ACTIONS_VIEW,
+        "settings_activity": SETTINGS_ACTIVITY,
+        "settings_search_cell": SETTINGS_SEARCH_CELL,
     }
     texts = {}
     for name, path in paths.items():
@@ -1264,6 +1269,151 @@ def main():
     old_ink = 0.4 * 2.75 * (72 / 255.0)
     check("negative control: the rejected 0.4dp @ alpha 72 frame is below the legibility floor",
           old_ink < 1.0, "ink=%.2f px" % old_ink)
+
+    # ---- [N] round-9 Stage F settings surface ------------------------------------------------
+    # SettingsActivity is the root settings screen (the third main tab). Round 9 replaced its
+    # stock Material shapes — the 90dp circular hero avatar, the 28dp circular account avatars,
+    # the 28dp rounded setting-icon chips, the 48dp bare settings-search icons and the suggestion
+    # pill row — with the shared eight-segment chamfer plus ONE thin cyan rail.
+    # SettingsSearchCell is shared with ProfileActivity's own settings-search list, so it carries
+    # an explicit LOCAL opt-in: only the Factory path (reached exclusively from the settings root
+    # through UniversalAdapter) enables it. This section re-derives the invariants from the real
+    # source so dropping the gate, re-rounding a chip or relaxing the opt-in fails the gate.
+    print("\n[N] round-9 settings surface (hero avatar + account/setting chips + search plate)")
+    sa = strip_java_comments(texts["settings_activity"])
+    ssc = strip_java_comments(texts["settings_search_cell"])
+    pa9 = strip_java_comments(texts["profile_activity"])
+
+    set_hero_cut = token("SETTINGS_AVATAR_CUT_DP")
+    set_frame_w = token("SETTINGS_AVATAR_FRAME_WIDTH_DP")
+    set_rest = ints.get("SETTINGS_AVATAR_FRAME_ALPHA")
+    set_raised = ints.get("SETTINGS_AVATAR_FRAME_RAISED_ALPHA")
+    set_chip_cut = token("SETTINGS_CHIP_CUT_DP")
+    set_chip_border_w = token("SETTINGS_CHIP_BORDER_WIDTH_DP")
+    set_chip_border = ints.get("SETTINGS_CHIP_BORDER_ALPHA")
+    set_chip_fill = ints.get("SETTINGS_CHIP_FILL_ALPHA")
+    set_search_cut = token("SETTINGS_SEARCH_PLATE_CUT_DP")
+
+    check("settings tokens parse",
+          None not in (set_hero_cut, set_frame_w, set_rest, set_raised, set_chip_cut,
+                       set_chip_border_w, set_chip_border, set_chip_fill, set_search_cut),
+          "hero_cut=%s frame_w=%s rest=%s raised=%s chip_cut=%s chip_border=%s search_cut=%s"
+          % (set_hero_cut, set_frame_w, set_rest, set_raised, set_chip_cut, set_chip_border,
+             set_search_cut))
+
+    # The chip/plate grammar must stay the inline-button grammar (one rail, same rail/fill as
+    # BOT_BUTTON_*), so a future edit cannot invent a second visual language for settings.
+    check("settings chip rail aliases the inline-button grammar (BOT_BUTTON_*)",
+          set_chip_border_w == token("BOT_BUTTON_BORDER_WIDTH_DP")
+          and set_chip_border == ints.get("BOT_BUTTON_BORDER_ALPHA")
+          and set_chip_fill == ints.get("BOT_BUTTON_FILL_ALPHA"),
+          "w=%s rail=%s fill=%s" % (set_chip_border_w, set_chip_border, set_chip_fill))
+
+    # Hero avatar: the 90dp box is upstream; the shared builder clamps the cut to 22% of the
+    # shorter side, so the chamfer must stay strictly inside the box on every supported density.
+    hero_side_dp = 90.0
+    if set_hero_cut is not None:
+        clamp_dp = hero_side_dp * 0.22
+        inside = []
+        for density in DENSITIES:
+            side = dp_ceil(hero_side_dp, density)
+            cut = min(dp_ceil(set_hero_cut, density), side * 0.22)
+            if cut <= 0 or 2 * cut >= side:
+                inside.append("d=%.3f" % density)
+        check("settings hero chamfer is a real, non-degenerate cut inside the 90dp box",
+              set_hero_cut > 0 and set_hero_cut <= clamp_dp and not inside,
+              "cut=%.2fdp clamp=%.2fdp violations=%s" % (set_hero_cut, clamp_dp, inside or "none"))
+
+    # The hero avatar must read the central gate first and keep the upstream circle as fallback.
+    hero_gate_idx = sa.find("final boolean cybergramHeroAvatar = CybergramTheme.isCybergramPresentation(resourceProvider);")
+    hero_round_idx = sa.find("avatarView.setRoundRadius(dp(90));")
+    check("settings hero avatar gate is read before the upstream circular fallback",
+          hero_gate_idx != -1 and hero_round_idx != -1 and hero_gate_idx < hero_round_idx)
+    check("settings hero avatar suppresses the circular mask under Cybergram",
+          "avatarView.setRoundRadius(0);" in sa and "new CybergramAvatarView(" in sa)
+
+    # The rail is one stroked chamfer, inset by half its own stroke, whose resting alpha is
+    # legible at 440dpi and below the raised state (round-7 Rest -> Raised grammar).
+    if None not in (set_frame_w, set_rest, set_raised):
+        rest_ink = set_frame_w * 2.75 * (set_rest / 255.0)
+        check("settings avatar rail reaches the legibility floor (>= 1.0 full-opacity device px)",
+              rest_ink >= 1.0, "ink=%.2f px at 440dpi (w=%.2fdp a=%s)" % (rest_ink, set_frame_w, set_rest))
+        check("settings avatar rail keeps a real Rest -> Raised delta",
+              0 < set_rest < set_raised <= 255, "rest=%s raised=%s" % (set_rest, set_raised))
+        check("settings avatar rail stroke stays a hairline (<= 1.2dp)",
+              set_frame_w <= 1.2, "w=%.2fdp" % set_frame_w)
+    check("settings avatar rail is inset by half its own stroke",
+          "stroke / 2f" in sa and "canvas.drawPath(chamferPath, railPaint);" in sa)
+    check("settings avatar rail samples the pressed state (Rest -> Raised)",
+          "pressSource.isPressed()" in sa)
+
+    # Account avatar + setting icon chip must each opt in, and the chip keeps the upstream
+    # rounded draw as the non-Cybergram fallback (provable no-op outside the gate).
+    check("account avatar and setting chip are gated (>= 2 settings-only opt-ins)",
+          sa.count("CybergramTheme.isCybergramPresentation(resourcesProvider)") >= 2
+          and "avatarView.setRoundRadius(dp(14));" in sa)
+    chip_gate_idx = sa.find("iconBackground.setCybergram(CybergramTheme.isCybergramPresentation(resourcesProvider));")
+    chip_branch_idx = sa.find("if (cybergram) {", chip_gate_idx if chip_gate_idx != -1 else 0)
+    chip_fallback_idx = sa.find(
+        "canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);",
+        chip_branch_idx if chip_branch_idx != -1 else 0)
+    check("setting icon chip chamfer is gated and precedes the upstream rounded draw",
+          chip_gate_idx != -1 and chip_branch_idx != -1 and chip_fallback_idx != -1
+          and chip_gate_idx < chip_branch_idx < chip_fallback_idx)
+    check("setting icon chip chamfer uses the shared cut token and draws ONE rail",
+          "CybergramTheme.SETTINGS_CHIP_CUT_DP" in sa
+          and "canvas.drawPath(chamferPath, strokePaint);" in sa)
+    check("suggestion plate uses the chamfer plate + chamfered ripple, height unchanged",
+          "CybergramTheme.createChamferedPlateDrawable(" in sa
+          and "CybergramTheme.createChamferedRippleDrawable(" in sa
+          and "LayoutHelper.createLinear(0, 42, 1f, Gravity.FILL_VERTICAL" in sa)
+
+    # SettingsSearchCell local opt-in: the DIRECT constructor must stay upstream (ProfileActivity
+    # renders this cell in its own settings-search list) and only the Factory may enable it.
+    check("SettingsSearchCell direct constructor keeps the upstream (non-cybergram) shape",
+          "this(context, false);" in ssc
+          and "Theme.key_windowBackgroundWhiteGrayIcon" in ssc)
+    check("SettingsSearchCell Factory is the LOCAL opt-in for the settings root",
+          "return new SettingsSearchCell(context, true);" in ssc
+          and "this.cybergram = cybergram;" in ssc
+          and "CybergramTheme.SETTINGS_SEARCH_PLATE_CUT_DP" in ssc)
+    check("profile settings-search still constructs the one-arg (upstream) cell",
+          "new SettingsSearchCell(mContext)" in pa9
+          and "new SettingsSearchCell(mContext, true)" not in pa9)
+
+    # Shared bordered drawable: the rail is inset by half its own stroke so it can never bleed
+    # past the chamfer on any of the settings chips/plates.
+    check("shared chamfer plate drawable insets its rail by half the stroke",
+          "rect.inset(stroke / 2f, stroke / 2f);" in texts["theme"])
+
+    # Geometry model: every settings chip/plate is built by the same clamped builder, so a chip
+    # whose shorter side limits the cut must still yield an in-bounds polygon; a negative control
+    # proves the check reacts to an over-large cut.
+    def chip_outside_count(width, height, cut, clamp_ratio=None):
+        if clamp_ratio is not None:
+            cut = min(cut, min(width, height) * clamp_ratio)
+        pts = [(cut, 0), (width - cut, 0), (width, cut), (width, height - cut),
+               (width - cut, height), (cut, height), (0, height - cut), (0, cut)]
+        return sum(1 for x, y in pts if x < 0 or y < 0 or x > width or y > height)
+
+    for label, side_dp, cut_dp in (("account/setting chip", 28.0, set_chip_cut),
+                                   ("settings search plate", 48.0, set_search_cut)):
+        if cut_dp is None:
+            continue
+        cases = 0
+        bad = []
+        for density in DENSITIES:
+            for size_dp in (side_dp, side_dp * 1.05, side_dp * 0.92):
+                cases += 1
+                side = float(dp_ceil(size_dp, density))
+                if chip_outside_count(side, side, dp_ceil(cut_dp, density), clamp_ratio=0.22) != 0:
+                    bad.append("%.0f d=%.3f" % (size_dp, density))
+        check("%s chamfer stays inside the plate for %d density/size cases" % (label, cases),
+              not bad, "violations: " + ", ".join(bad[:4]) if bad else "")
+
+    check("negative control: an unclamped oversized chip cut escapes the 28dp chip",
+          chip_outside_count(float(dp_ceil(28.0, 2.75)), float(dp_ceil(28.0, 2.75)), 400.0,
+                             clamp_ratio=None) > 0)
 
     _summary()
 

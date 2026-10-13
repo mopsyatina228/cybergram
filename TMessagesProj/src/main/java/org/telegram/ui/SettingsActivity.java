@@ -26,6 +26,7 @@ import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -94,6 +95,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -412,8 +414,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         ScaleStateListAnimator.apply(avatarContainer);
 
         avatarDrawable = new AvatarDrawable();
-        avatarView = new BackupImageView(context);
-        avatarView.setRoundRadius(dp(90));
+        // Stage F round 9: the settings hero avatar is the root screen's last circular shape. Under
+        // Cybergram the shared chamfer becomes the silhouette and carries one Rest -> Raised cyan
+        // rail (round-7 grammar). Paint/clip only: avatarContainer's 120dp box, the avatar's 90dp
+        // rect, its top inset and the tap target are exactly upstream.
+        final boolean cybergramHeroAvatar = CybergramTheme.isCybergramPresentation(resourceProvider);
+        if (cybergramHeroAvatar) {
+            avatarView = new CybergramAvatarView(
+                    context, CybergramTheme.SETTINGS_AVATAR_CUT_DP,
+                    CybergramTheme.SETTINGS_AVATAR_FRAME_WIDTH_DP, avatarContainer);
+            avatarView.setRoundRadius(0);
+        } else {
+            avatarView = new BackupImageView(context);
+            avatarView.setRoundRadius(dp(90));
+        }
         avatarContainer.addView(avatarView, LayoutHelper.createFrame(90, 90, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 15, 0, 0));
 
         avatarProgressView = new RadialProgressView(context) {
@@ -961,6 +975,73 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return WindowInsetsCompat.CONSUMED;
     }
 
+    /**
+     * Stage F round 9 settings avatar (hero + account rows). Under Cybergram the upstream circular
+     * ImageReceiver mask is replaced by the shared eight-segment chamfer, and one legible cyan rail
+     * is drawn on the silhouette with the round-7 Rest -> Raised grammar: resting
+     * {@link CybergramTheme#SETTINGS_AVATAR_FRAME_ALPHA}, full while {@code pressSource} is pressed.
+     *
+     * <p>Paint/clip only: the caller keeps the view's measured box, its layout params and the tap
+     * target exactly as upstream; the rail is inset by half its own stroke so it always stays
+     * inside the silhouette.
+     */
+    public static class CybergramAvatarView extends BackupImageView {
+
+        private final Path chamferPath = new Path();
+        private final RectF chamferRect = new RectF();
+        private final Paint railPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float cutDp;
+        private final float railWidthDp;
+        private final View pressSource;
+
+        public CybergramAvatarView(Context context, float cutDp, float railWidthDp, View pressSource) {
+            super(context);
+            this.cutDp = cutDp;
+            this.railWidthDp = railWidthDp;
+            this.pressSource = pressSource;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            final int width = getMeasuredWidth();
+            final int height = getMeasuredHeight();
+            if (width <= 0 || height <= 0) {
+                super.onDraw(canvas);
+                return;
+            }
+
+            chamferRect.set(0f, 0f, width, height);
+            chamferPath.rewind();
+            CybergramTheme.buildInteractionPanelPath(chamferPath, chamferRect, cutDp);
+
+            final int save = canvas.save();
+            canvas.clipPath(chamferPath);
+            super.onDraw(canvas);
+            canvas.restoreToCount(save);
+
+            final float stroke = AndroidUtilities.dpf2(railWidthDp);
+            final float inset = stroke / 2f;
+            chamferRect.set(inset, inset, width - inset, height - inset);
+            chamferPath.rewind();
+            CybergramTheme.buildInteractionPanelPath(chamferPath, chamferRect, cutDp);
+            railPaint.setStyle(Paint.Style.STROKE);
+            railPaint.setStrokeJoin(Paint.Join.MITER);
+            railPaint.setStrokeWidth(stroke);
+            railPaint.setColor(CybergramTheme.CYAN);
+            railPaint.setAlpha(pressSource != null && pressSource.isPressed()
+                    ? CybergramTheme.SETTINGS_AVATAR_FRAME_RAISED_ALPHA
+                    : CybergramTheme.SETTINGS_AVATAR_FRAME_ALPHA);
+            canvas.drawPath(chamferPath, railPaint);
+        }
+
+        @Override
+        protected void drawableStateChanged() {
+            super.drawableStateChanged();
+            // The rail is a visual state layer (Rest -> Raised), so a state change must repaint it.
+            invalidate();
+        }
+    }
+
     public static class AccountCell extends LinearLayout implements Theme.Colorable {
 
         private final Theme.ResourcesProvider resourcesProvider;
@@ -980,8 +1061,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             setOrientation(HORIZONTAL);
 
             avatarDrawable = new AvatarDrawable();
-            avatarView = new BackupImageView(context);
-            avatarView.setRoundRadius(dp(14));
+            // Stage F round 9: AccountCell is settings-only; under Cybergram its 28dp circular
+            // avatar becomes the shared chamfer with one thin cyan rail. The 28dp box and the row
+            // hit target are unchanged.
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                avatarView = new CybergramAvatarView(
+                        context, CybergramTheme.SETTINGS_CHIP_CUT_DP,
+                        CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP, this);
+                avatarView.setRoundRadius(0);
+            } else {
+                avatarView = new BackupImageView(context);
+                avatarView.setRoundRadius(dp(14));
+            }
 
             textView = new SimpleTextView(context);
             textView.setTextSize(15);
@@ -1152,6 +1243,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             iconLayout = new FrameLayout(context);
             iconLayout.setBackground(iconBackground = new Background());
+            // Stage F round 9: the settings row icon chip is used only by this screen; under
+            // Cybergram it keeps its category gradient but loses the rounded Material silhouette
+            // for the shared chamfer plus ONE thin cyan rail.
+            iconBackground.setCybergram(CybergramTheme.isCybergramPresentation(resourcesProvider));
 
             iconView = new ImageView(context);
             iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -1228,6 +1323,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             private LinearGradient gradient, strokeGradient;
             private final Matrix matrix = new Matrix();
+            /** Round-9 settings chip chamfer scratch (paint-only; the drawable bounds are upstream). */
+            private final Path chamferPath = new Path();
+            private final RectF chamferRect = new RectF();
+            private boolean cybergram;
+
+            public void setCybergram(boolean cybergram) {
+                this.cybergram = cybergram;
+            }
 
             public Background() {
                 strokePaint.setStyle(Paint.Style.STROKE);
@@ -1247,6 +1350,27 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public void draw(@NonNull Canvas canvas) {
+                if (cybergram) {
+                    // Round 9: shared eight-segment chamfer over the existing category gradient,
+                    // closed by ONE thin cyan rail (inline-button grammar). Bounds are untouched.
+                    chamferRect.set(getBounds());
+                    CybergramTheme.buildInteractionPanelPath(chamferPath, chamferRect, CybergramTheme.SETTINGS_CHIP_CUT_DP);
+                    canvas.drawPath(chamferPath, paint);
+
+                    if (border) {
+                        final float sw = AndroidUtilities.dpf2(CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP);
+                        strokePaint.setShader(null);
+                        strokePaint.setColor(CybergramTheme.CYAN);
+                        strokePaint.setAlpha(CybergramTheme.SETTINGS_CHIP_BORDER_ALPHA);
+                        strokePaint.setStrokeWidth(sw);
+                        chamferRect.set(getBounds());
+                        chamferRect.inset(sw / 2.0f, sw / 2.0f);
+                        CybergramTheme.buildInteractionPanelPath(chamferPath, chamferRect, CybergramTheme.SETTINGS_CHIP_CUT_DP);
+                        canvas.drawPath(chamferPath, strokePaint);
+                    }
+                    return;
+                }
+
                 final float r = dp(10);
                 AndroidUtilities.rectTmp.set(getBounds());
                 matrix.reset();
@@ -1348,6 +1472,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             no = new ButtonWithCounterView(context, resourcesProvider).setRound();
             yes = new ButtonWithCounterView(context, resourcesProvider).setRound();
+            // Stage F round 9: the suggestion plate is part of the settings root. Under Cybergram
+            // the stock Material pills become the shared chamfer plate (PANEL_RAISED fill + ONE
+            // thin cyan rail) without touching the 42dp button height or its tap target.
+            if (CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                for (ButtonWithCounterView plate : new ButtonWithCounterView[] { no, yes }) {
+                    plate.setBackground(CybergramTheme.createChamferedPlateDrawable(
+                            CybergramTheme.PANEL_RAISED, CybergramTheme.SETTINGS_CHIP_FILL_ALPHA,
+                            CybergramTheme.CYAN, CybergramTheme.SETTINGS_CHIP_BORDER_ALPHA,
+                            CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP, CybergramTheme.SETTINGS_CHIP_CUT_DP));
+                    plate.rippleView.setBackground(CybergramTheme.createChamferedRippleDrawable(
+                            Theme.getColor(Theme.key_listSelector, resourcesProvider),
+                            CybergramTheme.SETTINGS_CHIP_CUT_DP));
+                    plate.setTextColor(CybergramTheme.TEXT);
+                }
+            }
             buttons.addView(no, LayoutHelper.createLinear(0, 42, 1f, Gravity.FILL_VERTICAL, 0, 0, 12, 0));
             buttons.addView(yes, LayoutHelper.createLinear(0, 42, 1f, Gravity.FILL_VERTICAL, 0, 0, 0, 0));
 

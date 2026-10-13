@@ -3,9 +3,12 @@ package org.telegram.ui.ActionBar;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
@@ -562,6 +565,42 @@ public final class CybergramTheme {
     public static final int PROFILE_ACTION_BORDER_ALPHA = 126;
     public static final int PROFILE_ACTION_FILL_ALPHA = 236;
 
+    /**
+     * Settings surface, Stage F round 9 (owner order профиль -> настройки -> вложения).
+     *
+     * <p>{@code SettingsActivity} is the root settings screen — the third main tab, created at
+     * {@code MainTabsActivity.java:884}. Its stock Material shapes were the hero avatar (a 90dp
+     * circular ImageReceiver mask), the account rows ({@code AccountCell}, 28dp circular avatars),
+     * the setting rows ({@code SettingCell}, 28dp rounded gradient chips) and the settings
+     * search-result icon plates ({@code Cells/SettingsSearchCell}, 48dp bare icons). Everything
+     * else on the root (headers, shadow sections, plain text) is already flat.
+     *
+     * <p>The hero avatar and the two cells nested in {@code SettingsActivity} are reached by no
+     * other surface, so {@link #isCybergramPresentation} is their whole opt-in. {@code
+     * SettingsSearchCell} also renders ProfileActivity's own settings-search list, so it takes an
+     * explicit LOCAL opt-in instead: only its {@code Factory} — reached exclusively from the
+     * settings root through {@code UniversalAdapter} — enables the chamfer, while the direct
+     * constructor keeps the upstream shape. No global theme change (backlog B8 rule).
+     *
+     * <p>Grammar: avatars keep the round-7 Rest -> Raised rail
+     * ({@link #DIALOGS_AVATAR_FRAME_ALPHA} -> {@link #SETTINGS_AVATAR_FRAME_RAISED_ALPHA}); the
+     * chips/plates use the inline-button grammar ({@link #BOT_BUTTON_CUT_DP}) — ONE thin cyan rail
+     * over the existing category fill, no glow passes, no new hues.
+     */
+    public static final float SETTINGS_AVATAR_CUT_DP = 12f;
+    public static final float SETTINGS_AVATAR_FRAME_WIDTH_DP = 1.1f;
+    public static final int SETTINGS_AVATAR_FRAME_ALPHA = DIALOGS_AVATAR_FRAME_ALPHA;
+    public static final int SETTINGS_AVATAR_FRAME_RAISED_ALPHA = 255;
+
+    /** 28dp account avatar / setting-row icon chip: shared cut, one thin cyan rail. */
+    public static final float SETTINGS_CHIP_CUT_DP = 5f;
+    public static final float SETTINGS_CHIP_BORDER_WIDTH_DP = BOT_BUTTON_BORDER_WIDTH_DP;
+    public static final int SETTINGS_CHIP_BORDER_ALPHA = BOT_BUTTON_BORDER_ALPHA;
+    public static final int SETTINGS_CHIP_BORDER_RAISED_ALPHA = 255;
+    public static final int SETTINGS_CHIP_FILL_ALPHA = BOT_BUTTON_FILL_ALPHA;
+    /** 48dp settings search-result icon plate: same grammar, slightly larger cut. */
+    public static final float SETTINGS_SEARCH_PLATE_CUT_DP = 6f;
+
     private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**
@@ -666,6 +705,91 @@ public final class CybergramTheme {
                 outline.setConvexPath(path);
             }
         };
+    }
+
+    /**
+     * Bordered sibling of {@link #createChamferedPanelDrawable(int, float)}: the shared
+     * eight-segment chamfer painted as an optional fill plus ONE optional stroke rail. It exists so
+     * the round-9 settings chips/plates carry their rail without each cell re-implementing a
+     * {@link Drawable}. Both colours are Cybergram-owned constants, so this drawable needs no
+     * themed refresh ({@code Theme.setDrawableColor} is not used on it).
+     *
+     * @param fillColor    ARGB fill, or 0 to skip the fill
+     * @param fillAlpha    0..255 fill alpha
+     * @param borderColor  ARGB rail, or 0 to skip the rail
+     * @param borderAlpha  0..255 rail alpha
+     * @param borderWidthDp rail stroke width in dp (inset by half its own width)
+     * @param cutDp        corner cut in dp, clamped inside {@link #buildInteractionPanelPath}
+     */
+    public static Drawable createChamferedPlateDrawable(
+            int fillColor, int fillAlpha,
+            int borderColor, int borderAlpha,
+            float borderWidthDp, float cutDp
+    ) {
+        return new ChamferPlateDrawable(fillColor, fillAlpha, borderColor, borderAlpha, borderWidthDp, cutDp);
+    }
+
+    /** Fill + single-stroke chamfer plate; see {@link #createChamferedPlateDrawable}. */
+    private static final class ChamferPlateDrawable extends Drawable {
+        private final Path path = new Path();
+        private final RectF rect = new RectF();
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int fillColor, fillAlpha, borderColor, borderAlpha;
+        private final float borderWidthDp, cutDp;
+
+        ChamferPlateDrawable(
+                int fillColor, int fillAlpha,
+                int borderColor, int borderAlpha,
+                float borderWidthDp, float cutDp
+        ) {
+            this.fillColor = fillColor;
+            this.fillAlpha = fillAlpha;
+            this.borderColor = borderColor;
+            this.borderAlpha = borderAlpha;
+            this.borderWidthDp = borderWidthDp;
+            this.cutDp = cutDp;
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            final Rect bounds = getBounds();
+            if (bounds.isEmpty()) {
+                return;
+            }
+            if (fillColor != 0 && fillAlpha > 0) {
+                rect.set(bounds);
+                buildInteractionPanelPath(path, rect, cutDp);
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(fillColor);
+                paint.setAlpha(fillAlpha);
+                canvas.drawPath(path, paint);
+            }
+            if (borderColor != 0 && borderAlpha > 0 && borderWidthDp > 0f) {
+                final float stroke = AndroidUtilities.dpf2(borderWidthDp);
+                rect.set(bounds);
+                rect.inset(stroke / 2f, stroke / 2f);
+                buildInteractionPanelPath(path, rect, cutDp);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeJoin(Paint.Join.MITER);
+                paint.setStrokeWidth(stroke);
+                paint.setColor(borderColor);
+                paint.setAlpha(borderAlpha);
+                canvas.drawPath(path, paint);
+            }
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 
     /** Fill-only {@link Shape} painting the shared eight-segment interaction-panel chamfer. */
