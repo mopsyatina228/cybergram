@@ -61,6 +61,8 @@ SETTINGS_SEARCH_CELL = JAVA / "ui/Cells/SettingsSearchCell.java"
 CYBERGRAM_TYPOGRAPHY = JAVA / "ui/ActionBar/CybergramTypography.java"
 # Round 11 / Stage F attach surface (paperclip attach-alert menu).
 CHAT_ATTACH_ALERT = JAVA / "ui/Components/ChatAttachAlert.java"
+# Round 12 / Stage F follow-up: the profile music capsule.
+PROFILE_MUSIC_VIEW = JAVA / "ui/Components/ProfileMusicView.java"
 
 FLOAT_DECL = re.compile(
     r"static final (?:float|double)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);"
@@ -243,6 +245,7 @@ def main():
         "settings_search_cell": SETTINGS_SEARCH_CELL,
         "cybergram_typography": CYBERGRAM_TYPOGRAPHY,
         "chat_attach_alert": CHAT_ATTACH_ALERT,
+        "profile_music_view": PROFILE_MUSIC_VIEW,
     }
     texts = {}
     for name, path in paths.items():
@@ -1654,6 +1657,227 @@ def main():
           "public static final int TEXT_MUTED = 0xFF78858F;" in texts["theme"]
           and "public static final int CYAN = 0xFF00E5FF;" in texts["theme"]
           and "public static final int AMBER = 0xFFFFB300;" in texts["theme"])
+
+    # ---- [Q] round-12 Stage F follow-up (profile music capsule + settings camera/icons) --------
+    # Owner review of the round-9/round-10 shots left three surfaces: the profile music row was
+    # still a fully-rounded peer-tinted capsule (ProfileMusicView), the settings "set photo" badge
+    # was two stock Material circles, and the settings icon chips still carried their multi-hue
+    # vertical gradient. Round 12 replaces all three through gated seams with the already-accepted
+    # grammar (shared eight-segment chamfer + ONE thin cyan rail) and adds tokens only: no geometry,
+    # no touch target, no row height and no palette hue moves. This section re-derives the
+    # invariants from the real source so a silent revert fails the gate instead of shipping.
+    print("\n[Q] round-12 profile music plate + settings camera/icons")
+    pmv = strip_java_comments(texts["profile_music_view"])
+    pmvn = re.sub(r"[ \t]*\n[ \t]*", " ", pmv)
+
+    music_cut = token("PROFILE_MUSIC_CUT_DP")
+    music_border_w = token("PROFILE_MUSIC_BORDER_WIDTH_DP")
+    music_border_alpha = ints.get("PROFILE_MUSIC_BORDER_ALPHA")
+    music_fill_alpha = ints.get("PROFILE_MUSIC_FILL_ALPHA")
+    music_rail = token("PROFILE_MUSIC_RAIL_LENGTH_DP")
+    camera_size = ints.get("SETTINGS_CAMERA_SIZE_DP")
+    camera_cut = token("SETTINGS_CAMERA_CUT_DP")
+
+    check("round-12 tokens parse (music 6dp / 0.65dp / 110 / 220 / 14dp, camera 26 / 5)",
+          music_cut == 6.0 and music_border_w == 0.65 and music_border_alpha == 110
+          and music_fill_alpha == 220 and music_rail == 14.0
+          and camera_size == 26 and camera_cut == 5.0,
+          "cut=%s border=%s/%s fill=%s rail=%s camera=%s/%s"
+          % (music_cut, music_border_w, music_border_alpha, music_fill_alpha, music_rail,
+             camera_size, camera_cut))
+
+    # --- P1 profile music plate --------------------------------------------------------------
+    check("music plate is gated on the central Cybergram presentation gate",
+          "CybergramTheme.isCybergramPresentation(resourcesProvider)" in pmv)
+    check("music plate uses the shared chamfer builder and the round-12 cut token",
+          "CybergramTheme.buildInteractionPanelPath(clipPath, rect, CybergramTheme.PROFILE_MUSIC_CUT_DP)" in pmvn)
+    check("music plate fill is PANEL_RAISED at PROFILE_MUSIC_FILL_ALPHA",
+          "backgroundPaint.setColor(CybergramTheme.PANEL_RAISED)" in pmvn
+          and "CybergramTheme.PROFILE_MUSIC_FILL_ALPHA" in pmvn)
+    check("music plate carries ONE cyan border rail at PROFILE_MUSIC_BORDER_ALPHA",
+          "plateBorderPaint.setColor(CybergramTheme.CYAN)" in pmvn
+          and "CybergramTheme.PROFILE_MUSIC_BORDER_ALPHA" in pmvn)
+    check("music border rail is inset by half its own stroke (stays inside the silhouette)",
+          "plateRect.inset(musicStroke / 2f, musicStroke / 2f)" in pmvn
+          and "plateBorderPaint.setStrokeWidth(musicStroke)" in pmvn)
+    check("music plate draws the short leading cyan rail from the length token",
+          "CybergramTheme.PROFILE_MUSIC_RAIL_LENGTH_DP" in pmvn
+          and "canvas.drawRect(" in pmvn
+          and "plateRailPaint.setColor(CybergramTheme.CYAN)" in pmvn)
+    check("leading rail length is clamped by the collapsing plate height",
+          "rect.height() - dp(2)" in pmvn)
+
+    # The upstream rounded capsule must survive whole as the non-Cybergram path, and the gate must
+    # precede it so the two branches are genuinely alternatives rather than one dead seam.
+    rounded_draw = "canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);"
+    chamfer_idx = pmvn.find("CybergramTheme.buildInteractionPanelPath(clipPath, rect, CybergramTheme.PROFILE_MUSIC_CUT_DP)")
+    rounded_idx = pmvn.find(rounded_draw)
+    check("upstream rounded capsule survives as the non-Cybergram fallback",
+          rounded_draw in pmvn and "clipPath.addRoundRect(rect, rect.height() / 2f, rect.height() / 2f, Path.Direction.CW);" in pmvn)
+    check("chamfer branch and upstream capsule are exclusive alternatives (chamfer first)",
+          "final boolean cybergramMusic = CybergramTheme.isCybergramPresentation(resourcesProvider);" in pmvn
+          and chamfer_idx != -1 and rounded_idx != -1 and chamfer_idx < rounded_idx)
+
+    # Geometry / behaviour that round 12 must NOT move.
+    check("music view keeps its 37dp measured height, text, arrow and bounce",
+          "dp(37)" in pmv and "bounce.getScale(0.02f)" in pmv
+          and "canvas.drawPath(arrowPath, arrowPaint);" in pmv
+          and "this.author.draw(canvas, 0, cy, textColor, alpha);" in pmv)
+    check("music plate never redefines the touch rect",
+          "rect.set(" in pmv and "rect.contains(event.getX(), event.getY())" in pmv
+          and "plateRect.set(rect);" in pmvn)
+
+    def music_plate_outside(width_dp, alpha, density):
+        w = float(dp_ceil(width_dp, density))
+        h = 17.0 * density * alpha
+        if w <= 0.0 or h <= 0.0:
+            return None
+        cut = min(dp_ceil(music_cut, density), min(w, h) * 0.22)
+        if cut <= 0.0 or 2.0 * cut >= min(w, h):
+            return None
+        pts = [(cut, 0.0), (w - cut, 0.0), (w, cut), (w, h - cut),
+               (w - cut, h), (cut, h), (0.0, h - cut), (0.0, cut)]
+        return sum(1 for x, y in pts if x < 0.0 or y < 0.0 or x > w or y > h)
+
+    music_bad = []
+    music_cases = 0
+    for density in (DENSITIES if music_cut is not None else []):
+        for width_dp in (120.0, 200.0, 411.0):
+            for alpha in (0.15, 0.35, 0.6, 0.85, 1.0):
+                music_cases += 1
+                outside = music_plate_outside(width_dp, alpha, density)
+                if outside is None or outside != 0:
+                    music_bad.append("%.0fdp a=%.2f d=%.3f" % (width_dp, alpha, density))
+    check("music plate chamfer stays a real, in-bounds polygon for %d density/alpha cases"
+          % music_cases, music_cases > 0 and not music_bad,
+          "violations: " + ", ".join(music_bad[:4]) if music_bad else "")
+
+    # The leading rail must stay inside the plate's own dp(8) leading gutter for every density, and
+    # the token must be an actual 14dp accent (not a full-height bar).
+    def music_rail_in_gutter(density):
+        h = 17.0 * density
+        thickness = max(1.0, 1.0 * density)
+        length = min(14.0 * density, max(0.0, h - 2.0 * density))
+        return (3.0 * density + thickness) <= 8.0 * density and 0.0 < length <= h
+
+    check("leading rail fits the dp(8) leading gutter and the plate height at every density",
+          all(music_rail_in_gutter(d) for d in DENSITIES)
+          and music_rail == 14.0,
+          "rail=%.1fdp densities=%s" % (music_rail or -1, DENSITIES))
+
+    def music_plate_routed(src):
+        return ("CybergramTheme.buildInteractionPanelPath(clipPath, rect, CybergramTheme.PROFILE_MUSIC_CUT_DP)" in src
+                and "backgroundPaint.setColor(CybergramTheme.PANEL_RAISED)" in src)
+
+    pre_fix_music = ("clipPath.addRoundRect(rect, rect.height() / 2f, rect.height() / 2f, "
+                     "Path.Direction.CW); " + rounded_draw)
+    check("negative control: the pre-fix rounded capsule fails the chamfer predicate",
+          music_plate_routed(pre_fix_music) is False)
+
+    # --- S1 settings camera badge ------------------------------------------------------------
+    check("camera badge is gated on the central Cybergram presentation gate",
+          "if (CybergramTheme.isCybergramPresentation(resourceProvider)) {" in sa)
+    check("camera badge is ONE chamfer plate from the shared drawable helper",
+          sa.count("CybergramTheme.createChamferedPlateDrawable(") >= 1
+          and "CybergramTheme.SETTINGS_CAMERA_CUT_DP" in sa
+          and "CybergramTheme.SETTINGS_CAMERA_SIZE_DP" in sa)
+    check("camera plate is PANEL_RAISED with ONE cyan rail at the chip grammar values",
+          "CybergramTheme.PANEL_RAISED, CybergramTheme.SETTINGS_CHIP_FILL_ALPHA" in sa
+          and "CybergramTheme.CYAN, CybergramTheme.SETTINGS_CHIP_BORDER_ALPHA" in sa
+          and "CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP" in sa)
+    check("camera glyph is 16dp and AMBER",
+          "LayoutHelper.createFrame(16, 16, Gravity.CENTER)" in sa
+          and "new PorterDuffColorFilter(CybergramTheme.AMBER, PorterDuff.Mode.SRC_IN)" in sa)
+    check("camera 34dp box, offset and touch target are untouched",
+          "LayoutHelper.createFrame(34, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 75, 0, 0)" in sa)
+    check("the two stock Material circles survive as the non-Cybergram fallback",
+          "Theme.createCircleDrawable(dp(32), getThemedColor(Theme.key_windowBackgroundGray))" in sa
+          and "Theme.createCircleDrawable(dp(30), getThemedColor(Theme.key_featuredStickers_addButton))" in sa
+          and "LayoutHelper.createFrame(30, 30)" in sa)
+
+    def camera_plate_outside(size_dp, cut_dp, density, clamp_ratio=0.22):
+        side = float(dp_ceil(size_dp, density))
+        cut = (min(dp_ceil(cut_dp, density), side * clamp_ratio)
+               if clamp_ratio is not None else dp_ceil(cut_dp, density))
+        if cut <= 0.0:
+            return None
+        pts = [(cut, 0.0), (side - cut, 0.0), (side, cut), (side, side - cut),
+               (side - cut, side), (cut, side), (0.0, side - cut), (0.0, cut)]
+        return sum(1 for x, y in pts if x < 0.0 or y < 0.0 or x > side or y > side)
+
+    camera_bad = []
+    if camera_size is None or camera_cut is None:
+        camera_bad = ["tokens"]
+    else:
+        for _density in DENSITIES:
+            _side = float(dp_ceil(camera_size, _density))
+            _cut = min(dp_ceil(camera_cut, _density), _side * 0.22)
+            if (_cut <= 0.0 or 2.0 * _cut >= _side
+                    or camera_plate_outside(camera_size, camera_cut, _density) != 0):
+                camera_bad.append(_density)
+    check("camera plate chamfer stays inside the 26dp box at every density",
+          camera_size is not None and camera_cut is not None
+          and camera_cut <= camera_size * 0.22 + 1e-6 and not camera_bad,
+          "cut=%s clamp=%.2f violations=%s"
+          % (camera_cut, (camera_size or 0) * 0.22, camera_bad or "none"))
+    check("negative control: an unclamped oversized camera cut escapes the 26dp box",
+          camera_size is not None and camera_cut is not None
+          and camera_plate_outside(camera_size, 400.0, 2.75, clamp_ratio=None) > 0)
+
+    def camera_plate_gated(src):
+        return ("if (CybergramTheme.isCybergramPresentation(resourceProvider)) {" in src
+                and "CybergramTheme.SETTINGS_CAMERA_CUT_DP" in src)
+
+    pre_fix_camera = ("cameraButton.setBackground(Theme.createCircleDrawable(dp(32), "
+                      "getThemedColor(Theme.key_windowBackgroundGray)));")
+    check("negative control: the pre-fix two-circle camera badge fails the plate predicate",
+          camera_plate_gated(pre_fix_camera) is False)
+
+    # --- S2 settings icon chip: single fill, glyph state layer --------------------------------
+    check("round-9 chamfer grammar is kept (cut 5dp, 0.65dp rail, alpha 126, gated)",
+          set_chip_cut == 5.0
+          and set_chip_border_w == 0.65
+          and set_chip_border == 126
+          and "iconBackground.setCybergram(CybergramTheme.isCybergramPresentation(resourcesProvider));" in sa)
+    check("icon chip gradient fill is replaced by ONE PANEL_RAISED fill at alpha 236",
+          "paint.setShader(null);" in sa
+          and "paint.setColor(CybergramTheme.PANEL_RAISED);" in sa
+          and "paint.setAlpha(CybergramTheme.SETTINGS_CHIP_FILL_ALPHA);" in sa
+          and set_chip_fill == 236)
+    check("the upstream multi-hue vertical gradient survives off Cybergram",
+          "gradient = new LinearGradient(0, 0, 0, dp(28), new int[] { topColor, bottomColor }"
+          in sa)
+    check("glyph state layer: ICON_PALE at rest, CYAN raised, DANGER destructive",
+          "color = CybergramTheme.DANGER;" in sa
+          and "color = CybergramTheme.CYAN;" in sa
+          and "color = CybergramTheme.ICON_PALE;" in sa
+          and "iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));" in sa)
+    check("DANGER glyph is reachable only through the destructive flag",
+          "private boolean cybergramDestructive;" in sa
+          and "if (cybergramDestructive) {" in sa
+          and "setCybergramDestructive(item.id == ID_CLEAR_LOGS);" in sa
+          and "private static final int ID_CLEAR_LOGS = 22;" in sa)
+    check("glyph tint is re-evaluated on row state and on bind",
+          "protected void drawableStateChanged() {" in sa
+          and "applyCybergramGlyphColor();" in sa
+          and sa.count("applyCybergramGlyphColor();") >= 3)
+    check("glyph tint is a no-op outside the gate (early return, no filter)",
+          "if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {" in sa)
+
+    # --- scope: round-12 tokens are referenced by exactly the three surfaced files -------------
+    r12_files = sorted(name for name, text in texts.items()
+                       if "PROFILE_MUSIC_" in text or "SETTINGS_CAMERA_" in text)
+    check("round-12 tokens are referenced only by theme + the two surfaced sources",
+          r12_files == ["profile_music_view", "settings_activity", "theme"],
+          "referenced by: " + ", ".join(r12_files))
+
+    check("round 12 keeps TEXT_MUTED and the D2 palette hues byte-for-byte",
+          "public static final int TEXT_MUTED = 0xFF78858F;" in texts["theme"]
+          and "public static final int CYAN = 0xFF00E5FF;" in texts["theme"]
+          and "public static final int AMBER = 0xFFFFB300;" in texts["theme"]
+          and "public static final int DANGER = 0xFFFF003C;" in texts["theme"]
+          and "public static final int ICON_PALE = 0xFF91BCC6;" in texts["theme"]
+          and "public static final int PANEL_RAISED = 0xFF111820;" in texts["theme"])
 
     _summary()
 

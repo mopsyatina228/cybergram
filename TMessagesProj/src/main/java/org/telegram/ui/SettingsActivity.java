@@ -453,15 +453,31 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         showAvatarProgress(false, false);
 
         cameraButton = new FrameLayout(context);
-        cameraButton.setBackground(Theme.createCircleDrawable(dp(32), getThemedColor(Theme.key_windowBackgroundGray)));
-        cameraButton.setPadding(dp(2), dp(2), dp(2), dp(2));
         cameraBackground = new FrameLayout(context);
-        cameraBackground.setBackground(Theme.createCircleDrawable(dp(30), getThemedColor(Theme.key_featuredStickers_addButton)));
         cameraImageView = new ImageView(context);
         cameraImageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         cameraImageView.setImageResource(R.drawable.filled_premium_camera);
-        cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
-        cameraButton.addView(cameraBackground, LayoutHelper.createFrame(30, 30));
+        if (CybergramTheme.isCybergramPresentation(resourceProvider)) {
+            // Stage F round 12: the two stock Material circles (a 32dp ring plus a 30dp
+            // feature-coloured disc) collapse into ONE 26dp angular plate -- the shared chamfer
+            // with ONE cyan rail -- carrying a 16dp amber glyph. The 34dp button box, its offset
+            // and its touch target are untouched; outside the gate the two circles are drawn
+            // exactly as before.
+            cameraImageView.setColorFilter(new PorterDuffColorFilter(CybergramTheme.AMBER, PorterDuff.Mode.SRC_IN));
+            cameraBackground.setBackground(CybergramTheme.createChamferedPlateDrawable(
+                    CybergramTheme.PANEL_RAISED, CybergramTheme.SETTINGS_CHIP_FILL_ALPHA,
+                    CybergramTheme.CYAN, CybergramTheme.SETTINGS_CHIP_BORDER_ALPHA,
+                    CybergramTheme.SETTINGS_CHIP_BORDER_WIDTH_DP, CybergramTheme.SETTINGS_CAMERA_CUT_DP));
+            cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(16, 16, Gravity.CENTER));
+            cameraButton.addView(cameraBackground, LayoutHelper.createFrame(
+                    CybergramTheme.SETTINGS_CAMERA_SIZE_DP, CybergramTheme.SETTINGS_CAMERA_SIZE_DP, Gravity.CENTER));
+        } else {
+            cameraButton.setBackground(Theme.createCircleDrawable(dp(32), getThemedColor(Theme.key_windowBackgroundGray)));
+            cameraButton.setPadding(dp(2), dp(2), dp(2), dp(2));
+            cameraBackground.setBackground(Theme.createCircleDrawable(dp(30), getThemedColor(Theme.key_featuredStickers_addButton)));
+            cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+            cameraButton.addView(cameraBackground, LayoutHelper.createFrame(30, 30));
+        }
         avatarContainer.addView(cameraButton, LayoutHelper.createFrame(34, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 75, 0, 0));
         ScaleStateListAnimator.apply(cameraButton);
 
@@ -1229,6 +1245,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         private final TextView subtitleView;
         private final TextView valueView;
         private final boolean mini;
+        /** Round-12: TRUE only for a row whose action destroys data (keeps the DANGER glyph). */
+        private boolean cybergramDestructive;
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider) {
             this(context, resourcesProvider, false);
@@ -1299,6 +1317,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             iconBackground.setColor(iconColorTop, iconColorBottom);
             iconView.setImageResource(icon);
+            applyCybergramGlyphColor();
             titleView.setText(title);
             subtitleView.setVisibility((twoLines = !TextUtils.isEmpty(subtitle)) ? View.VISIBLE : View.GONE);
             subtitleView.setText(subtitle);
@@ -1316,6 +1335,44 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(dp(mini ? 44 : twoLines ? 60 : 50), MeasureSpec.EXACTLY)
             );
+        }
+
+        /**
+         * Stage F round 12: under Cybergram the settings glyph is a state layer -- ICON_PALE at
+         * rest, CYAN while the row is pressed/selected/focused, and DANGER only for a row that
+         * destroys data. Outside the gate no filter is applied, so the upstream drawable keeps its
+         * own colour byte-for-byte.
+         */
+        private void applyCybergramGlyphColor() {
+            if (iconView == null) {
+                // drawableStateChanged() can fire from the View constructor chain, before the
+                // glyph exists; the tint is re-applied from set() once it does.
+                return;
+            }
+            if (!CybergramTheme.isCybergramPresentation(resourcesProvider)) {
+                return;
+            }
+            final int color;
+            if (cybergramDestructive) {
+                color = CybergramTheme.DANGER;
+            } else if (isPressed() || isSelected() || isFocused()) {
+                color = CybergramTheme.CYAN;
+            } else {
+                color = CybergramTheme.ICON_PALE;
+            }
+            iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        }
+
+        /** Round-12: marks a destructive row so its glyph is the only DANGER glyph. */
+        public void setCybergramDestructive(boolean destructive) {
+            cybergramDestructive = destructive;
+            applyCybergramGlyphColor();
+        }
+
+        @Override
+        protected void drawableStateChanged() {
+            super.drawableStateChanged();
+            applyCybergramGlyphColor();
         }
 
         public static class Background extends Drawable {
@@ -1351,8 +1408,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void draw(@NonNull Canvas canvas) {
                 if (cybergram) {
-                    // Round 9: shared eight-segment chamfer over the existing category gradient,
-                    // closed by ONE thin cyan rail (inline-button grammar). Bounds are untouched.
+                    // Round 9: shared eight-segment chamfer, closed by ONE thin cyan rail
+                    // (inline-button grammar). Bounds are untouched.
+                    // Round 12: the multi-hue vertical category gradient is gone -- ONE
+                    // PANEL_RAISED fill at SETTINGS_CHIP_FILL_ALPHA (236). Only this gated branch
+                    // changes; setColor()'s upstream LinearGradient stays the non-Cybergram path.
+                    paint.setShader(null);
+                    paint.setColor(CybergramTheme.PANEL_RAISED);
+                    paint.setAlpha(CybergramTheme.SETTINGS_CHIP_FILL_ALPHA);
                     chamferRect.set(getBounds());
                     CybergramTheme.buildInteractionPanelPath(chamferPath, chamferRect, CybergramTheme.SETTINGS_CHIP_CUT_DP);
                     canvas.drawPath(chamferPath, paint);
@@ -1400,6 +1463,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public static class Factory extends UItem.UItemFactory<SettingCell> {
             static { setup(new Factory()); }
 
+            /**
+             * Round-12: the settings row that destroys data -- {@code SettingsActivity.onClick}
+             * case 22 ({@code FileLog.cleanupLogs()}, the debug "Clear Logs" row). It is the only
+             * row allowed the DANGER glyph; every other row is ICON_PALE / CYAN.
+             */
+            private static final int ID_CLEAR_LOGS = 22;
+
             @Override
             public SettingCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new SettingCell(context, resourcesProvider);
@@ -1415,6 +1485,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     item.subtext,
                     item.textValue
                 );
+                ((SettingCell) view).setCybergramDestructive(item.id == ID_CLEAR_LOGS);
             }
 
             public static UItem of(int id, int iconColorTop, int iconColorBottom, int icon, CharSequence title) {

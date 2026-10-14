@@ -633,6 +633,36 @@ public final class CybergramTheme {
     /** 28dp-tall attach-alert action plate ("Create"): the same chamfer grammar as the chips. */
     public static final float ATTACH_ACTION_CUT_DP = 6f;
 
+    /**
+     * Round-12 Stage F follow-up (owner review of the round-9/round-10 shots): the profile music
+     * capsule and the settings camera badge / icon chips.
+     *
+     * <p>{@code Components/ProfileMusicView} was the last fully-rounded capsule on the profile - a
+     * peer-tinted pill with a half-height corner radius. Under Cybergram it becomes the same
+     * near-black HUD plate as the rest of the fork: the shared six-dp chamfer, ONE cyan border rail
+     * and a short cyan rail along the leading edge, all inside the untouched rect (touch bounds).
+     * The text, the arrow, the 37dp measured height and the bounce animation do not move.
+     */
+    public static final float PROFILE_MUSIC_CUT_DP = 6f;
+    public static final float PROFILE_MUSIC_BORDER_WIDTH_DP = 0.65f;
+    public static final int PROFILE_MUSIC_BORDER_ALPHA = 110;
+    public static final int PROFILE_MUSIC_FILL_ALPHA = 220;
+    /**
+     * Length (long dimension, dp) of the short leading cyan rail. It runs along the plate's
+     * leading edge inside the dp(8) gutter that the icon/text row already leaves clear, and it is
+     * clamped by the collapsing plate height so it can never leave the silhouette.
+     */
+    public static final float PROFILE_MUSIC_RAIL_LENGTH_DP = 14f;
+
+    /**
+     * Round-12: the settings "set photo" camera badge was built from TWO stock Material circles (a
+     * 32dp background ring and a 30dp feature-coloured disc). Under Cybergram the pair collapses
+     * into ONE 26dp angular plate (shared chamfer + ONE cyan rail) carrying a 16dp amber glyph.
+     * The 34dp button box, its offset and its touch target are untouched.
+     */
+    public static final int SETTINGS_CAMERA_SIZE_DP = 26;
+    public static final float SETTINGS_CAMERA_CUT_DP = 5f;
+
     private static final Paint ANALOG_OVERLAY_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     /**

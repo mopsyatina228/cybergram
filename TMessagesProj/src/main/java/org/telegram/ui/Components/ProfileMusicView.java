@@ -35,6 +35,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.CybergramTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ProfileActivity;
 
@@ -54,6 +55,11 @@ public class ProfileMusicView extends View {
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path clipPath = new Path();
+    /** Round-12 Cybergram plate scratch: paint-only, the touch rect above is never modified. */
+    private final RectF plateRect = new RectF();
+    private final Path plateBorderPath = new Path();
+    private final Paint plateBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint plateRailPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private final ButtonBounce bounce = new ButtonBounce(this);
 
@@ -273,7 +279,13 @@ public class ProfileMusicView extends View {
             (getWidth() + containerWidth) / 2f,
             dp(10) + dp(17) * alpha
         );
-        if (withShadows && SharedConfig.shadowsInSections) {
+        // Stage F round 12: under Cybergram the fully-rounded peer capsule becomes the shared
+        // six-dp-chamfered near-black plate (PANEL_RAISED at PROFILE_MUSIC_FILL_ALPHA) closed by
+        // ONE cyan border rail, plus a short cyan rail along the leading edge. The rect (touch
+        // bounds), the ellipsized text, the arrow, the 37dp measured height and the bounce are
+        // untouched; outside the gate the upstream capsule is drawn exactly as before.
+        final boolean cybergramMusic = CybergramTheme.isCybergramPresentation(resourcesProvider);
+        if (withShadows && SharedConfig.shadowsInSections && !cybergramMusic) {
             backgroundPaint.setShadowLayer(dpf2(2), 0, dpf2(0.33f), multAlpha(0x0a000000, alpha));
             strokePaint.setShadowLayer(dpf2(0.33f), 0, 0, multAlpha(0x0c000000, alpha));
             strokePaint.setColor(0);
@@ -281,15 +293,58 @@ public class ProfileMusicView extends View {
             backgroundPaint.setShadowLayer(0, 0, 0, 0);
         }
         int wasAlpha = backgroundPaint.getAlpha();
-        backgroundPaint.setAlpha((int) (wasAlpha * alpha));
-        if (withShadows && SharedConfig.shadowsInSections) {
-            canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, strokePaint);
+        if (cybergramMusic) {
+            backgroundPaint.setColor(CybergramTheme.PANEL_RAISED);
+            backgroundPaint.setAlpha((int) (CybergramTheme.PROFILE_MUSIC_FILL_ALPHA * alpha));
+        } else {
+            backgroundPaint.setAlpha((int) (wasAlpha * alpha));
         }
-        canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);
-        backgroundPaint.setAlpha(wasAlpha);
 
         clipPath.rewind();
-        clipPath.addRoundRect(rect, rect.height() / 2f, rect.height() / 2f, Path.Direction.CW);
+        if (cybergramMusic) {
+            CybergramTheme.buildInteractionPanelPath(clipPath, rect, CybergramTheme.PROFILE_MUSIC_CUT_DP);
+            canvas.drawPath(clipPath, backgroundPaint);
+
+            final float musicStroke = dpf2(CybergramTheme.PROFILE_MUSIC_BORDER_WIDTH_DP);
+            plateRect.set(rect);
+            plateRect.inset(musicStroke / 2f, musicStroke / 2f);
+            if (plateRect.width() > 0f && plateRect.height() > 0f) {
+                CybergramTheme.buildInteractionPanelPath(plateBorderPath, plateRect, CybergramTheme.PROFILE_MUSIC_CUT_DP);
+                plateBorderPaint.setStyle(Paint.Style.STROKE);
+                plateBorderPaint.setStrokeJoin(Paint.Join.MITER);
+                plateBorderPaint.setStrokeWidth(musicStroke);
+                plateBorderPaint.setColor(CybergramTheme.CYAN);
+                plateBorderPaint.setAlpha((int) (CybergramTheme.PROFILE_MUSIC_BORDER_ALPHA * alpha));
+                canvas.drawPath(plateBorderPath, plateBorderPaint);
+            }
+
+            // Short leading rail: it lives inside the dp(8) gutter the icon/text row already keeps
+            // clear, and its length is clamped by the collapsing plate height so it can never
+            // leave the silhouette while the row is still animating in.
+            final float railThickness = Math.max(1f, dpf2(1f));
+            final float railLength = Math.min(dpf2(CybergramTheme.PROFILE_MUSIC_RAIL_LENGTH_DP),
+                    Math.max(0f, rect.height() - dp(2)));
+            if (railLength > 0f) {
+                final float railX = LocaleController.isRTL
+                        ? rect.right - dp(3) - railThickness
+                        : rect.left + dp(3);
+                plateRailPaint.setStyle(Paint.Style.FILL);
+                plateRailPaint.setColor(CybergramTheme.CYAN);
+                plateRailPaint.setAlpha((int) (CybergramTheme.PROFILE_MUSIC_BORDER_ALPHA * alpha));
+                canvas.drawRect(
+                        railX, rect.centerY() - railLength / 2f,
+                        railX + railThickness, rect.centerY() + railLength / 2f,
+                        plateRailPaint);
+            }
+        } else {
+            if (withShadows && SharedConfig.shadowsInSections) {
+                canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, strokePaint);
+            }
+            canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);
+            clipPath.addRoundRect(rect, rect.height() / 2f, rect.height() / 2f, Path.Direction.CW);
+        }
+        backgroundPaint.setAlpha(wasAlpha);
+        backgroundPaint.setColor(backgroundColor);
 
         canvas.save();
         canvas.clipPath(clipPath);
